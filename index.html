@@ -1,438 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Anowar Creation - Digital, technical and creative services.">
-  <title>Anowar Creation | Digital & Technical Solutions</title>
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      line-height: 1.6;
-      color: #172033;
-      background: #f7f9fc;
-    }
-
-    a { text-decoration: none; color: inherit; }
-
-    .container {
-      width: min(1120px, 92%);
-      margin: auto;
-    }
-
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: rgba(255,255,255,.94);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid #e7ebf2;
-    }
-
-    nav {
-      min-height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .logo {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -.5px;
-    }
-
-    .logo span { color: #2563eb; }
-
-    .nav-links {
-      display: flex;
-      list-style: none;
-      gap: 28px;
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .nav-links a:hover { color: #2563eb; }
-
-    .menu-btn {
-      display: none;
-      border: 0;
-      background: transparent;
-      font-size: 28px;
-      cursor: pointer;
-    }
-
-    .hero {
-      padding: 92px 0 80px;
-      background:
-        radial-gradient(circle at 85% 20%, rgba(37,99,235,.15), transparent 30%),
-        linear-gradient(135deg, #eff6ff, #ffffff 55%, #f8fafc);
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.25fr .75fr;
-      align-items: center;
-      gap: 55px;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 7px 13px;
-      border-radius: 999px;
-      background: #dbeafe;
-      color: #1d4ed8;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 18px;
-    }
-
-    h1 {
-      font-size: clamp(42px, 6vw, 70px);
-      line-height: 1.05;
-      letter-spacing: -2.5px;
-      margin-bottom: 20px;
-    }
-
-    h1 span { color: #2563eb; }
-
-    .hero p {
-      max-width: 650px;
-      color: #596579;
-      font-size: 18px;
-      margin-bottom: 30px;
-    }
-
-    .buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 13px;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 13px 21px;
-      border-radius: 10px;
-      font-weight: 700;
-      transition: .2s;
-    }
-
-    .btn-primary {
-      background: #2563eb;
-      color: white;
-      box-shadow: 0 8px 22px rgba(37,99,235,.22);
-    }
-
-    .btn-primary:hover { transform: translateY(-2px); }
-
-    .btn-secondary {
-      border: 1px solid #d6dce7;
-      background: white;
-    }
-
-    .hero-card {
-      background: white;
-      border: 1px solid #e4e9f1;
-      border-radius: 24px;
-      padding: 34px;
-      box-shadow: 0 20px 55px rgba(15,23,42,.08);
-    }
-
-    .hero-card .icon {
-      width: 64px;
-      height: 64px;
-      display: grid;
-      place-items: center;
-      border-radius: 18px;
-      background: #eff6ff;
-      font-size: 30px;
-      margin-bottom: 22px;
-    }
-
-    .hero-card h3 { margin-bottom: 8px; font-size: 23px; }
-    .hero-card p { font-size: 15px; margin: 0; }
-
-    section { padding: 82px 0; }
-
-    .section-title {
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto 45px;
-    }
-
-    .section-title h2 {
-      font-size: clamp(30px, 4vw, 42px);
-      margin-bottom: 10px;
-    }
-
-    .section-title p { color: #667085; }
-
-    .services {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-
-    .service {
-      background: white;
-      border: 1px solid #e7ebf2;
-      padding: 28px;
-      border-radius: 18px;
-      transition: .2s;
-    }
-
-    .service:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 14px 35px rgba(15,23,42,.08);
-    }
-
-    .service-icon { font-size: 30px; margin-bottom: 14px; }
-    .service h3 { margin-bottom: 8px; }
-    .service p { color: #667085; font-size: 15px; }
-
-    .about {
-      background: #111827;
-      color: white;
-    }
-
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 50px;
-      align-items: center;
-    }
-
-    .about p { color: #cbd5e1; margin-top: 15px; }
-
-    .points {
-      display: grid;
-      gap: 14px;
-    }
-
-    .point {
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.1);
-      padding: 16px 18px;
-      border-radius: 12px;
-    }
-
-    .contact-box {
-      background: white;
-      border: 1px solid #e7ebf2;
-      border-radius: 20px;
-      padding: 38px;
-      text-align: center;
-      box-shadow: 0 15px 40px rgba(15,23,42,.06);
-    }
-
-    .contact-box p {
-      color: #667085;
-      margin: 10px auto 24px;
-      max-width: 650px;
-    }
-
-    footer {
-      background: #0b1220;
-      color: #94a3b8;
-      text-align: center;
-      padding: 25px 15px;
-      font-size: 14px;
-    }
-
-    footer strong { color: white; }
-
-    @media (max-width: 800px) {
-      .menu-btn { display: block; }
-
-      .nav-links {
-        display: none;
-        position: absolute;
-        top: 72px;
-        left: 0;
-        right: 0;
-        background: white;
-        padding: 20px 5%;
-        border-bottom: 1px solid #e7ebf2;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .nav-links.active { display: flex; }
-
-      .hero-grid,
-      .about-grid { grid-template-columns: 1fr; }
-
-      .services { grid-template-columns: 1fr 1fr; }
-    }
-
-    @media (max-width: 520px) {
-      .hero { padding-top: 65px; }
-      .services { grid-template-columns: 1fr; }
-      section { padding: 65px 0; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Anowar Creation | Digital Service Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#0b1527;color:#f5f7fb;min-height:100vh}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+a{text-decoration:none;color:inherit}
+.app{display:flex;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:235px;background:#101b30;border-right:1px solid #293650;padding:18px 12px;overflow:auto;z-index:10}
+.brand{font-size:22px;font-weight:800;padding:8px 12px 24px}.brand span{color:#18dca0}.brand small{display:block;color:#71809a;font-size:10px;margin-top:4px;letter-spacing:1px}
+.nav{display:flex;flex-direction:column;gap:8px}.nav a{padding:13px 14px;border-radius:10px;border-left:3px solid transparent;color:#d7deeb;font-size:14px;font-weight:700}.nav a:hover,.nav a.active{background:#19263d;border-left-color:#ffd000;color:#fff}
+.main{margin-left:235px;width:calc(100% - 235px);padding:23px 28px 45px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.top h1{font-size:27px}.top p{color:#8290a7;font-size:13px;margin-top:4px}
+.profile{display:flex;gap:10px;align-items:center;background:#17243a;border:1px solid #303d55;border-radius:12px;padding:9px 13px}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#2469e8;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}.stat{background:#172238;border:1px solid #344157;border-radius:16px;padding:19px}.label{color:#8290a7;font-size:11px;margin-bottom:6px}.value{font-size:21px;font-weight:800}.green{color:#17d99e}.sub{color:#71809a;font-size:11px;margin-top:5px}
+.announce{border:1px solid #d5bd00;background:rgba(125,108,0,.18);border-radius:12px;padding:14px;text-align:center;color:#ffd900;font-weight:800;margin-bottom:18px}
+.tabs{display:flex;gap:11px;border-bottom:1px solid #29364d;padding-bottom:13px;margin-bottom:17px}.tab{border:1px solid #2d3b52;background:#17243a;color:#c8d0df;padding:10px 17px;border-radius:9px;font-weight:700}.tab.active{background:#2168df;color:white;border-color:#3b85ff}
+.panel{display:none}.panel.active{display:block}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.section-head h2{font-size:19px}.section-head span{font-size:12px;color:#7f8da4}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.card{background:#152138;border:1px solid #2b3850;border-radius:15px;min-height:185px;padding:20px 14px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;transition:.2s}.card:hover{transform:translateY(-3px);border-color:#3979e9;box-shadow:0 12px 30px #0004}.icon{width:56px;height:56px;border-radius:14px;background:#1d2d49;display:grid;place-items:center;font-size:27px;margin-bottom:11px}.card h3{font-size:15px}.card p{color:#8795aa;font-size:11px;margin:5px 0 12px;min-height:30px}.card button{border:0;background:#1769e8;color:#fff;border-radius:8px;padding:9px 15px;font-weight:700;font-size:12px}.card button:hover{background:#3883f3}
+.manual{background:#152138;border:1px solid #2b3850;border-radius:15px;padding:20px;color:#c9d1df}.manual li{margin:10px 0 10px 20px}
+.footer{text-align:center;color:#62718a;font-size:11px;margin-top:42px}.support{position:fixed;right:24px;bottom:22px;background:#11c88a;color:#041a12;padding:13px 20px;border-radius:30px;font-weight:800;box-shadow:0 10px 25px #11c88a44;z-index:20}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:18px;z-index:100}.modal.show{display:flex}.box{width:min(560px,100%);max-height:90vh;overflow:auto;background:#121e33;border:1px solid #33435e;border-radius:18px;padding:24px;box-shadow:0 25px 80px #0008}.box h2{font-size:21px;margin-bottom:5px}.box .desc{color:#8492a8;font-size:12px;margin-bottom:18px}
+.close{float:right;border:0;background:#26344d;color:#fff;width:34px;height:34px;border-radius:9px;font-size:20px}
+.form{display:grid;gap:13px}.form label{font-size:12px;color:#bfc9d9;font-weight:700}.form input,.form select,.form textarea{width:100%;margin-top:6px;padding:11px 12px;border-radius:9px;border:1px solid #33435d;background:#0d1729;color:#fff;outline:none}.form input:focus,.form select:focus,.form textarea:focus{border-color:#3980f0}
+.price-box{background:#0d1729;border:1px solid #30405a;border-radius:12px;padding:14px;margin-top:4px}.price-row{display:flex;justify-content:space-between;padding:5px 0;color:#aeb9ca}.total{border-top:1px solid #334159;margin-top:7px;padding-top:10px;color:#fff;font-size:18px;font-weight:800}
+.primary{width:100%;border:0;background:#1769e8;color:#fff;padding:12px;border-radius:9px;font-weight:800}.upi{background:#0d3029;border:1px solid #13bd86;border-radius:12px;padding:13px;margin-top:10px}.upi b{color:#19dda0}.note{color:#7f8da3;font-size:11px;margin-top:10px;line-height:1.5}
+#pdfInfo{display:none;margin-top:10px;padding:10px;border-radius:9px;background:#172b45;color:#bcd0eb;font-size:12px}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:850px){.sidebar{width:72px;padding:14px 7px}.brand{font-size:0;text-align:center}.brand:before{content:"AC";font-size:21px;color:#18dca0}.brand small,.nav a span{display:none}.nav a{text-align:center;padding:14px 4px}.main{margin-left:72px;width:calc(100% - 72px);padding:18px}.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:1fr}}
+@media(max-width:520px){.main{padding:13px}.top h1{font-size:21px}.profile{display:none}.grid{grid-template-columns:1fr}.support{right:13px;bottom:13px}.box{padding:18px}}
+</style>
 </head>
-
 <body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">Anowar <span>Creation</span><small>Digital Service Portal</small></div>
+  <nav class="nav">
+    <a class="active" href="#home">🏠 <span>Dashboard</span></a>
+    <a href="#services" onclick="activateServices()">🚀 <span>Our Services</span></a>
+    <a href="#orders" onclick="showOrders()">📋 <span>My Orders</span></a>
+    <a href="#orders" onclick="showOrders()">🕘 <span>Order History</span></a>
+    <a href="#support" onclick="openSupport()">💬 <span>Support</span></a>
+    <a href="#contact" onclick="openSupport()">📞 <span>Contact</span></a>
+  </nav>
+</aside>
 
-<header>
-  <div class="container">
-    <nav>
-      <a href="#home" class="logo">Anowar <span>Creation</span></a>
+<main class="main" id="home">
+  <div class="top"><div><h1>Welcome to Anowar Creation</h1><p>Your digital service portal</p></div><div class="profile"><div class="avatar">AC</div><div><b>Guest User</b><small style="display:block;color:#71809a">Online</small></div></div></div>
 
-      <button class="menu-btn" onclick="toggleMenu()" aria-label="Open menu">☰</button>
+  <section class="stats">
+    <div class="stat"><div class="label">📞 HELPLINE</div><div class="value">Contact Us</div><div class="sub">For service support</div></div>
+    <div class="stat"><div class="label">💵 PAYMENT</div><div class="value green">Cash on Delivery</div><div class="sub">Pay when your order is delivered</div></div>
+    <div class="stat"><div class="label">📦 ORDERS</div><div class="value" id="orderCount">0</div><div class="sub">Orders placed on this device</div></div>
+  </section>
 
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#home">Home</a></li>
-        <li><a href="#services">Services</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-    </nav>
+  <div class="announce">✨ Choose a service, complete the details, see the exact price. All orders are Cash on Delivery (COD). ✨</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showPanel('services',this)">🚀 Our Services</button>
+    <button class="tab" onclick="showPanel('manual',this)">📄 Manual Services</button>
   </div>
-</header>
 
-<main>
-
-  <section class="hero" id="home">
-    <div class="container hero-grid">
-      <div>
-        <div class="badge">Digital • Technical • Creative</div>
-        <h1>Welcome to <span>Anowar Creation</span></h1>
-        <p>
-          Simple, reliable and practical digital solutions for everyday
-          technical, document and creative needs.
-        </p>
-
-        <div class="buttons">
-          <a class="btn btn-primary" href="#services">Explore Services</a>
-          <a class="btn btn-secondary" href="#contact">Get in Touch</a>
-        </div>
-      </div>
-
-      <div class="hero-card">
-        <div class="icon">💻</div>
-        <h3>Your Digital Solution Partner</h3>
-        <p>
-          From documents and office work to digital support and creative
-          services, Anowar Creation is built to make things easier.
-        </p>
-      </div>
+  <section id="services" class="panel active">
+    <div class="section-head"><h2>Available Services</h2><span>Click a service to start</span></div>
+    <div class="grid">
+      <article class="card"><div class="icon">🖨️</div><h3>PDF Print</h3><p>Upload PDF, choose B&W or colour</p><button onclick="openPrint()">Start</button></article>
+      <article class="card"><div class="icon">📄</div><h3>Online Applications</h3><p>Application and form assistance</p><button onclick="openForm('Online Application','Tell us which application you need.')">Start</button></article>
+      <article class="card"><div class="icon">💻</div><h3>Computer Services</h3><p>Technical and software assistance</p><button onclick="openForm('Computer Service','Describe the computer or software issue.')">Start</button></article>
+      <article class="card"><div class="icon">📊</div><h3>MS Office</h3><p>Word, Excel and PowerPoint work</p><button onclick="openForm('MS Office Service','Tell us what document you need.')">Start</button></article>
+      <article class="card"><div class="icon">🎨</div><h3>Graphic Design</h3><p>Poster, banner and social design</p><button onclick="openForm('Graphic Design','Describe the design you need.')">Start</button></article>
+      <article class="card"><div class="icon">🌐</div><h3>Website Service</h3><p>Personal and business websites</p><button onclick="openForm('Website Service','Tell us about your website requirement.')">Start</button></article>
+      <article class="card"><div class="icon">📝</div><h3>Document Service</h3><p>Formatting and document preparation</p><button onclick="openForm('Document Service','Describe your document requirement.')">Start</button></article>
+      <article class="card"><div class="icon">🛠️</div><h3>Digital Support</h3><p>Everyday digital assistance</p><button onclick="openForm('Digital Support','Describe what help you need.')">Start</button></article>
     </div>
   </section>
 
-  <section id="services">
-    <div class="container">
-      <div class="section-title">
-        <h2>Our Services</h2>
-        <p>Practical services designed for students, individuals and small businesses.</p>
-      </div>
 
-      <div class="services">
-        <div class="service">
-          <div class="service-icon">💻</div>
-          <h3>Technical Support</h3>
-          <p>Basic computer, software and digital troubleshooting assistance.</p>
-        </div>
+  <section id="orders" class="panel">
+    <div class="section-head"><h2>📦 My Orders</h2><span>Your recent orders</span></div>
+    <div id="ordersList" class="manual"></div>
+  </section>
 
-        <div class="service">
-          <div class="service-icon">📄</div>
-          <h3>MS Office</h3>
-          <p>Professional help with Word, Excel and PowerPoint documents.</p>
-        </div>
-
-        <div class="service">
-          <div class="service-icon">📝</div>
-          <h3>Online Assistance</h3>
-          <p>Support with online forms, applications and digital documentation.</p>
-        </div>
-
-        <div class="service">
-          <div class="service-icon">🎨</div>
-          <h3>Creative Design</h3>
-          <p>Simple and attractive designs for posters, notices and social media.</p>
-        </div>
-
-        <div class="service">
-          <div class="service-icon">🌐</div>
-          <h3>Website Solutions</h3>
-          <p>Basic responsive websites for personal projects and small businesses.</p>
-        </div>
-
-        <div class="service">
-          <div class="service-icon">🛠️</div>
-          <h3>Digital Solutions</h3>
-          <p>Practical help for everyday digital and documentation requirements.</p>
-        </div>
-      </div>
+  <section id="manual" class="panel">
+    <div class="section-head"><h2>Manual Services</h2><span>Request a custom service</span></div>
+    <div class="manual">
+      <ul><li>Custom document preparation</li><li>Specialized online application assistance</li><li>Custom graphic or editing work</li><li>Other digital services on request</li></ul>
+      <button class="primary" style="margin-top:10px" onclick="openForm('Manual Service','Describe the custom service you need.')">Request Manual Service</button>
     </div>
   </section>
 
-  <section class="about" id="about">
-    <div class="container about-grid">
-      <div>
-        <div class="badge">About Us</div>
-        <h2>Making digital work simpler.</h2>
-        <p>
-          Anowar Creation focuses on useful, affordable and easy-to-understand
-          digital services. The goal is simple: provide practical solutions
-          without unnecessary complexity.
-        </p>
-      </div>
-
-      <div class="points">
-        <div class="point">✓ Student-friendly services</div>
-        <div class="point">✓ Clear and practical support</div>
-        <div class="point">✓ Professional presentation</div>
-        <div class="point">✓ Mobile-friendly solutions</div>
-      </div>
-    </div>
-  </section>
-
-  <section id="contact">
-    <div class="container">
-      <div class="contact-box">
-        <div class="section-title" style="margin-bottom: 0;">
-          <h2>Let's Work Together</h2>
-          <p>
-            Have a project, document or digital task? Contact Anowar Creation
-            and let's discuss what you need.
-          </p>
-        </div>
-
-        <div class="buttons" style="justify-content:center;">
-          <a class="btn btn-primary" href="mailto:anowarali0499@gmail.com">Email Us</a>
-          <a class="btn btn-secondary" href="https://wa.me/8670992707" target="_blank">WhatsApp</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
+  <div class="footer">© <span id="year"></span> Anowar Creation · Digital Service Portal</div>
 </main>
+<a class="support" href="#" onclick="openSupport();return false">💬 Live Support</a>
+</div>
 
-<footer>
-  © <span id="year"></span> <strong>Anowar Creation</strong>. All rights reserved.
-</footer>
+<!-- PDF PRINT MODAL -->
+<div class="modal" id="printModal">
+<div class="box">
+<button class="close" onclick="closeModal('printModal')">×</button>
+<h2>🖨️ PDF Print</h2>
+<div class="desc">Upload your PDF and choose the print type. Price is calculated automatically.</div>
+<div class="form">
+<label>Upload PDF
+<input id="pdfFile" type="file" accept="application/pdf" onchange="readPDF()">
+</label>
+<div id="pdfInfo"></div>
+<label>Print Type
+<select id="printType" onchange="calculatePrint()">
+<option value="bw">Black & White - ₹5 / page</option>
+<option value="color">Colour - ₹10 / page</option>
+</select>
+</label>
+<div class="price-box">
+<div class="price-row"><span>Pages</span><b id="pageCount">0</b></div>
+<div class="price-row"><span>Rate</span><b id="rate">₹5 / page</b></div>
+<div class="price-row total"><span>Exact Total</span><b id="printTotal">₹0</b></div>
+</div>
+<label style="display:block;font-size:12px;color:#bfc9d9;font-weight:700;margin:14px 0 6px">Payment Method</label>
+<select id="paymentMethod" style="width:100%;padding:11px 12px;border-radius:9px;border:1px solid #33435d;background:#0d1729;color:#fff">
+<option value="cod">Cash on Delivery (COD)</option>
+<option value="upi">UPI Payment</option>
+</select>
+<button class="primary" onclick="confirmPrint()">Continue</button>
+<div class="note">Choose UPI to pay online or COD to pay when the order is delivered.</div>
+</div>
+</div>
+</div>
+
+<!-- GENERIC SERVICE MODAL -->
+<div class="modal" id="serviceModal">
+<div class="box">
+<button class="close" onclick="closeModal('serviceModal')">×</button>
+<h2 id="serviceTitle">Service</h2><div class="desc" id="serviceDesc"></div>
+<div class="form">
+<label>Your Name<input id="custName" placeholder="Enter your name"></label>
+<label>Mobile Number<input id="custPhone" type="tel" placeholder="Enter mobile number"></label>
+<label>Requirement<textarea id="custReq" rows="4" placeholder="Describe your requirement"></textarea></label>
+<label>Payment Method
+<select id="servicePayment">
+<option value="cod">Cash on Delivery (COD)</option>
+<option value="upi">UPI Payment</option>
+</select>
+</label>
+<button class="primary" onclick="submitService()">Continue</button>
+</div>
+</div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal" id="upiModal">
+<div class="box">
+<button class="close" onclick="closeModal('upiModal')">×</button>
+<h2 id="paymentTitle">💳 Payment</h2>
+<div class="desc" id="paymentDesc">Choose how you want to pay.</div>
+<div class="price-box"><div class="price-row total"><span>Exact Amount</span><b id="upiAmount">₹0</b></div></div>
+
+<div id="upiSection" style="display:none">
+<div class="upi"><div>UPI ID: <b>anowarali0499@ptyes</b></div>
+<div class="note">Pay the exact amount using any UPI app.</div></div>
+<button class="primary" style="margin-top:12px" onclick="openUPI()">Pay by UPI</button>
+<button class="primary" style="margin-top:8px;background:#14b87a" onclick="confirmUPIPrint()">I Have Paid - Confirm Order</button>
+<div class="note">After payment, return here and press “I Have Paid - Confirm Order”.</div>
+</div>
+
+<div id="codSection" style="display:none">
+<div class="upi"><div>💵 Payment Method: <b>Cash on Delivery</b></div>
+<div class="note">No advance payment is required. Keep the exact amount ready when the order is delivered.</div></div>
+<button class="primary" style="margin-top:12px" onclick="placeCODOrder()">Confirm COD Order</button>
+</div>
+</div>
+</div>
+
+
+<!-- THANK YOU MODAL -->
+<div class="modal" id="thankModal">
+<div class="box" style="text-align:center">
+  <div style="font-size:52px;margin-bottom:8px">🎉</div>
+  <h2>Thank You!</h2>
+  <div class="desc" style="margin-top:7px">Your order has been confirmed successfully.</div>
+  <div class="price-box" style="text-align:left;margin-top:16px">
+    <div class="price-row"><span>Order ID</span><b id="thankOrderId">AC-000000</b></div>
+    <div class="price-row"><span>Service</span><b id="thankService">Service</b></div>
+    <div class="price-row"><span>Payment</span><b id="thankPayment">COD</b></div>
+    <div class="price-row total"><span>Total</span><b id="thankAmount">₹0</b></div>
+  </div>
+  <button class="primary" style="margin-top:14px" onclick="goToOrders()">📦 View My Orders</button>
+</div>
+</div>
+
+<!-- INFO MODAL -->
+<div class="modal" id="infoModal">
+<div class="box"><button class="close" onclick="closeModal('infoModal')">×</button><h2 id="infoTitle"></h2><div class="desc" id="infoText"></div></div>
+</div>
 
 <script>
-  function toggleMenu() {
-    document.getElementById("navLinks").classList.toggle("active");
-  }
+let currentService="";
+let pdfPages=0;
+let currentAmount=0;
 
-  document.querySelectorAll(".nav-links a").forEach(link => {
-    link.addEventListener("click", () => {
-      document.getElementById("navLinks").classList.remove("active");
-    });
-  });
+document.getElementById("year").textContent=new Date().getFullYear();
+document.getElementById("orderCount").textContent=localStorage.getItem("ac_orders")||"0";
 
-  document.getElementById("year").textContent = new Date().getFullYear();
+function showPanel(id,btn){
+ document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+ btn.classList.add("active");
+}
+function activateServices(){showPanel("services",document.querySelector(".tab"))}
+function closeModal(id){document.getElementById(id).classList.remove("show")}
+function openForm(title,desc){currentService=title;document.getElementById("serviceTitle").textContent="📋 "+title;document.getElementById("serviceDesc").textContent=desc;document.getElementById("serviceModal").classList.add("show")}
+function openInfo(t,x){document.getElementById("infoTitle").textContent=t;document.getElementById("infoText").textContent=x;document.getElementById("infoModal").classList.add("show")}
+function openSupport(){openInfo("💬 Live Support","For support, add your real WhatsApp number and email address in the website settings/code.")}
+function openPrint(){document.getElementById("printModal").classList.add("show")}
+function readPDF(){
+ const file=document.getElementById("pdfFile").files[0]; const info=document.getElementById("pdfInfo");
+ if(!file){return}
+ if(file.type!=="application/pdf"){info.style.display="block";info.textContent="Please select a PDF file.";return}
+ // Page count without a backend: use PDF.js from CDN.
+ info.style.display="block"; info.textContent="Reading PDF pages...";
+ if(!window.pdfjsLib){
+   const s=document.createElement("script");
+   s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+   s.onload=()=>{ window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; countPDF(file); };
+   s.onerror=()=>{info.textContent="Could not load PDF reader. Please refresh and try again."};
+   document.head.appendChild(s);
+ }else countPDF(file);
+}
+async function countPDF(file){
+ try{
+   const data=await file.arrayBuffer();
+   const pdf=await window.pdfjsLib.getDocument({data}).promise;
+   pdfPages=pdf.numPages;
+   document.getElementById("pdfInfo").textContent=file.name+" • "+pdfPages+" page(s)";
+   calculatePrint();
+ }catch(e){
+   document.getElementById("pdfInfo").textContent="Could not read this PDF. Please try another PDF.";
+   pdfPages=0;calculatePrint();
+ }
+}
+function calculatePrint(){
+ const type=document.getElementById("printType").value;
+ const rate=type==="color"?10:5;
+ document.getElementById("rate").textContent="₹"+rate+" / page";
+ currentAmount=pdfPages*rate;
+ document.getElementById("pageCount").textContent=pdfPages;
+ document.getElementById("printTotal").textContent="₹"+currentAmount;
+}
+let currentServiceOrder=null;
+let pendingPrintOrder=null;
+
+function confirmPrint(){
+ if(pdfPages<1){alert("Please upload a valid PDF first.");return}
+ const method=document.getElementById("paymentMethod").value;
+ document.getElementById("upiAmount").textContent="₹"+currentAmount;
+ closeModal("printModal");
+ document.getElementById("upiModal").classList.add("show");
+ document.getElementById("upiSection").style.display=method==="upi"?"block":"none";
+ document.getElementById("codSection").style.display=method==="cod"?"block":"none";
+ document.getElementById("paymentTitle").textContent=method==="upi"?"💳 UPI Payment":"📦 Cash on Delivery";
+ document.getElementById("paymentDesc").textContent=method==="upi"?"Pay the exact amount using UPI, then confirm your order.":"Your order will be placed with Cash on Delivery.";
+ pendingPrintOrder={service:"PDF Print",amount:currentAmount,payment:method==="upi"?"UPI":"COD",fileName:(document.getElementById("pdfFile").files[0]||{}).name||"PDF",pages:pdfPages,type:document.getElementById("printType").value==="color"?"Colour":"Black & White"};
+}
+function openUPI(){
+ const url="upi://pay?pa="+encodeURIComponent("anowarali0499@ptyes")+"&pn="+encodeURIComponent("Anowar Creation")+"&am="+encodeURIComponent(currentAmount.toFixed(2))+"&cu=INR";
+ window.location.href=url;
+}
+function confirmUPIPrint(){
+ if(!pendingPrintOrder)return;
+ const o=pendingPrintOrder;
+ closeModal("upiModal");
+ createOrder(o.service,o.amount,"UPI","","","",o);
+}
+function placeCODOrder(){
+ if(!pendingPrintOrder)return;
+ const o=pendingPrintOrder;
+ closeModal("upiModal");
+ createOrder(o.service,o.amount,"COD","","","",o);
+}
+function generateOrderId(){
+ const d=new Date();
+ const stamp=String(d.getFullYear()).slice(-2)+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+ const rand=Math.floor(1000+Math.random()*9000);
+ return "AC-"+stamp+"-"+rand;
+}
+function createOrder(service,amount,payment,name,phone,requirement,extra={}){
+ const order={
+   id:generateOrderId(),service,amount:Number(amount)||0,payment,
+   name:name||"Guest",phone:phone||"",requirement:requirement||"",
+   date:new Date().toLocaleString(),status:"Confirmed",...extra
+ };
+ const orders=JSON.parse(localStorage.getItem("ac_order_list")||"[]");
+ orders.unshift(order);
+ localStorage.setItem("ac_order_list",JSON.stringify(orders.slice(0,50)));
+ document.getElementById("orderCount").textContent=orders.length;
+ renderOrders();
+ showThankYou(order);
+}
+function showThankYou(order){
+ document.getElementById("thankOrderId").textContent=order.id;
+ document.getElementById("thankService").textContent=order.service;
+ document.getElementById("thankPayment").textContent=order.payment==="UPI"?"UPI":"Cash on Delivery";
+ document.getElementById("thankAmount").textContent=order.amount>0?"₹"+order.amount:"Price to be confirmed";
+ document.getElementById("thankModal").classList.add("show");
+}
+function renderOrders(){
+ const box=document.getElementById("ordersList"); if(!box)return;
+ const orders=JSON.parse(localStorage.getItem("ac_order_list")||"[]");
+ if(!orders.length){box.innerHTML="<div style='text-align:center;color:#8391a7;padding:25px'>No orders yet.</div>";return}
+ box.innerHTML=orders.map(o=>`<div style="padding:15px 0;border-bottom:1px solid #2b3850">
+ <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${escapeHtml(o.service)}</b><b style="color:#19dda0">${o.amount>0?"₹"+o.amount:"Price TBD"}</b></div>
+ <div style="font-size:12px;color:#8391a7;margin-top:5px">Order ID: <b style="color:#dce4f1">${escapeHtml(o.id)}</b> · ${escapeHtml(o.payment==="UPI"?"UPI":"COD")} · ${escapeHtml(o.status)}</div>
+ <div style="font-size:11px;color:#71809a;margin-top:4px">${escapeHtml(o.date)}</div>
+ </div>`).join("");
+}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function showOrders(){
+ document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+ document.getElementById("orders").classList.add("active");
+ renderOrders();
+}
+function goToOrders(){closeModal("thankModal");showOrders()}
+renderOrders();
+function submitService(){
+ const n=document.getElementById("custName").value.trim(),p=document.getElementById("custPhone").value.trim(),r=document.getElementById("custReq").value.trim();
+ if(!n||!p||!r){alert("Please fill all fields.");return}
+ const method=document.getElementById("servicePayment").value;
+ if(method==="upi"){
+   closeModal("serviceModal");
+   currentServiceOrder={service:currentService,name:n,phone:p,requirement:r,payment:"UPI",amount:0};
+   openInfo("💳 UPI Payment","Pay the final confirmed amount to UPI ID: anowarali0499@ptyes. After payment, use the confirmation button below.");
+   const info=document.getElementById("infoModal").querySelector(".box");
+   if(!document.getElementById("upiServiceConfirm")){
+     const b=document.createElement("button"); b.id="upiServiceConfirm"; b.className="primary"; b.style.marginTop="12px"; b.textContent="I Have Paid - Confirm Order";
+     b.onclick=()=>{closeModal("infoModal"); createOrder(currentServiceOrder.service,currentServiceOrder.amount,"UPI",currentServiceOrder.name,currentServiceOrder.phone,currentServiceOrder.requirement)};
+     info.appendChild(b);
+   }
+ }else{
+   closeModal("serviceModal");
+   createOrder(currentService,0,"COD",n,p,r);
+ }
+}
+window.addEventListener("click",e=>{if(e.target.classList.contains("modal"))e.target.classList.remove("show")});
 </script>
-
 </body>
 </html>
