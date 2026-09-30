@@ -33,8 +33,40 @@ a{text-decoration:none;color:inherit}
 @media(max-width:850px){.sidebar{width:72px;padding:14px 7px}.brand{font-size:0;text-align:center}.brand:before{content:"AC";font-size:21px;color:#18dca0}.brand small,.nav a span{display:none}.nav a{text-align:center;padding:14px 4px}.main{margin-left:72px;width:calc(100% - 72px);padding:18px}.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:1fr}}
 @media(max-width:520px){.main{padding:13px}.top h1{font-size:21px}.profile{display:none}.grid{grid-template-columns:1fr}.support{right:13px;bottom:13px}.box{padding:18px}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<div id="authScreen" style="position:fixed;inset:0;background:#0b1527;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:min(430px,100%);background:#121e33;border:1px solid #33435e;border-radius:20px;padding:28px;box-shadow:0 25px 80px #0008">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="font-size:30px;font-weight:800">Anowar <span style="color:#18dca0">Creation</span></div>
+      <div style="color:#7f8da4;font-size:12px;margin-top:5px">Customer Service Portal</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <button id="loginTab" class="tab active" style="flex:1" onclick="authMode('login')">Login</button>
+      <button id="registerTab" class="tab" style="flex:1" onclick="authMode('register')">Create Account</button>
+    </div>
+
+    <div id="loginForm" class="form">
+      <label>Email<input id="loginEmail" type="email" placeholder="Enter email"></label>
+      <label>Password<input id="loginPassword" type="password" placeholder="Enter password"></label>
+      <button class="primary" onclick="loginUser()">Login</button>
+      <div id="authMessage" class="note"></div>
+    </div>
+
+    <div id="registerForm" class="form" style="display:none">
+      <label>Full Name<input id="regName" placeholder="Enter your name"></label>
+      <label>Mobile Number<input id="regPhone" type="tel" placeholder="Enter mobile number"></label>
+      <label>Email<input id="regEmail" type="email" placeholder="Enter email"></label>
+      <label>Password<input id="regPassword" type="password" placeholder="Minimum 6 characters"></label>
+      <label>Confirm Password<input id="regConfirm" type="password" placeholder="Confirm password"></label>
+      <button class="primary" onclick="registerUser()">Create Account</button>
+      <div id="registerMessage" class="note"></div>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 <aside class="sidebar">
   <div class="brand">Anowar <span>Creation</span><small>Digital Service Portal</small></div>
@@ -45,11 +77,12 @@ a{text-decoration:none;color:inherit}
     <a href="#orders" onclick="showOrders()">🕘 <span>Order History</span></a>
     <a href="#support" onclick="openSupport()">💬 <span>Support</span></a>
     <a href="#contact" onclick="openSupport()">📞 <span>Contact</span></a>
+    <a href="#" onclick="logoutUser();return false">🚪 <span>Logout</span></a>
   </nav>
 </aside>
 
 <main class="main" id="home">
-  <div class="top"><div><h1>Welcome to Anowar Creation</h1><p>Your digital service portal</p></div><div class="profile"><div class="avatar">AC</div><div><b>Guest User</b><small style="display:block;color:#71809a">Online</small></div></div></div>
+  <div class="top"><div><h1>Welcome to Anowar Creation</h1><p>Your digital service portal</p></div><div class="profile"><div class="avatar" id="profileAvatar">AC</div><div><b id="profileName">Customer</b><small style="display:block;color:#71809a"><a href="#" onclick="logoutUser();return false">Logout</a></small></div></div></div>
 
   <section class="stats">
     <div class="stat"><div class="label">📞 HELPLINE</div><div class="value">Contact Us</div><div class="sub">For service support</div></div>
@@ -197,6 +230,124 @@ a{text-decoration:none;color:inherit}
 </div>
 
 <script>
+
+// Supabase configuration.
+// 1) Create a free Supabase project.
+// 2) Put your Project URL and anon/publishable key below.
+// Never put a Supabase service_role/secret key in this website.
+const SUPABASE_URL = "https://tlsrvyqyhonnrlcdmlzo.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_znUuYPAf3U-FQoUtp4JRcA_kGZOIvoh";
+let supabaseClient = null;
+
+if (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") &&
+    SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("YOUR_")) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+let currentUserProfile = null;
+
+function authMode(mode){
+  document.getElementById("loginForm").style.display=mode==="login"?"grid":"none";
+  document.getElementById("registerForm").style.display=mode==="register"?"grid":"none";
+  document.getElementById("loginTab").classList.toggle("active",mode==="login");
+  document.getElementById("registerTab").classList.toggle("active",mode==="register");
+}
+
+function authUnavailable(){
+  alert("Supabase is not connected yet. Add your Supabase Project URL and anon/publishable key in the code first.");
+}
+
+async function registerUser(){
+  if(!supabaseClient){authUnavailable();return}
+  const name=document.getElementById("regName").value.trim();
+  const phone=document.getElementById("regPhone").value.trim();
+  const email=document.getElementById("regEmail").value.trim();
+  const password=document.getElementById("regPassword").value;
+  const confirm=document.getElementById("regConfirm").value;
+  const msg=document.getElementById("registerMessage");
+  if(!name||!phone||!email||!password){msg.textContent="Please fill all fields.";return}
+  if(password.length<6){msg.textContent="Password must be at least 6 characters.";return}
+  if(password!==confirm){msg.textContent="Passwords do not match.";return}
+  msg.textContent="Creating account...";
+  const {data,error}=await supabaseClient.auth.signUp({
+    email,
+    password,
+    options:{data:{name,phone}}
+  });
+  if(error){msg.textContent=error.message;return}
+  msg.textContent="Account created. Check your email if email confirmation is enabled, then log in.";
+  authMode("login");
+}
+
+async function loginUser(){
+  if(!supabaseClient){authUnavailable();return}
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const msg=document.getElementById("authMessage");
+  if(!email||!password){msg.textContent="Enter email and password.";return}
+  msg.textContent="Logging in...";
+  const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){msg.textContent=error.message;return}
+  await loadLoggedInUser();
+}
+
+async function loadLoggedInUser(){
+  if(!supabaseClient)return;
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  if(!user){showAuthScreen(true);return}
+  const {data:profile}=await supabaseClient.from("profiles").select("*").eq("id",user.id).single();
+  currentUserProfile=profile||{name:user.email?.split("@")[0]||"Customer",email:user.email};
+  document.getElementById("profileName").textContent=currentUserProfile.name||"Customer";
+  document.getElementById("profileAvatar").textContent=(currentUserProfile.name||"C").slice(0,2).toUpperCase();
+  showAuthScreen(false);
+  await loadCloudOrders();
+}
+
+function showAuthScreen(show){
+  document.getElementById("authScreen").style.display=show?"flex":"none";
+}
+
+async function logoutUser(){
+  if(supabaseClient) await supabaseClient.auth.signOut();
+  currentUserProfile=null;
+  showAuthScreen(true);
+}
+
+async function loadCloudOrders(){
+  if(!supabaseClient)return;
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  if(!user)return;
+  const {data,error}=await supabaseClient.from("orders").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
+  if(!error && data){
+    localStorage.setItem("ac_order_list",JSON.stringify(data.map(o=>({
+      id:o.order_id,service:o.service,amount:o.amount||0,payment:o.payment_method||"COD",
+      name:o.customer_name||"",phone:o.phone||"",requirement:o.requirement||"",
+      date:new Date(o.created_at).toLocaleString(),status:o.status||"Confirmed"
+    }))));
+    document.getElementById("orderCount").textContent=data.length;
+    renderOrders();
+if(supabaseClient){
+  supabaseClient.auth.getSession().then(({data})=>{
+    if(data.session) loadLoggedInUser(); else showAuthScreen(true);
+  });
+}else{
+  showAuthScreen(true);
+}
+  }
+}
+
+async function saveCloudOrder(order){
+  if(!supabaseClient)return;
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  if(!user)return;
+  await supabaseClient.from("orders").insert({
+    user_id:user.id,order_id:order.id,service:order.service,amount:order.amount,
+    payment_method:order.payment,customer_name:order.name,phone:order.phone,
+    requirement:order.requirement,status:"Confirmed"
+  });
+  await loadCloudOrders();
+}
+
 let currentService="";
 let pdfPages=0;
 let currentAmount=0;
@@ -287,7 +438,7 @@ function generateOrderId(){
  const rand=Math.floor(1000+Math.random()*9000);
  return "AC-"+stamp+"-"+rand;
 }
-function createOrder(service,amount,payment,name,phone,requirement,extra={}){
+async function createOrder(service,amount,payment,name,phone,requirement,extra={}){
  const order={
    id:generateOrderId(),service,amount:Number(amount)||0,payment,
    name:name||"Guest",phone:phone||"",requirement:requirement||"",
@@ -297,6 +448,7 @@ function createOrder(service,amount,payment,name,phone,requirement,extra={}){
  orders.unshift(order);
  localStorage.setItem("ac_order_list",JSON.stringify(orders.slice(0,50)));
  document.getElementById("orderCount").textContent=orders.length;
+ saveCloudOrder(order);
  renderOrders();
  showThankYou(order);
 }
