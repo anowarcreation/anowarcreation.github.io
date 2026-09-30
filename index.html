@@ -1,3 +1,37 @@
+
+<!--
+SUPABASE ADMIN SQL SETUP
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select lower(email) = 'anowarali2707@outlook.com'
+     from auth.users
+     where id = auth.uid()),
+    false
+  );
+$$;
+
+grant execute on function public.is_admin() to authenticated;
+
+drop policy if exists "Users can view own orders" on public.orders;
+create policy "Users and admin can view orders"
+on public.orders
+for select
+using (auth.uid() = user_id or public.is_admin());
+
+drop policy if exists "Users can view own profile" on public.profiles;
+create policy "Users and admin can view profiles"
+on public.profiles
+for select
+using (auth.uid() = id or public.is_admin());
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,6 +75,7 @@
     <a href="#support" onclick="openSupport();return false">💬 <span>Support</span></a>
     <a href="#contact" onclick="openSupport();return false">📞 <span>Contact</span></a>
     <a href="#" onclick="logoutUser();return false">🚪 <span>Logout</span></a>
+    <a href="#" onclick="openAdmin();return false">🔐 <span>Admin Login</span></a>
   </nav>
 </aside>
 <main class="main" id="home">
@@ -104,6 +139,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const ADMIN_EMAIL = "anowarali2707@outlook.com";
 const SUPABASE_URL="https://tlsrvyqyhonnrlcdmlzo.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_znUuYPAf3U-FQoUtp4JRcA_kGZOIvoh";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -153,6 +189,109 @@ function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function showOrders(){showPanel('orders');renderOrders()}
 function showResult(icon,title,text,label,num,service){$('resultIcon').textContent=icon;$('resultTitle').textContent=title;$('resultText').textContent=text;$('resultNumberLabel').textContent=label;$('resultNumber').textContent=num;$('resultService').textContent=service;$('resultModal').classList.add('show')}
 window.addEventListener('click',e=>{if(e.target.classList.contains('modal'))e.target.classList.remove('show')});
+
+async function openAdmin(){
+  document.getElementById('adminModal').classList.add('show');
+  document.getElementById('adminDashboard').style.display='none';
+  document.getElementById('adminLoginPanel').style.display='block';
+  document.getElementById('adminLoginMessage').textContent='';
+  document.getElementById('adminEmail').value='';
+  document.getElementById('adminPassword').value='';
+}
+
+async function adminLogin(){
+  const email=document.getElementById('adminEmail').value.trim();
+  const password=document.getElementById('adminPassword').value;
+  const msg=document.getElementById('adminLoginMessage');
+  if(!email || !password){ msg.textContent='Please enter Admin ID and Password.'; return; }
+  if(ADMIN_EMAIL !== 'YOUR_ADMIN_EMAIL_HERE' && email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()){
+    msg.textContent='Invalid admin ID or password.';
+    return;
+  }
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){ msg.textContent='Invalid admin ID or password.'; return; }
+  const {data:allowed,error:ae}=await supabaseClient.rpc('is_admin');
+  if(ae || !allowed){ await supabaseClient.auth.signOut(); msg.textContent='This account is not an admin account.'; return; }
+  document.getElementById('adminLoginPanel').style.display='none';
+  document.getElementById('adminDashboard').style.display='block';
+  await loadAdminOrders();
+}
+
+async function loadAdminOrders(){
+  const body=document.getElementById('adminOrdersBody');
+  body.innerHTML='<tr><td colspan="9" style="padding:14px">Loading...</td></tr>';
+  const {data,error}=await supabaseClient.from('orders').select('*').order('created_at',{ascending:false});
+  if(error){
+    body.innerHTML='<tr><td colspan="9" style="padding:14px">Could not load admin data. Please complete the Admin SQL setup.</td></tr>';
+    return;
+  }
+  const rows=data||[];
+  document.getElementById('adminOrderCount').textContent=rows.length;
+  document.getElementById('adminAppointmentCount').textContent=rows.filter(x=>String(x.status||'').toLowerCase().includes('appointment')).length;
+  body.innerHTML=rows.length?rows.map(o=>`<tr>
+    <td style="padding:9px;border-bottom:1px solid #26344b">${String(o.service||'').toLowerCase().includes('pdf print')?'Order':'Appointment'}</td>
+    <td style="padding:9px;border-bottom:1px solid #26344b"><b>${escapeHtml(o.order_id||'')}</b></td>
+    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.customer_name||'')}</td>
+    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.phone||'')}</td>
+    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.service||'')}</td>
+    <td style="padding:9px;border-bottom:1px solid #26344b">₹${Number(o.amount||0).toFixed(2)}</td>
+    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.payment_method||'')}</td>
+    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.status||'')}</td>
+    <td style="padding:9px;border-bottom:1px solid #26344b">${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
+  </tr>`).join(''):'<tr><td colspan="9" style="padding:14px">No orders or appointments yet.</td></tr>';
+}
+
+async function adminLogout(){
+  await supabaseClient.auth.signOut();
+  closeModal('adminModal');
+}
+
 </script>
+
+<!-- ADMIN PORTAL -->
+<div class="modal" id="adminModal">
+  <div class="box" style="max-width:1100px">
+    <button class="close" onclick="closeModal('adminModal')">×</button>
+    <h2>🔐 Admin Login</h2>
+
+    <div id="adminLoginPanel" class="form">
+      <div class="note">Admin access only. Customer registration is not available here.</div>
+      <label>Admin ID / Email
+        <input id="adminEmail" type="email" placeholder="Enter admin email">
+      </label>
+      <label>Password
+        <input id="adminPassword" type="password" placeholder="Enter admin password">
+      </label>
+      <button class="primary" onclick="adminLogin()">Login as Admin</button>
+      <div id="adminLoginMessage" class="note"></div>
+    </div>
+
+    <div id="adminDashboard" style="display:none">
+      <div class="section-head"><h2>Admin Dashboard</h2><span>All customer orders & appointments</span></div>
+      <div class="stats" style="margin-top:12px">
+        <div class="stat"><div class="label">📦 ALL ORDERS</div><div class="value" id="adminOrderCount">0</div><div class="sub">Orders + appointments</div></div>
+        <div class="stat"><div class="label">📅 APPOINTMENTS</div><div class="value" id="adminAppointmentCount">0</div><div class="sub">Customer appointments</div></div>
+      </div>
+      <div style="overflow:auto;margin-top:16px">
+        <table style="width:100%;border-collapse:collapse;min-width:900px">
+          <thead><tr>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Type</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">No.</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Customer</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Phone</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Service</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Amount</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Payment</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Status</th>
+            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Date</th>
+          </tr></thead>
+          <tbody id="adminOrdersBody"></tbody>
+        </table>
+      </div>
+      <button class="primary" style="margin-top:14px" onclick="adminLogout()">Admin Logout</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
