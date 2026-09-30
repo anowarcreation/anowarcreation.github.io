@@ -40,6 +40,8 @@ using (auth.uid() = id or public.is_admin());
 <title>Anowar Creation | Digital Service Portal</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;background:#0b1527;color:#f5f7fb;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}a{text-decoration:none;color:inherit}.app{display:flex;min-height:100vh}.sidebar{position:fixed;left:0;top:0;bottom:0;width:235px;background:#101b30;border-right:1px solid #293650;padding:18px 12px;overflow:auto;z-index:10}.brand{font-size:22px;font-weight:800;padding:8px 12px 24px}.brand span{color:#18dca0}.brand small{display:block;color:#71809a;font-size:10px;margin-top:4px;letter-spacing:1px}.nav{display:flex;flex-direction:column;gap:8px}.nav a{padding:13px 14px;border-radius:10px;border-left:3px solid transparent;color:#d7deeb;font-size:14px;font-weight:700}.nav a:hover,.nav a.active{background:#19263d;border-left-color:#ffd000;color:#fff}.main{margin-left:235px;width:calc(100% - 235px);padding:23px 28px 45px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.top h1{font-size:27px}.top p{color:#8290a7;font-size:13px;margin-top:4px}.profile{display:flex;gap:10px;align-items:center;background:#17243a;border:1px solid #303d55;border-radius:12px;padding:9px 13px}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#2469e8;font-weight:800}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}.stat{background:#172238;border:1px solid #344157;border-radius:16px;padding:19px}.label{color:#8290a7;font-size:11px;margin-bottom:6px}.value{font-size:21px;font-weight:800}.green{color:#17d99e}.sub{color:#71809a;font-size:11px;margin-top:5px}.announce{border:1px solid #d5bd00;background:rgba(125,108,0,.18);border-radius:12px;padding:14px;text-align:center;color:#ffd900;font-weight:800;margin-bottom:18px}.tabs{display:flex;gap:8px;margin-bottom:18px}.tab{border:1px solid #30405a;background:#121e32;color:#aeb9ca;padding:10px 14px;border-radius:10px;font-weight:700}.tab.active{background:#2469e8;color:#fff;border-color:#2469e8}.panel{display:none}.panel.active{display:block}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.section-head h2{font-size:20px}.section-head span{color:#71809a;font-size:12px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.card{background:#121e32;border:1px solid #2e3d55;border-radius:16px;padding:18px;min-height:180px;display:flex;flex-direction:column}.card .icon{font-size:29px;margin-bottom:12px}.card h3{font-size:16px;margin-bottom:7px}.card p{color:#8795aa;font-size:12px;line-height:1.5;flex:1}.card button,.primary{border:0;background:#2469e8;color:#fff;border-radius:9px;padding:11px 13px;font-weight:800;margin-top:13px}.card button:hover,.primary:hover{filter:brightness(1.08)}.card.disabled{opacity:.75}.card.disabled button{background:#465269;cursor:not-allowed}.manual{background:#121e32;border:1px solid #2e3d55;border-radius:16px;padding:20px}.manual ul{padding-left:20px;color:#b8c2d1;line-height:1.9}.footer{text-align:center;color:#617088;font-size:11px;margin-top:35px}.support{position:fixed;right:22px;bottom:20px;background:#18b987;color:#fff;padding:12px 16px;border-radius:999px;font-weight:800;box-shadow:0 8px 25px #0005}.modal{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.modal.show{display:flex}.box{width:min(560px,100%);max-height:90vh;overflow:auto;background:#101b30;border:1px solid #33425b;border-radius:18px;padding:22px;position:relative;box-shadow:0 20px 70px #0008}.box h2{font-size:21px}.close{position:absolute;right:13px;top:10px;background:transparent;border:0;color:#9aa7ba;font-size:27px}.desc{color:#8492a7;font-size:12px;line-height:1.55;margin:8px 0 16px}.form{display:grid;gap:12px}.form label{display:grid;gap:6px;color:#bfc9d9;font-size:12px;font-weight:700}.form input,.form select,.form textarea{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #33435d;background:#0d1729;color:#fff;outline:none}.form input:focus,.form select:focus,.form textarea:focus{border-color:#3b82f6}.note{color:#8290a7;font-size:11px;line-height:1.5;margin-top:6px}.price-box{background:#0d1729;border:1px solid #2e3d55;border-radius:12px;padding:13px;margin-top:10px}.price-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;color:#9eabc0;font-size:13px}.price-row b{color:#fff}.price-row.total{border-top:1px solid #2b3850;margin-top:6px;padding-top:12px;font-size:15px}.price-row.total b{color:#19dda0;font-size:20px}.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.choice{border:1px solid #33435d;background:#142239;color:#dbe4f1;border-radius:11px;padding:14px;text-align:left;font-weight:800}.choice:hover,.choice.selected{border-color:#3b82f6;background:#1b345a}.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:8px}.check{display:flex;gap:8px;align-items:center;background:#0d1729;border:1px solid #2d3b53;border-radius:9px;padding:10px;color:#c7d0de;font-size:12px}.check input{width:auto}.success{text-align:center}.success .big{font-size:56px}.appointment{background:#0d1729;border:1px solid #2f4260;border-radius:13px;padding:15px;margin:16px 0}.appointment .num{font-size:22px;color:#19dda0;font-weight:900;letter-spacing:1px}.muted{color:#8290a7;font-size:12px}.status{display:inline-block;padding:5px 8px;border-radius:999px;background:#173d36;color:#38e1a9;font-size:10px;font-weight:800}.order-item{padding:15px 0;border-bottom:1px solid #2b3850}.order-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.order-meta{font-size:11px;color:#8290a7;margin-top:5px;line-height:1.5}.auth-screen{position:fixed;inset:0;background:#081221;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}.auth-card{width:min(430px,100%);background:#101b30;border:1px solid #33425b;border-radius:20px;padding:26px;box-shadow:0 25px 80px #0009}.auth-brand{text-align:center;font-size:26px;font-weight:900;margin-bottom:5px}.auth-brand span{color:#18dca0}.auth-sub{text-align:center;color:#71809a;font-size:12px;margin-bottom:20px}.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}.auth-tabs button{padding:10px;border:1px solid #30405a;background:#121e32;color:#aeb9ca;border-radius:9px;font-weight:800}.auth-tabs button.active{background:#2469e8;color:#fff;border-color:#2469e8}.auth-msg{font-size:12px;color:#ffcf55;margin-top:8px;min-height:16px}.hidden{display:none!important}@media(max-width:950px){.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:1fr}.sidebar{width:205px}.main{margin-left:205px;width:calc(100% - 205px)}}@media(max-width:700px){.sidebar{position:relative;width:100%;height:auto}.app{display:block}.main{margin-left:0;width:100%;padding:18px}.nav{display:grid;grid-template-columns:1fr 1fr}.top{align-items:flex-start;gap:12px}.grid{grid-template-columns:1fr}.choice-grid,.check-grid{grid-template-columns:1fr}.support{right:12px;bottom:12px}}
+
+.admin-page{position:fixed;inset:0;background:#081221;color:#f5f7fb;z-index:200;display:none;overflow:auto}.admin-page.show{display:block}.admin-shell{min-height:100vh;display:flex}.admin-side{width:245px;position:fixed;left:0;top:0;bottom:0;background:#101b30;border-right:1px solid #293650;padding:20px 14px;overflow:auto}.admin-brand{font-size:22px;font-weight:900;padding:6px 10px 24px}.admin-brand span{color:#18dca0}.admin-brand small{display:block;color:#71809a;font-size:10px;margin-top:4px;letter-spacing:1px}.admin-nav{display:grid;gap:8px}.admin-nav button{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:#cbd5e3;border-radius:10px;padding:12px;font-weight:800}.admin-nav button:hover,.admin-nav button.active{background:#19263d;border-color:#30405a;color:#fff}.admin-content{margin-left:245px;width:calc(100% - 245px);padding:25px 28px 50px}.admin-top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px}.admin-top h1{font-size:28px}.admin-top p{color:#8190a6;font-size:12px;margin-top:5px}.admin-actions{display:flex;gap:8px}.admin-btn{border:1px solid #34445d;background:#142239;color:#e7edf6;border-radius:9px;padding:10px 13px;font-weight:800}.admin-btn.primary{background:#2469e8;border-color:#2469e8;color:#fff}.admin-btn.danger{background:#8f3040;border-color:#a83b4d;color:#fff}.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.admin-stat{background:#121e32;border:1px solid #2e3d55;border-radius:15px;padding:18px}.admin-stat .label{color:#8290a7;font-size:11px}.admin-stat .value{font-size:25px;font-weight:900;margin-top:7px}.admin-stat .sub{color:#71809a;font-size:11px;margin-top:4px}.admin-section{display:none}.admin-section.active{display:block}.admin-card{background:#121e32;border:1px solid #2e3d55;border-radius:16px;padding:18px}.admin-table-wrap{overflow:auto}.admin-table{width:100%;border-collapse:collapse;min-width:1050px}.admin-table th{color:#91a0b5;text-align:left;font-size:11px;padding:11px;border-bottom:1px solid #34435b;white-space:nowrap}.admin-table td{padding:10px;border-bottom:1px solid #26344b;font-size:12px;color:#d7dfeb;vertical-align:top}.admin-table tr:hover td{background:#152239}.admin-empty{text-align:center;color:#7e8da3;padding:28px}.admin-search{width:100%;max-width:360px;margin-bottom:14px;padding:11px 12px;border-radius:9px;border:1px solid #33435d;background:#0d1729;color:#fff;outline:none}.admin-badge{display:inline-block;padding:5px 8px;border-radius:999px;background:#173d36;color:#38e1a9;font-size:10px;font-weight:800}.admin-login-note{background:#0d1729;border:1px solid #2e3d55;border-radius:11px;padding:12px;color:#9aa8bc;font-size:11px;line-height:1.5}.admin-login-box{width:min(460px,100%)}@media(max-width:1000px){.admin-stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.admin-side{position:relative;width:100%;height:auto}.admin-shell{display:block}.admin-content{margin-left:0;width:100%;padding:18px}.admin-stats{grid-template-columns:1fr}.admin-top{align-items:flex-start;flex-direction:column}.admin-actions{width:100%}.admin-actions button{flex:1}}
 </style>
 </head>
 <body>
@@ -190,106 +192,187 @@ function showOrders(){showPanel('orders');renderOrders()}
 function showResult(icon,title,text,label,num,service){$('resultIcon').textContent=icon;$('resultTitle').textContent=title;$('resultText').textContent=text;$('resultNumberLabel').textContent=label;$('resultNumber').textContent=num;$('resultService').textContent=service;$('resultModal').classList.add('show')}
 window.addEventListener('click',e=>{if(e.target.classList.contains('modal'))e.target.classList.remove('show')});
 
-async function openAdmin(){
-  document.getElementById('adminModal').classList.add('show');
-  document.getElementById('adminDashboard').style.display='none';
-  document.getElementById('adminLoginPanel').style.display='block';
-  document.getElementById('adminLoginMessage').textContent='';
-  document.getElementById('adminEmail').value='';
-  document.getElementById('adminPassword').value='';
+let adminLoginInProgress=false;
+function openAdmin(){
+  $('adminLoginModal').classList.add('show');
+  $('adminLoginMessage').textContent='';
+  $('adminEmail').value='';
+  $('adminPassword').value='';
 }
 
 async function adminLogin(){
-  const email=document.getElementById('adminEmail').value.trim();
-  const password=document.getElementById('adminPassword').value;
-  const msg=document.getElementById('adminLoginMessage');
-  if(!email || !password){ msg.textContent='Please enter Admin ID and Password.'; return; }
-  if(ADMIN_EMAIL !== 'YOUR_ADMIN_EMAIL_HERE' && email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()){
-    msg.textContent='Invalid admin ID or password.';
-    return;
-  }
-  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-  if(error){ msg.textContent='Invalid admin ID or password.'; return; }
+  const email=$('adminEmail').value.trim(),password=$('adminPassword').value,msg=$('adminLoginMessage');
+  if(!email||!password){msg.textContent='Please enter Admin ID and Password.';return}
+  if(email.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){msg.textContent='Invalid admin ID or password.';return}
+  msg.textContent='Checking admin access...';
+  adminLoginInProgress=true;
+  const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){adminLoginInProgress=false;msg.textContent='Invalid admin ID or password.';return}
   const {data:allowed,error:ae}=await supabaseClient.rpc('is_admin');
-  if(ae || !allowed){ await supabaseClient.auth.signOut(); msg.textContent='This account is not an admin account.'; return; }
-  document.getElementById('adminLoginPanel').style.display='none';
-  document.getElementById('adminDashboard').style.display='block';
-  await loadAdminOrders();
+  if(ae||!allowed){await supabaseClient.auth.signOut();adminLoginInProgress=false;msg.textContent='This account is not an admin account.';return}
+  currentUser=(await supabaseClient.auth.getUser()).data.user;
+  adminLoginInProgress=false;
+  closeModal('adminLoginModal');
+  $('authScreen').style.display='none';
+  document.querySelector('.app').style.display='none';
+  $('adminPage').classList.add('show');
+  await loadAdminData();
 }
 
-async function loadAdminOrders(){
-  const body=document.getElementById('adminOrdersBody');
-  body.innerHTML='<tr><td colspan="9" style="padding:14px">Loading...</td></tr>';
-  const {data,error}=await supabaseClient.from('orders').select('*').order('created_at',{ascending:false});
-  if(error){
-    body.innerHTML='<tr><td colspan="9" style="padding:14px">Could not load admin data. Please complete the Admin SQL setup.</td></tr>';
-    return;
-  }
-  const rows=data||[];
-  document.getElementById('adminOrderCount').textContent=rows.length;
-  document.getElementById('adminAppointmentCount').textContent=rows.filter(x=>String(x.status||'').toLowerCase().includes('appointment')).length;
+function switchAdminSection(id,btn){
+  document.querySelectorAll('.admin-section').forEach(x=>x.classList.remove('active'));
+  $(id).classList.add('active');
+  document.querySelectorAll('.admin-nav button').forEach(x=>x.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+
+function filterCustomers(){
+  const q=($('customerSearch').value||'').toLowerCase().trim();
+  document.querySelectorAll('#adminCustomersBody tr[data-search]').forEach(tr=>{tr.style.display=!q||tr.dataset.search.includes(q)?'':'none'});
+}
+
+async function loadAdminData(){
+  $('adminLastUpdated').textContent='Loading...';
+  const [ordersRes,profilesRes]=await Promise.all([
+    supabaseClient.from('orders').select('*').order('created_at',{ascending:false}),
+    supabaseClient.from('profiles').select('*').order('created_at',{ascending:false})
+  ]);
+  const orders=ordersRes.data||[],profiles=profilesRes.data||[];
+  if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="10" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>'}
+  else { renderAdminOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
+  if(profilesRes.error){console.error(profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="5" class="admin-empty">Could not load customers. Please check Admin SQL/RLS.</td></tr>'}
+  else renderAdminCustomers(profiles);
+  const appointments=orders.filter(o=>String(o.status||'').toLowerCase().includes('appointment')).length;
+  const printOrders=orders.filter(o=>String(o.service||'').toLowerCase().includes('pdf print')).length;
+  const revenue=orders.reduce((sum,o)=>sum+(Number(o.amount)||0),0);
+  $('adminCustomerCount').textContent=profiles.length;
+  $('adminOrderCount').textContent=orders.length;
+  $('adminAppointmentCount').textContent=appointments;
+  $('adminRevenue').textContent='₹'+revenue.toFixed(2);
+  $('adminPrintCount').textContent=printOrders;
+  $('adminLastUpdated').textContent='Updated: '+new Date().toLocaleString('en-IN');
+}
+
+function renderAdminOrders(rows){
+  const body=$('adminOrdersBody');
   body.innerHTML=rows.length?rows.map(o=>`<tr>
-    <td style="padding:9px;border-bottom:1px solid #26344b">${String(o.service||'').toLowerCase().includes('pdf print')?'Order':'Appointment'}</td>
-    <td style="padding:9px;border-bottom:1px solid #26344b"><b>${escapeHtml(o.order_id||'')}</b></td>
-    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.customer_name||'')}</td>
-    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.phone||'')}</td>
-    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.service||'')}</td>
-    <td style="padding:9px;border-bottom:1px solid #26344b">₹${Number(o.amount||0).toFixed(2)}</td>
-    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.payment_method||'')}</td>
-    <td style="padding:9px;border-bottom:1px solid #26344b">${escapeHtml(o.status||'')}</td>
-    <td style="padding:9px;border-bottom:1px solid #26344b">${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
-  </tr>`).join(''):'<tr><td colspan="9" style="padding:14px">No orders or appointments yet.</td></tr>';
+    <td><span class="admin-badge">${String(o.service||'').toLowerCase().includes('pdf print')?'Order':'Appointment'}</span></td>
+    <td><b>${escapeHtml(o.order_id||'')}</b></td>
+    <td>${escapeHtml(o.customer_name||'')}</td>
+    <td>${escapeHtml(o.phone||'')}</td>
+    <td>${escapeHtml(o.service||'')}</td>
+    <td>₹${Number(o.amount||0).toFixed(2)}</td>
+    <td>${escapeHtml(o.payment_method||'')}</td>
+    <td>${escapeHtml(o.requirement||'')}</td>
+    <td>${escapeHtml(o.status||'')}</td>
+    <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
+  </tr>`).join(''):'<tr><td colspan="10" class="admin-empty">No orders or appointments yet.</td></tr>';
+}
+
+function renderAdminAppointments(rows){
+  const body=$('adminAppointmentsBody');
+  body.innerHTML=rows.length?rows.map(o=>`<tr>
+    <td><b>${escapeHtml(o.order_id||'')}</b></td>
+    <td>${escapeHtml(o.customer_name||'')}</td>
+    <td>${escapeHtml(o.phone||'')}</td>
+    <td>${escapeHtml(o.service||'')}</td>
+    <td>${escapeHtml(o.requirement||'')}</td>
+    <td><span class="admin-badge">${escapeHtml(o.status||'')}</span></td>
+    <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
+  </tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No appointments yet.</td></tr>';
+}
+
+function renderAdminCustomers(rows){
+  const body=$('adminCustomersBody');
+  body.innerHTML=rows.length?rows.map(p=>{const search=[p.name,p.phone,p.email].filter(Boolean).join(' ').toLowerCase();return `<tr data-search="${escapeHtml(search)}">
+    <td><b>${escapeHtml(p.name||'Customer')}</b></td>
+    <td>${escapeHtml(p.phone||'')}</td>
+    <td>${escapeHtml(p.email||'')}</td>
+    <td>${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):''}</td>
+    <td><span class="admin-badge">Customer</span></td>
+  </tr>`}).join(''):'<tr><td colspan="5" class="admin-empty">No customers found.</td></tr>';
 }
 
 async function adminLogout(){
   await supabaseClient.auth.signOut();
-  closeModal('adminModal');
+  currentUser=null;currentProfile=null;
+  $('adminPage').classList.remove('show');
+  document.querySelector('.app').style.display='flex';
+  $('authScreen').style.display='flex';
+  authMode('login');
 }
 
 </script>
 
-<!-- ADMIN PORTAL -->
-<div class="modal" id="adminModal">
-  <div class="box" style="max-width:1100px">
-    <button class="close" onclick="closeModal('adminModal')">×</button>
+<!-- ADMIN LOGIN -->
+<div class="modal" id="adminLoginModal">
+  <div class="box admin-login-box">
+    <button class="close" onclick="closeModal('adminLoginModal')">×</button>
     <h2>🔐 Admin Login</h2>
-
-    <div id="adminLoginPanel" class="form">
-      <div class="note">Admin access only. Customer registration is not available here.</div>
-      <label>Admin ID / Email
-        <input id="adminEmail" type="email" placeholder="Enter admin email">
-      </label>
-      <label>Password
-        <input id="adminPassword" type="password" placeholder="Enter admin password">
-      </label>
+    <div class="admin-login-note" style="margin:12px 0">Admin access only. Customer registration is not available here.</div>
+    <div class="form">
+      <label>Admin ID / Email<input id="adminEmail" type="email" placeholder="Enter admin email"></label>
+      <label>Password<input id="adminPassword" type="password" placeholder="Enter admin password"></label>
       <button class="primary" onclick="adminLogin()">Login as Admin</button>
       <div id="adminLoginMessage" class="note"></div>
     </div>
+  </div>
+</div>
 
-    <div id="adminDashboard" style="display:none">
-      <div class="section-head"><h2>Admin Dashboard</h2><span>All customer orders & appointments</span></div>
-      <div class="stats" style="margin-top:12px">
-        <div class="stat"><div class="label">📦 ALL ORDERS</div><div class="value" id="adminOrderCount">0</div><div class="sub">Orders + appointments</div></div>
-        <div class="stat"><div class="label">📅 APPOINTMENTS</div><div class="value" id="adminAppointmentCount">0</div><div class="sub">Customer appointments</div></div>
+<!-- FULL ADMIN PAGE -->
+<div class="admin-page" id="adminPage">
+  <div class="admin-shell">
+    <aside class="admin-side">
+      <div class="admin-brand">Anowar <span>Creation</span><small>ADMIN CONTROL PANEL</small></div>
+      <div class="admin-nav">
+        <button class="active" onclick="switchAdminSection('adminOverview',this)">📊 Overview</button>
+        <button onclick="switchAdminSection('adminCustomers',this)">👥 All Customers</button>
+        <button onclick="switchAdminSection('adminOrders',this)">📦 All Orders</button>
+        <button onclick="switchAdminSection('adminAppointments',this)">📅 Appointments</button>
       </div>
-      <div style="overflow:auto;margin-top:16px">
-        <table style="width:100%;border-collapse:collapse;min-width:900px">
-          <thead><tr>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Type</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">No.</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Customer</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Phone</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Service</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Amount</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Payment</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Status</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #33435d">Date</th>
-          </tr></thead>
-          <tbody id="adminOrdersBody"></tbody>
-        </table>
+      <button class="admin-btn danger" style="width:100%;margin-top:18px" onclick="adminLogout()">Logout Admin</button>
+    </aside>
+    <main class="admin-content">
+      <div class="admin-top">
+        <div><h1>Admin Dashboard</h1><p>Manage customers, appointments and orders from one place.</p></div>
+        <div class="admin-actions"><button class="admin-btn primary" onclick="loadAdminData()">↻ Refresh</button><button class="admin-btn" onclick="adminLogout()">Logout</button></div>
       </div>
-      <button class="primary" style="margin-top:14px" onclick="adminLogout()">Admin Logout</button>
-    </div>
+
+      <section id="adminOverview" class="admin-section active">
+        <div class="admin-stats">
+          <div class="admin-stat"><div class="label">👥 TOTAL CUSTOMERS</div><div class="value" id="adminCustomerCount">0</div><div class="sub">Registered users</div></div>
+          <div class="admin-stat"><div class="label">📦 TOTAL ORDERS</div><div class="value" id="adminOrderCount">0</div><div class="sub">Orders + appointments</div></div>
+          <div class="admin-stat"><div class="label">📅 APPOINTMENTS</div><div class="value" id="adminAppointmentCount">0</div><div class="sub">Appointment requests</div></div>
+          <div class="admin-stat"><div class="label">💰 TOTAL AMOUNT</div><div class="value green" id="adminRevenue">₹0.00</div><div class="sub">Recorded order amounts</div></div>
+        </div>
+        <div class="admin-card">
+          <div class="section-head"><h2>Quick Summary</h2><span id="adminLastUpdated">Loading...</span></div>
+          <p class="desc">PDF Print Orders: <b id="adminPrintCount">0</b><br>Use the left menu to view the complete customer list, all orders and appointments.</p>
+        </div>
+      </section>
+
+      <section id="adminCustomers" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>👥 All Customers</h2><span>Customer profiles</span></div>
+          <input id="customerSearch" class="admin-search" oninput="filterCustomers()" placeholder="Search name, phone or email">
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Registered</th><th>Type</th></tr></thead><tbody id="adminCustomersBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="adminOrders" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>📦 All Orders</h2><span>Every customer order</span></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Amount</th><th>Payment</th><th>Requirement</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminOrdersBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="adminAppointments" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>📅 Appointments</h2><span>Appointment requests</span></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Appointment No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Requirement</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminAppointmentsBody"></tbody></table></div>
+        </div>
+      </section>
+    </main>
   </div>
 </div>
 
