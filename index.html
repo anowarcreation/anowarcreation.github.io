@@ -1,12 +1,438 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Anowar Creation</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Anowar Creation - Digital, technical and creative services.">
+  <title>Anowar Creation | Digital & Technical Solutions</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.6;
+      color: #172033;
+      background: #f7f9fc;
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    .container {
+      width: min(1120px, 92%);
+      margin: auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e7ebf2;
+    }
+
+    nav {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -.5px;
+    }
+
+    .logo span { color: #2563eb; }
+
+    .nav-links {
+      display: flex;
+      list-style: none;
+      gap: 28px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .nav-links a:hover { color: #2563eb; }
+
+    .menu-btn {
+      display: none;
+      border: 0;
+      background: transparent;
+      font-size: 28px;
+      cursor: pointer;
+    }
+
+    .hero {
+      padding: 92px 0 80px;
+      background:
+        radial-gradient(circle at 85% 20%, rgba(37,99,235,.15), transparent 30%),
+        linear-gradient(135deg, #eff6ff, #ffffff 55%, #f8fafc);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      align-items: center;
+      gap: 55px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 7px 13px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(42px, 6vw, 70px);
+      line-height: 1.05;
+      letter-spacing: -2.5px;
+      margin-bottom: 20px;
+    }
+
+    h1 span { color: #2563eb; }
+
+    .hero p {
+      max-width: 650px;
+      color: #596579;
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 13px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 13px 21px;
+      border-radius: 10px;
+      font-weight: 700;
+      transition: .2s;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      box-shadow: 0 8px 22px rgba(37,99,235,.22);
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); }
+
+    .btn-secondary {
+      border: 1px solid #d6dce7;
+      background: white;
+    }
+
+    .hero-card {
+      background: white;
+      border: 1px solid #e4e9f1;
+      border-radius: 24px;
+      padding: 34px;
+      box-shadow: 0 20px 55px rgba(15,23,42,.08);
+    }
+
+    .hero-card .icon {
+      width: 64px;
+      height: 64px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: #eff6ff;
+      font-size: 30px;
+      margin-bottom: 22px;
+    }
+
+    .hero-card h3 { margin-bottom: 8px; font-size: 23px; }
+    .hero-card p { font-size: 15px; margin: 0; }
+
+    section { padding: 82px 0; }
+
+    .section-title {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 45px;
+    }
+
+    .section-title h2 {
+      font-size: clamp(30px, 4vw, 42px);
+      margin-bottom: 10px;
+    }
+
+    .section-title p { color: #667085; }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .service {
+      background: white;
+      border: 1px solid #e7ebf2;
+      padding: 28px;
+      border-radius: 18px;
+      transition: .2s;
+    }
+
+    .service:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 14px 35px rgba(15,23,42,.08);
+    }
+
+    .service-icon { font-size: 30px; margin-bottom: 14px; }
+    .service h3 { margin-bottom: 8px; }
+    .service p { color: #667085; font-size: 15px; }
+
+    .about {
+      background: #111827;
+      color: white;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      align-items: center;
+    }
+
+    .about p { color: #cbd5e1; margin-top: 15px; }
+
+    .points {
+      display: grid;
+      gap: 14px;
+    }
+
+    .point {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      padding: 16px 18px;
+      border-radius: 12px;
+    }
+
+    .contact-box {
+      background: white;
+      border: 1px solid #e7ebf2;
+      border-radius: 20px;
+      padding: 38px;
+      text-align: center;
+      box-shadow: 0 15px 40px rgba(15,23,42,.06);
+    }
+
+    .contact-box p {
+      color: #667085;
+      margin: 10px auto 24px;
+      max-width: 650px;
+    }
+
+    footer {
+      background: #0b1220;
+      color: #94a3b8;
+      text-align: center;
+      padding: 25px 15px;
+      font-size: 14px;
+    }
+
+    footer strong { color: white; }
+
+    @media (max-width: 800px) {
+      .menu-btn { display: block; }
+
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 72px;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 20px 5%;
+        border-bottom: 1px solid #e7ebf2;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .nav-links.active { display: flex; }
+
+      .hero-grid,
+      .about-grid { grid-template-columns: 1fr; }
+
+      .services { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 520px) {
+      .hero { padding-top: 65px; }
+      .services { grid-template-columns: 1fr; }
+      section { padding: 65px 0; }
+    }
+  </style>
 </head>
+
 <body>
 
-    <h1>Welcome to Anowar Creation</h1>
-    <p>Official Website of Anowar Creation</p>
+<header>
+  <div class="container">
+    <nav>
+      <a href="#home" class="logo">Anowar <span>Creation</span></a>
+
+      <button class="menu-btn" onclick="toggleMenu()" aria-label="Open menu">☰</button>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero" id="home">
+    <div class="container hero-grid">
+      <div>
+        <div class="badge">Digital • Technical • Creative</div>
+        <h1>Welcome to <span>Anowar Creation</span></h1>
+        <p>
+          Simple, reliable and practical digital solutions for everyday
+          technical, document and creative needs.
+        </p>
+
+        <div class="buttons">
+          <a class="btn btn-primary" href="#services">Explore Services</a>
+          <a class="btn btn-secondary" href="#contact">Get in Touch</a>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="icon">💻</div>
+        <h3>Your Digital Solution Partner</h3>
+        <p>
+          From documents and office work to digital support and creative
+          services, Anowar Creation is built to make things easier.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="services">
+    <div class="container">
+      <div class="section-title">
+        <h2>Our Services</h2>
+        <p>Practical services designed for students, individuals and small businesses.</p>
+      </div>
+
+      <div class="services">
+        <div class="service">
+          <div class="service-icon">💻</div>
+          <h3>Technical Support</h3>
+          <p>Basic computer, software and digital troubleshooting assistance.</p>
+        </div>
+
+        <div class="service">
+          <div class="service-icon">📄</div>
+          <h3>MS Office</h3>
+          <p>Professional help with Word, Excel and PowerPoint documents.</p>
+        </div>
+
+        <div class="service">
+          <div class="service-icon">📝</div>
+          <h3>Online Assistance</h3>
+          <p>Support with online forms, applications and digital documentation.</p>
+        </div>
+
+        <div class="service">
+          <div class="service-icon">🎨</div>
+          <h3>Creative Design</h3>
+          <p>Simple and attractive designs for posters, notices and social media.</p>
+        </div>
+
+        <div class="service">
+          <div class="service-icon">🌐</div>
+          <h3>Website Solutions</h3>
+          <p>Basic responsive websites for personal projects and small businesses.</p>
+        </div>
+
+        <div class="service">
+          <div class="service-icon">🛠️</div>
+          <h3>Digital Solutions</h3>
+          <p>Practical help for everyday digital and documentation requirements.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about" id="about">
+    <div class="container about-grid">
+      <div>
+        <div class="badge">About Us</div>
+        <h2>Making digital work simpler.</h2>
+        <p>
+          Anowar Creation focuses on useful, affordable and easy-to-understand
+          digital services. The goal is simple: provide practical solutions
+          without unnecessary complexity.
+        </p>
+      </div>
+
+      <div class="points">
+        <div class="point">✓ Student-friendly services</div>
+        <div class="point">✓ Clear and practical support</div>
+        <div class="point">✓ Professional presentation</div>
+        <div class="point">✓ Mobile-friendly solutions</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="container">
+      <div class="contact-box">
+        <div class="section-title" style="margin-bottom: 0;">
+          <h2>Let's Work Together</h2>
+          <p>
+            Have a project, document or digital task? Contact Anowar Creation
+            and let's discuss what you need.
+          </p>
+        </div>
+
+        <div class="buttons" style="justify-content:center;">
+          <a class="btn btn-primary" href="mailto:YOUR_EMAIL@example.com">Email Us</a>
+          <a class="btn btn-secondary" href="https://wa.me/YOUR_PHONE_NUMBER" target="_blank">WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  © <span id="year"></span> <strong>Anowar Creation</strong>. All rights reserved.
+</footer>
+
+<script>
+  function toggleMenu() {
+    document.getElementById("navLinks").classList.toggle("active");
+  }
+
+  document.querySelectorAll(".nav-links a").forEach(link => {
+    link.addEventListener("click", () => {
+      document.getElementById("navLinks").classList.remove("active");
+    });
+  });
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
 
 </body>
 </html>
