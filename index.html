@@ -214,7 +214,86 @@ body{background:#020814;overflow-x:hidden}
 /* keep the moving scene visible on small screens too */
 @media(max-width:700px){.ship2,.ship3,.ship4{display:block!important}.space-ship{width:175px!important}.ship1{animation-name:shipAcrossPro!important}.space-ufo{left:62%!important;transform:scale(.8)} }
 
+
+/* Mobile navigation: desktop keeps the full sidebar, phones get a 3-line menu */
+.mobile-menu-btn{
+  display:none;
+  position:fixed;
+  top:14px;
+  left:14px;
+  z-index:80;
+  width:46px;
+  height:46px;
+  border:1px solid rgba(75,210,255,.45);
+  border-radius:13px;
+  background:rgba(6,18,34,.78);
+  backdrop-filter:blur(12px);
+  color:#fff;
+  box-shadow:0 0 22px rgba(0,190,255,.18);
+  font-size:24px;
+  line-height:1;
+}
+.mobile-menu-btn span{display:block;line-height:1}
+.mobile-menu-backdrop{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:55;
+  background:rgba(0,0,0,.48);
+  backdrop-filter:blur(2px);
+}
+@media(max-width:700px){
+  .mobile-menu-btn{display:block}
+  .mobile-menu-backdrop.show{display:block}
+  .app{display:block;min-height:100vh}
+  .sidebar{
+    position:fixed;
+    left:-285px;
+    top:0;
+    bottom:0;
+    width:270px;
+    height:100vh;
+    z-index:70;
+    transition:left .28s ease;
+    box-shadow:18px 0 45px rgba(0,0,0,.35);
+    overflow-y:auto;
+  }
+  .sidebar.mobile-open{left:0}
+  .main{
+    margin-left:0;
+    width:100%;
+    padding:18px 14px 45px;
+  }
+  .nav{display:flex;grid-template-columns:none}
+  .nav a{
+    display:flex;
+    align-items:center;
+    min-height:48px;
+    white-space:nowrap;
+  }
+  .brand{padding-top:20px}
+  .top{padding-left:52px}
+  .support{right:12px;bottom:12px}
+}
+
 </style>
+
+<style>
+/* Reduce background spacecraft density for a cleaner futuristic look */
+@media (min-width: 701px){
+  .space-scene .ship:nth-of-type(even),
+  .space-scene .ufo:nth-of-type(even){
+    display:none !important;
+  }
+}
+@media (max-width: 700px){
+  .space-scene .ship:nth-of-type(odd),
+  .space-scene .ufo:nth-of-type(odd){
+    display:none !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -269,6 +348,10 @@ body{background:#020814;overflow-x:hidden}
     </div>
   </div>
 </div>
+
+
+<button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileMenu()"><span>☰</span></button>
+<div class="mobile-menu-backdrop" id="mobileMenuBackdrop" onclick="closeMobileMenu()"></div>
 
 <div class="app">
 <aside class="sidebar">
@@ -597,6 +680,41 @@ async function adminLogout(){
     </main>
   </div>
 </div>
+
+
+<script>
+function toggleMobileMenu(){
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('mobileMenuBackdrop');
+  const btn = document.getElementById('mobileMenuBtn');
+  if(!sidebar) return;
+  const open = sidebar.classList.toggle('mobile-open');
+  if(backdrop) backdrop.classList.toggle('show', open);
+  if(btn){
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.innerHTML = '<span>' + (open ? '×' : '☰') + '</span>';
+  }
+}
+function closeMobileMenu(){
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('mobileMenuBackdrop');
+  const btn = document.getElementById('mobileMenuBtn');
+  if(sidebar) sidebar.classList.remove('mobile-open');
+  if(backdrop) backdrop.classList.remove('show');
+  if(btn){
+    btn.setAttribute('aria-expanded','false');
+    btn.innerHTML = '<span>☰</span>';
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.nav a').forEach(function(link){
+    link.addEventListener('click', closeMobileMenu);
+  });
+});
+window.addEventListener('resize', function(){
+  if(window.innerWidth > 700) closeMobileMenu();
+});
+</script>
 
 </body>
 </html>
