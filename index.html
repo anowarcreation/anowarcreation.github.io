@@ -626,6 +626,7 @@ body{background:#020814;overflow-x:hidden}
       <article class="card"><div class="icon">🎓</div><h3>Scholarship</h3><p>SVMCM or NSP-WB / Aikyashree, with New or Renewal.</p><button onclick="openScholarship()">Start</button></article>
       <article class="card"><div class="icon">🚗</div><h3>DL PDF</h3><p>Request driving licence PDF assistance.</p><button onclick="openAppointment('DL PDF','Provide the details required for the DL PDF service.')">Start</button></article>
       <article class="card"><div class="icon">🚘</div><h3>RC PDF</h3><p>Request registration certificate PDF assistance.</p><button onclick="openAppointment('RC PDF','Provide the details required for the RC PDF service.')">Start</button></article>
+      <article class="card"><div class="icon">🖊️</div><h3>PDF Digital Signature Verification</h3><p>Check an embedded digital signature in a PDF. Signature images are not verified.</p><button onclick="openPdfVerification()">Verify PDF</button></article>
       <article class="card"><div class="icon">🖨️</div><h3>PDF Print</h3><p>Only for Sister Nivedita University students. Upload PDF, choose B&W or Colour.</p><button onclick="openPrint()">Start</button></article>
       
       <article class="card disabled"><div class="icon">🏛️</div><h3>Government Schemes</h3><p>Service is temporarily unavailable.</p><button onclick="showUnavailable()">Temporarily Unavailable</button></article>
@@ -654,6 +655,9 @@ body{background:#020814;overflow-x:hidden}
 
 <!-- Print Modal -->
 <div class="modal" id="printModal"><div class="box"><button class="close" onclick="closeModal('printModal')">×</button><h2>🖨️ PDF Print</h2><div class="desc"><strong>This service is only for Sister Nivedita University's students.</strong><br><span style="display:block;margin-top:7px">Upload your PDF. Pages are counted automatically. B&W ₹5/page, Colour ₹10/page.</span></div><div class="form"><label>Upload PDF<input id="pdfFile" type="file" accept="application/pdf" onchange="readPDF()"></label><div id="pdfInfo" class="note"></div><label>Print Type<select id="printType" onchange="calculatePrint()"><option value="bw">Black & White - ₹5 / page</option><option value="color">Colour - ₹10 / page</option></select></label><div class="price-box"><div class="price-row"><span>Pages</span><b id="pageCount">0</b></div><div class="price-row"><span>Rate</span><b id="rate">₹5 / page</b></div><div class="price-row total"><span>Exact Total</span><b id="printTotal">₹0</b></div></div><label>Payment Method<select id="paymentMethod"><option value="COD">Cash on Delivery (COD)</option><option value="UPI">UPI Payment</option></select></label><button class="primary" onclick="confirmPrint()">Confirm Print Order</button></div></div></div>
+
+<!-- PDF Digital Signature Verification Modal -->
+<div class="modal" id="pdfVerifyModal"><div class="box"><button class="close" onclick="closeModal('pdfVerifyModal')">×</button><h2>🖊️ PDF Digital Signature Verification</h2><div class="desc">Upload a PDF to check for an embedded cryptographic digital signature. A scanned or handwritten signature image is not a digital signature. Certificate trust may not be established for every document.</div><div class="form"><label>Select PDF<input id="verifyPdfFile" type="file" accept="application/pdf,.pdf"></label><label>PDF password (if required)<input id="verifyPdfPassword" type="password" autocomplete="off" placeholder="Enter password if the PDF is protected"></label><button class="primary" id="verifyPdfButton" onclick="verifyPdfSignature()">Verify Digital Signature</button><div id="verifyPdfMessage" class="note" aria-live="polite"></div><div id="verifyPdfResults" class="note" aria-live="polite"></div><div id="verifyPdfActions" class="hidden" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="primary" type="button" onclick="downloadVerifiedPdf()">Download Original PDF</button><button class="primary" type="button" onclick="printVerifiedPdf()">Print Original PDF</button></div><p class="note">Privacy: the selected PDF is sent to the verification API for processing. Do not upload documents you are not authorized to share. Download/print options appear only when signature integrity is reported valid; this does not by itself prove the signer is trusted.</p></div></div></div>
 
 <!-- UPI Modal -->
 <div class="modal" id="upiModal"><div class="box"><button class="close" onclick="closeModal('upiModal')">×</button><h2>💳 UPI Payment</h2><div class="desc">Pay the exact amount using your UPI app.</div><div class="price-box"><div class="price-row total"><span>Amount</span><b id="upiAmount">₹0</b></div></div><div class="manual" style="margin-top:12px"><div>UPI ID: <b>anowarali0499@ptyes</b></div><div class="note">After payment, return here and confirm the order.</div></div><button class="primary" onclick="openUPI()">Pay by UPI</button><button class="primary" style="background:#16a875" onclick="confirmUPIPrint()">✓ I Have Paid - Confirm Order</button></div></div>
@@ -706,6 +710,36 @@ function selectScholarship(name){scholarshipName=name;$('scholarshipStep2').clas
 function selectScholarshipType(type){scholarshipType=type;$('scholarshipDetails').classList.remove('hidden')}
 async function submitScholarship(){const n=$('scholarName').value.trim(),p=$('scholarPhone').value.trim(),r=$('scholarReq').value.trim();if(!n||!p){$('scholarMsg').textContent='Please enter name and mobile number.';return}closeModal('scholarshipModal');await createAppointment('Scholarship - '+scholarshipName+' - '+scholarshipType,n,p,r||'Scholarship application')}
 function openPrint(){$('pdfFile').value='';$('pdfInfo').textContent='';pdfPages=0;currentAmount=0;calculatePrint();$('printModal').classList.add('show')}
+let verifiedPdfFile=null;
+function openPdfVerification(){verifiedPdfFile=null;$('verifyPdfFile').value='';$('verifyPdfPassword').value='';$('verifyPdfMessage').textContent='';$('verifyPdfResults').textContent='';$('verifyPdfActions').classList.add('hidden');$('pdfVerifyModal').classList.add('show')}
+async function verifyPdfSignature(){
+  const file=$('verifyPdfFile').files[0];
+  const message=$('verifyPdfMessage'),results=$('verifyPdfResults'),button=$('verifyPdfButton'),actions=$('verifyPdfActions');
+  verifiedPdfFile=null;actions.classList.add('hidden');results.textContent='';
+  if(!file){message.textContent='Please select a PDF file.';return}
+  if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){message.textContent='Please select a PDF file.';return}
+  if(file.size>15*1024*1024){message.textContent='PDF must be 15 MB or smaller.';return}
+  const data=new FormData();data.append('file',file);const password=$('verifyPdfPassword').value;if(password)data.append('password',password);
+  button.disabled=true;button.textContent='Verifying...';message.textContent='Uploading PDF and checking its embedded digital signature. Please wait.';
+  try{
+    const response=await fetch('https://anowarcreation-pdf-verifier.onrender.com/verify',{method:'POST',body:data});
+    const payload=await response.json();
+    if(!response.ok||!payload.success){message.textContent=payload.message||'Verification failed. Please try again.';return}
+    if(!payload.has_signature){message.textContent=payload.message||'No embedded digital signature found.';return}
+    const lines=(payload.signatures||[]).map((sig,index)=>{
+      const integrity=sig.integrity_valid?'Integrity: valid':'Integrity: not verified or invalid';
+      const trust=sig.certificate_trusted?'Certificate trust: established':'Certificate trust: not established';
+      return `Signature ${index+1} (${sig.field_name||'unnamed'}): ${sig.status||'Could not verify'}. ${integrity}. ${trust}.`;
+    });
+    results.textContent=lines.join(' ');
+    const integrityValid=(payload.signatures||[]).some(sig=>sig.integrity_valid===true);
+    if(integrityValid){verifiedPdfFile=file;actions.classList.remove('hidden');message.textContent='At least one signature passed the integrity check. Certificate trust is shown separately below.';}
+    else{message.textContent='No signature passed the integrity check. Download and print options are unavailable.';}
+  }catch(error){message.textContent='Could not connect to the verification service. Please try again in a moment.';}
+  finally{button.disabled=false;button.textContent='Verify Digital Signature';}
+}
+function downloadVerifiedPdf(){if(!verifiedPdfFile)return;const url=URL.createObjectURL(verifiedPdfFile);const a=document.createElement('a');a.href=url;a.download=verifiedPdfFile.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function printVerifiedPdf(){if(!verifiedPdfFile)return;const url=URL.createObjectURL(verifiedPdfFile);const w=window.open(url,'_blank');if(!w){URL.revokeObjectURL(url);openInfo('Print PDF','Your browser blocked the PDF window. Please allow pop-ups and try again.');return}setTimeout(()=>URL.revokeObjectURL(url),60000)}
 function readPDF(){const f=$('pdfFile').files[0];if(!f)return;if(f.type!=='application/pdf'){$('pdfInfo').textContent='Please select a PDF file.';return}$('pdfInfo').textContent='Reading PDF pages...';if(!window.pdfjsLib){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';countPDF(f)};s.onerror=()=>{$('pdfInfo').textContent='Could not load PDF reader. Please refresh and try again.'};document.head.appendChild(s)}else countPDF(f)}
 async function countPDF(f){try{const data=await f.arrayBuffer(),pdf=await window.pdfjsLib.getDocument({data}).promise;pdfPages=pdf.numPages;$('pdfInfo').textContent=f.name+' • '+pdfPages+' page(s)';calculatePrint()}catch(e){pdfPages=0;$('pdfInfo').textContent='Could not read this PDF. Please try another PDF.';calculatePrint()}}
 function calculatePrint(){const rate=$('printType').value==='color'?10:5;$('rate').textContent='₹'+rate+' / page';currentAmount=pdfPages*rate;$('pageCount').textContent=pdfPages;$('printTotal').textContent='₹'+currentAmount}
