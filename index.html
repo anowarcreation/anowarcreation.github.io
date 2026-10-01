@@ -496,48 +496,38 @@ body{background:#020814;overflow-x:hidden}
 
 
 <style>
-/* Root cause fix: the customer .app had backdrop-filter: blur(), and the
-   sidebar lives inside .app, so the blur was inherited visually by the menu.
-   Disable that ancestor blur on phones and keep blur only on the background. */
-@media (max-width:700px){
-  .app{
+/* Definitive mobile menu click fix */
+@media(max-width:700px){
+  .mobile-menu-backdrop{
+    z-index:90!important;
+    pointer-events:none!important;
+    background:rgba(0,5,15,.62)!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;
-    filter:none!important;
-    opacity:1!important;
   }
-
   .sidebar,
   .sidebar.mobile-open{
-    background:rgba(4,14,28,.98)!important;
+    z-index:9999!important;
+    pointer-events:auto!important;
+    touch-action:auto!important;
+    background:rgba(4,14,28,.985)!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;
     filter:none!important;
     opacity:1!important;
-    z-index:130!important;
-    transform:translateX(-100%)!important;
-    transition:transform .28s ease!important;
   }
-
-  .sidebar.mobile-open{
-    transform:translateX(0)!important;
+  .sidebar.mobile-open .nav,
+  .sidebar.mobile-open .nav a,
+  .sidebar.mobile-open .nav a span,
+  .sidebar.mobile-open button{
+    pointer-events:auto!important;
+    touch-action:manipulation!important;
+    position:relative!important;
+    z-index:10000!important;
   }
-
-  .sidebar *,
-  .sidebar.mobile-open *{
-    filter:none!important;
-    opacity:1!important;
-  }
-
-  .mobile-menu-backdrop{
-    z-index:100!important;
-    background:rgba(0,5,15,.58)!important;
-    backdrop-filter:none!important;
-    -webkit-backdrop-filter:none!important;
-  }
-
-  .mobile-menu-btn{
-    z-index:150!important;
+  .sidebar.mobile-open a{
+    cursor:pointer!important;
+    -webkit-tap-highlight-color:rgba(40,200,255,.2)!important;
   }
 }
 </style>
@@ -965,21 +955,7 @@ window.addEventListener('resize', function(){
 </script>
 
 
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const sidebar = document.querySelector('.sidebar');
-  if(!sidebar) return;
 
-  sidebar.addEventListener('click', function(e){
-    const link = e.target.closest('a,button,[role="button"]');
-    if(!link) return;
-    e.stopPropagation();
-    setTimeout(function(){
-      if(typeof closeMobileMenu === 'function') closeMobileMenu();
-    }, 80);
-  }, true);
-});
-</script>
 
 </body>
 </html>
