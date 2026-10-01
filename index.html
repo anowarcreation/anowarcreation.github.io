@@ -175,8 +175,10 @@ async function registerUser(){const name=$('regName').value.trim(),phone=$('regP
 async function loginUser(){const email=$('loginEmail').value.trim(),password=$('loginPassword').value,msg=$('authMessage');if(!email||!password){msg.textContent='Enter email and password.';return}msg.textContent='Logging in...';const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error){msg.textContent=error.message;return}msg.textContent='';await loadUser()}
 async function loadUser(){const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;currentUser=user;const {data:profile}=await supabaseClient.from('profiles').select('*').eq('id',user.id).maybeSingle();currentProfile=profile||{name:user.user_metadata?.name||'Customer',phone:user.user_metadata?.phone||'',email:user.email||''};$('profileName').textContent=currentProfile.name||'Customer';$('profileAvatar').textContent=(currentProfile.name||'C').slice(0,2).toUpperCase();$('authScreen').style.display='none';await loadCloudOrders()}
 async function logoutUser(){await supabaseClient.auth.signOut();currentUser=null;currentProfile=null;$('authScreen').style.display='flex';authMode('login')}
-supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){showPasswordRecovery();return}if(session&&!currentUser)loadUser()});
-supabaseClient.auth.getSession().then(({data})=>{if(data.session){loadUser()}else if(window.location.hash.includes('type=recovery')){showPasswordRecovery()}else{$('authScreen').style.display='flex'}});
+let recoveryMode=false;
+function isRecoveryUrl(){const hash=window.location.hash||'';const search=window.location.search||'';return hash.includes('type=recovery')||search.includes('type=recovery')||search.includes('code=')}
+supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){recoveryMode=true;showPasswordRecovery();return}if(session&&!currentUser&&!recoveryMode&&!isRecoveryUrl())loadUser()});
+supabaseClient.auth.getSession().then(({data})=>{if(isRecoveryUrl()){recoveryMode=true;showPasswordRecovery();return}if(data.session){loadUser()}else{$('authScreen').style.display='flex'}});
 function showPanel(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active')}
 function activateServices(){showPanel('services',document.querySelector('.tabs .tab'))}
 function closeModal(id){$(id).classList.remove('show')}
