@@ -1,3 +1,4 @@
 Flask
 pyHanko
 gunicorn
+Flask-Cors
