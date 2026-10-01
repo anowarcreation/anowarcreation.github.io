@@ -54,17 +54,24 @@ def verify_pdf():
     try:
         reader = PdfFileReader(io.BytesIO(pdf_data))
 
-        if reader.is_encrypted:
-            decrypt_result = reader.decrypt(password)
+        # Check/decrypt the PDF using the supplied password.
+        try:
+            decrypted = reader.decrypt(password)
+        except Exception as exc:
+            app.logger.info("PDF password check failed: %s", exc)
+            return jsonify({
+                "success": False,
+                "message": (
+                    "Could not open this PDF. Check the password, "
+                    "or the PDF may be damaged or unsupported."
+                )
+            }), 400
 
-            if not decrypt_result:
-                return jsonify({
-                    "success": False,
-                    "message": (
-                        "Incorrect PDF password. "
-                        "Please check the password and try again."
-                    )
-                }), 400
+        if decrypted is False or decrypted == 0:
+            return jsonify({
+                "success": False,
+                "message": "Incorrect PDF password. Please try again."
+            }), 400
 
         embedded_signatures = reader.embedded_signatures
 
@@ -102,28 +109,23 @@ def verify_pdf():
                 item["integrity_valid"] = bool(
                     status.intact and status.valid
                 )
-                item["certificate_trusted"] = bool(status.trusted)
 
-                if (
-                    item["integrity_valid"]
-                    and item["certificate_trusted"]
-                ):
-                    item["status"] = "Valid and trusted"
+                # No trusted roots are configured above, so this
+                # service does not establish certificate trust.
+                item["certificate_trusted"] = False
 
-                elif item["integrity_valid"]:
+                if item["integrity_valid"]:
                     item["status"] = (
-                        "Signature integrity is valid, "
-                        "but certificate trust is not established."
+                        "Signature integrity valid; "
+                        "certificate trust not established"
                     )
-
                 else:
                     item["status"] = (
-                        "Invalid signature or document "
-                        "modification detected."
+                        "Invalid signature or document modification detected"
                     )
 
             except Exception as exc:
-                item["status"] = "Could not verify this signature."
+                item["status"] = "Could not verify this signature"
                 item["error"] = str(exc)[:300]
 
             results.append(item)
@@ -136,31 +138,21 @@ def verify_pdf():
                 item["integrity_valid"] for item in results
             ),
             "message": (
-                "Verification completed. Signature integrity "
-                "and certificate trust are reported separately."
+                "Verification completed. Signature integrity and "
+                "certificate trust are separate checks."
             )
         })
 
     except Exception as exc:
         app.logger.exception("PDF verification failed")
-
         return jsonify({
             "success": False,
             "message": (
-                "Could not open or verify this PDF. "
-                "It may be password-protected, damaged, "
-                "or unsupported. Details: "
-                f"{str(exc)[:200]}"
+                "Could not open or verify this PDF. It may be "
+                "password-protected, damaged, or unsupported. "
+                f"Details: {str(exc)[:200]}"
             )
         }), 400
-
-
-@app.errorhandler(413)
-def file_too_large(error):
-    return jsonify({
-        "success": False,
-        "message": "PDF must be 15 MB or smaller."
-    }), 413
 
 
 if __name__ == "__main__":
