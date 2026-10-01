@@ -277,6 +277,155 @@ body{background:#020814;overflow-x:hidden}
 }
 
 </style>
+
+<style>
+/* Final smooth motion tuning:
+   fewer simultaneous craft, rockets always travel nose-first, UFOs move gently. */
+.space-stage .ship1{
+  left:-300px!important;
+  top:14%!important;
+  animation: acShip1 34s linear infinite!important;
+}
+.space-stage .ship2{
+  left:-300px!important;
+  top:34%!important;
+  transform:none!important;
+  animation: acShip2 42s linear infinite 12s!important;
+  opacity:.72!important;
+}
+.space-stage .ship3{
+  left:-300px!important;
+  top:67%!important;
+  transform:none!important;
+  animation: acShip3 48s linear infinite 24s!important;
+  opacity:.58!important;
+}
+.space-stage .ship4{
+  left:-300px!important;
+  right:auto!important;
+  top:50%!important;
+  transform:none!important;
+  animation: acShip4 44s linear infinite 36s!important;
+  opacity:.62!important;
+}
+
+/* Rockets all point to the right and move in the same natural direction. */
+.space-stage .rocket1{
+  left:-160px!important;
+  right:auto!important;
+  top:25%!important;
+  transform:none!important;
+  animation: acRocket1 11s linear infinite 2s!important;
+}
+.space-stage .rocket2{
+  left:-160px!important;
+  right:auto!important;
+  top:73%!important;
+  transform:none!important;
+  animation: acRocket2 14s linear infinite 10s!important;
+}
+.space-stage .rocket3{
+  left:-160px!important;
+  right:auto!important;
+  top:56%!important;
+  transform:none!important;
+  animation: acRocket3 17s linear infinite 20s!important;
+}
+
+/* One UFO, slow and gentle, with a longer cycle. */
+.space-stage .space-ufo{
+  left:61%!important;
+  top:18%!important;
+  animation: acUfo 12s ease-in-out infinite!important;
+}
+
+/* Natural movement: enter from the left, cross the scene, then repeat after a pause. */
+@keyframes acShip1{
+  0%{transform:translate3d(-330px,0,0) scale(1.22) rotate(0deg)}
+  68%{transform:translate3d(calc(100vw + 180px),8px,0) scale(1.22) rotate(0deg)}
+  100%{transform:translate3d(calc(100vw + 180px),8px,0) scale(1.22) rotate(0deg)}
+}
+@keyframes acShip2{
+  0%{transform:translate3d(-330px,0,0) scale(1.02) rotate(0deg)}
+  68%{transform:translate3d(calc(100vw + 180px),-5px,0) scale(1.02) rotate(0deg)}
+  100%{transform:translate3d(calc(100vw + 180px),-5px,0) scale(1.02) rotate(0deg)}
+}
+@keyframes acShip3{
+  0%{transform:translate3d(-330px,0,0) scale(.84) rotate(0deg)}
+  68%{transform:translate3d(calc(100vw + 180px),6px,0) scale(.84) rotate(0deg)}
+  100%{transform:translate3d(calc(100vw + 180px),6px,0) scale(.84) rotate(0deg)}
+}
+@keyframes acShip4{
+  0%{transform:translate3d(-330px,0,0) scale(.92) rotate(0deg)}
+  68%{transform:translate3d(calc(100vw + 180px),-4px,0) scale(.92) rotate(0deg)}
+  100%{transform:translate3d(calc(100vw + 180px),-4px,0) scale(.92) rotate(0deg)}
+}
+
+@keyframes acRocket1{
+  0%{transform:translate3d(-190px,0,0) scale(1.2) rotate(0deg)}
+  78%{transform:translate3d(calc(100vw + 160px),-4px,0) scale(1.2) rotate(0deg)}
+  100%{transform:translate3d(calc(100vw + 160px),-4px,0) scale(1.2) rotate(0deg)}
+}
+@keyframes acRocket2{
+  0%{transform:translate3d(-190px,0,0) scale(1.02) rotate(0deg)}
+  78%{transform:translate3d(calc(100vw + 160px),5px,0) scale(1.02) rotate(0deg)}
+  100%{transform:translate3d(calc(100vw + 160px),5px,0) scale(1.02) rotate(0deg)}
+}
+@keyframes acRocket3{
+  0%{transform:translate3d(-190px,0,0) scale(.88) rotate(0deg)}
+  78%{transform:translate3d(calc(100vw + 160px),-3px,0) scale(.88) rotate(0deg)}
+  100%{transform:translate3d(calc(100vw + 160px),-3px,0) scale(.88) rotate(0deg)}
+}
+
+@keyframes acUfo{
+  0%,100%{transform:translate3d(-10px,0,0) rotate(-2deg) scale(.82)}
+  25%{transform:translate3d(55px,18px,0) rotate(2deg) scale(.84)}
+  50%{transform:translate3d(105px,-8px,0) rotate(-1deg) scale(.82)}
+  75%{transform:translate3d(35px,25px,0) rotate(2deg) scale(.84)}
+}
+
+/* On phones, keep the scene lighter and avoid several craft entering together. */
+@media(max-width:700px){
+  .space-stage .ship1{animation-duration:40s!important}
+  .space-stage .ship2{animation-duration:48s!important;animation-delay:15s!important}
+  .space-stage .ship3{animation-duration:55s!important;animation-delay:30s!important}
+  .space-stage .ship4{animation-duration:52s!important;animation-delay:45s!important}
+  .space-stage .rocket1{animation-duration:13s!important;animation-delay:2s!important}
+  .space-stage .rocket2{animation-duration:16s!important;animation-delay:11s!important}
+  .space-stage .rocket3{animation-duration:19s!important;animation-delay:23s!important}
+  .space-stage .space-ufo{animation-duration:15s!important}
+}
+</style>
+
+
+<style>
+/* Mobile menu click fix: keep the drawer above the blur/backdrop and fully interactive */
+@media(max-width:700px){
+  .mobile-menu-btn{z-index:120!important;pointer-events:auto!important}
+  .mobile-menu-backdrop{
+    z-index:100!important;
+    pointer-events:auto!important;
+  }
+  .sidebar{
+    z-index:130!important;
+    pointer-events:auto!important;
+    isolation:isolate;
+  }
+  .sidebar.mobile-open,
+  .sidebar.mobile-open *{
+    pointer-events:auto!important;
+  }
+  .sidebar.mobile-open .nav,
+  .sidebar.mobile-open .nav a,
+  .sidebar.mobile-open button,
+  .sidebar.mobile-open [role="button"]{
+    position:relative;
+    z-index:2;
+    pointer-events:auto!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -696,6 +845,23 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 window.addEventListener('resize', function(){
   if(window.innerWidth > 700) closeMobileMenu();
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const sidebar = document.querySelector('.sidebar');
+  if(!sidebar) return;
+
+  sidebar.addEventListener('click', function(e){
+    const link = e.target.closest('a,button,[role="button"]');
+    if(!link) return;
+    e.stopPropagation();
+    setTimeout(function(){
+      if(typeof closeMobileMenu === 'function') closeMobileMenu();
+    }, 80);
+  }, true);
 });
 </script>
 
