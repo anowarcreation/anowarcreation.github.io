@@ -51,17 +51,16 @@ def verify_pdf():
 
     password = request.form.get("password") or None
 
+        try:
+            reader = PdfFileReader(io.BytesIO(pdf_data))
 
-        reader = PdfFileReader(io.BytesIO(pdf_data))
+            if reader.is_encrypted and reader.decrypt(password or "") == 0:
+                return jsonify({
+                    "success": False,
+                    "message": "Incorrect PDF password. Please check the password."
+                }), 400
 
-        if reader.is_encrypted and reader.decrypt(password or "") == 0:
-            return jsonify({
-                "success": False,
-                "message": "Incorrect PDF password. Please check the password."
-            }), 400
-
-        embedded_signatures = reader.embedded_signatures
-
+            embedded_signatures = reader.embedded_signatures
         if not embedded_signatures:
             return jsonify({
                 "success": True,
