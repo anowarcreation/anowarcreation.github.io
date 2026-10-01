@@ -1,12 +1,12 @@
 
 import os
 import io
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pyhanko.pdf_utils.reader import PdfFileReader
 from pyhanko.sign.validation import validate_pdf_signature
 from pyhanko_certvalidator import ValidationContext
-from pyhanko.pdf_utils.crypt import PdfKeyNotAvailableError
 
 app = Flask(__name__)
 CORS(app)
@@ -29,7 +29,7 @@ def health():
 def verify_pdf():
     uploaded = request.files.get("file")
 
-    if not uploaded:
+    if not uploaded or not uploaded.filename:
         return jsonify({
             "success": False,
             "message": "Please upload a PDF file."
@@ -49,25 +49,34 @@ def verify_pdf():
             "message": "PDF must be 15 MB or smaller."
         }), 413
 
-    password = request.form.get("password") or None
+    password = request.form.get("password") or ""
 
-        try:
-            reader = PdfFileReader(io.BytesIO(pdf_data))
+    try:
+        reader = PdfFileReader(io.BytesIO(pdf_data))
 
-            if reader.is_encrypted and reader.decrypt(password or "") == 0:
+        if reader.is_encrypted:
+            decrypt_result = reader.decrypt(password)
+
+            if not decrypt_result:
                 return jsonify({
                     "success": False,
-                    "message": "Incorrect PDF password. Please check the password."
+                    "message": (
+                        "Incorrect PDF password. "
+                        "Please check the password and try again."
+                    )
                 }), 400
 
-            embedded_signatures = reader.embedded_signatures
+        embedded_signatures = reader.embedded_signatures
+
         if not embedded_signatures:
             return jsonify({
                 "success": True,
                 "has_signature": False,
+                "download_allowed": False,
                 "message": (
                     "No embedded digital signature found. "
-                    "A signature image is not a digital signature."
+                    "A scanned or handwritten signature image "
+                    "is not a digital signature."
                 )
             })
 
@@ -93,24 +102,28 @@ def verify_pdf():
                 item["integrity_valid"] = bool(
                     status.intact and status.valid
                 )
-                item["certificate_trusted"] = bool(
-                    status.trusted
-                )
+                item["certificate_trusted"] = bool(status.trusted)
 
-                if item["integrity_valid"] and item["certificate_trusted"]:
+                if (
+                    item["integrity_valid"]
+                    and item["certificate_trusted"]
+                ):
                     item["status"] = "Valid and trusted"
+
                 elif item["integrity_valid"]:
                     item["status"] = (
-                        "Signature integrity valid, "
-                        "but certificate trust is not established"
+                        "Signature integrity is valid, "
+                        "but certificate trust is not established."
                     )
+
                 else:
                     item["status"] = (
-                        "Invalid signature or document modification detected"
+                        "Invalid signature or document "
+                        "modification detected."
                     )
 
             except Exception as exc:
-                item["status"] = "Could not verify this signature"
+                item["status"] = "Could not verify this signature."
                 item["error"] = str(exc)[:300]
 
             results.append(item)
@@ -123,17 +136,31 @@ def verify_pdf():
                 item["integrity_valid"] for item in results
             ),
             "message": (
-                "Verification completed. Review integrity and trust "
-                "separately before relying on this document."
+                "Verification completed. Signature integrity "
+                "and certificate trust are reported separately."
             )
         })
 
     except Exception as exc:
         app.logger.exception("PDF verification failed")
+
         return jsonify({
             "success": False,
-            "message": f"PDF error: {str(exc)[:250]}"
+            "message": (
+                "Could not open or verify this PDF. "
+                "It may be password-protected, damaged, "
+                "or unsupported. Details: "
+                f"{str(exc)[:200]}"
+            )
         }), 400
+
+
+@app.errorhandler(413)
+def file_too_large(error):
+    return jsonify({
+        "success": False,
+        "message": "PDF must be 15 MB or smaller."
+    }), 413
 
 
 if __name__ == "__main__":
