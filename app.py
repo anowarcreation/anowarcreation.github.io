@@ -126,12 +126,12 @@ def verify_pdf():
             )
         })
 
-except Exception as exc:
-    app.logger.exception("PDF verification failed")
-    return jsonify({
-        "success": False,
-        "message": f"PDF error: {str(exc)[:250]}"
-    }), 400
+    except Exception as exc:
+        app.logger.exception("PDF verification failed")
+        return jsonify({
+            "success": False,
+            "message": f"PDF error: {str(exc)[:250]}"
+        }), 400
 
 
 if __name__ == "__main__":
