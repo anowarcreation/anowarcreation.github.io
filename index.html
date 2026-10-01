@@ -494,6 +494,54 @@ body{background:#020814;overflow-x:hidden}
 }
 </style>
 
+
+<style>
+/* Root cause fix: the customer .app had backdrop-filter: blur(), and the
+   sidebar lives inside .app, so the blur was inherited visually by the menu.
+   Disable that ancestor blur on phones and keep blur only on the background. */
+@media (max-width:700px){
+  .app{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    filter:none!important;
+    opacity:1!important;
+  }
+
+  .sidebar,
+  .sidebar.mobile-open{
+    background:rgba(4,14,28,.98)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    filter:none!important;
+    opacity:1!important;
+    z-index:130!important;
+    transform:translateX(-100%)!important;
+    transition:transform .28s ease!important;
+  }
+
+  .sidebar.mobile-open{
+    transform:translateX(0)!important;
+  }
+
+  .sidebar *,
+  .sidebar.mobile-open *{
+    filter:none!important;
+    opacity:1!important;
+  }
+
+  .mobile-menu-backdrop{
+    z-index:100!important;
+    background:rgba(0,5,15,.58)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+
+  .mobile-menu-btn{
+    z-index:150!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
