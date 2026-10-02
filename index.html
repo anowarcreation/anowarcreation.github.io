@@ -308,6 +308,8 @@ body{background:#020814;overflow-x:hidden}
 .customer-notice-popup[hidden]{display:none}.customer-notice-close{position:absolute;right:9px;top:7px;border:0;background:transparent;color:#b8c5d8;font-size:24px;line-height:1;cursor:pointer}.customer-notice-kicker{font-size:10px;letter-spacing:1px;color:#4be0ba;font-weight:900;margin-bottom:6px}.customer-notice-popup h3{font-size:15px;margin:0 0 8px;padding-right:2px}.customer-notice-content{font-size:12px;color:#d1dbea;line-height:1.55;overflow-wrap:anywhere}.customer-notice-content p{margin:0 0 7px}.customer-notice-content ul,.customer-notice-content ol{padding-left:18px}.maintenance-label{background:#3b2e1b;color:#ffd27a}
 @media(max-width:600px){.customer-notice-popup{right:10px;bottom:66px;width:calc(100vw - 20px);max-height:36vh}.notice-admin-actions button{flex:1}}
 
+
+.admin-filter-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.admin-filter-row input,.admin-filter-row select{background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:9px;padding:10px;min-width:150px}.admin-status-select{max-width:210px;background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:8px;padding:7px}.admin-mini-btn{background:#2563eb;color:white;border:0;border-radius:7px;padding:7px 10px}.admin-stat-grid-6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.admin-stat-mini{border:1px solid #2c3b55;background:#101d32;border-radius:10px;padding:13px}.admin-stat-mini span{display:block;color:#91a2bd;font-size:12px}.admin-stat-mini b{display:block;font-size:22px;margin-top:5px}@media(max-width:800px){.admin-stat-grid-6{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filter-row>*{flex:1;min-width:120px}}
 </style>
 
 <style>
@@ -901,6 +903,7 @@ function switchAdminSection(id,btn){
   if(btn)btn.classList.add('active');
 }
 
+let adminOrdersCache=[];
 function filterCustomers(){
   const q=($('customerSearch').value||'').toLowerCase().trim();
   document.querySelectorAll('#adminCustomersBody tr[data-search]').forEach(tr=>{tr.style.display=!q||tr.dataset.search.includes(q)?'':'none'});
@@ -913,6 +916,7 @@ async function loadAdminData(){
     supabaseClient.from('profiles').select('*').order('created_at',{ascending:false})
   ]);
   const orders=ordersRes.data||[],profiles=profilesRes.data||[];
+  adminOrdersCache=orders;
   if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="11" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>'}
   else { renderAdminOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
   if(profilesRes.error){console.error(profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="5" class="admin-empty">Could not load customers. Please check Admin SQL/RLS.</td></tr>'}
@@ -925,8 +929,31 @@ async function loadAdminData(){
   $('adminAppointmentCount').textContent=appointments;
   $('adminRevenue').textContent='₹'+revenue.toFixed(2);
   $('adminPrintCount').textContent=printOrders;
+  const today=new Date().toLocaleDateString('en-CA');
+  const normalized=orders.map(o=>({...o,_status:normalizeApplicationStatus(o.status)}));
+  $('adminTodayCount').textContent=orders.filter(o=>o.created_at&&new Date(o.created_at).toLocaleDateString('en-CA')===today).length;
+  $('adminSubmittedCount').textContent=normalized.filter(o=>o._status==='Application Submitted').length;
+  $('adminProcessingCount').textContent=normalized.filter(o=>o._status==='Under Process').length;
+  $('adminCompletedCount').textContent=normalized.filter(o=>o._status==='Successfully Completed').length;
+  $('adminRejectedCount').textContent=normalized.filter(o=>o._status==='Rejected').length;
+  $('adminDeclinedCount').textContent=normalized.filter(o=>o._status==='Declined').length;
+  renderAdminApplications();renderAdminPayments();
   $('adminLastUpdated').textContent='Updated: '+new Date().toLocaleString('en-IN');
 }
+
+const APPLICATION_STATUSES=['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'];
+function normalizeApplicationStatus(status){const s=String(status||'').toLowerCase();if(s.includes('reject'))return 'Rejected';if(s.includes('declin'))return 'Declined';if(s.includes('complete')||s==='done')return 'Successfully Completed';if(s.includes('process'))return 'Under Process';return 'Application Submitted'}
+function renderAdminApplications(){
+ const body=$('adminApplicationsBody');if(!body)return;
+ const q=($('applicationSearch')?.value||'').toLowerCase().trim(),st=$('applicationStatusFilter')?.value||'',from=$('applicationFromDate')?.value||'',to=$('applicationToDate')?.value||'';
+ const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.phone,o.service].join(' ').toLowerCase();const d=o.created_at?new Date(o.created_at).toLocaleDateString('en-CA'):'';return (!q||text.includes(q))&&(!st||normalizeApplicationStatus(o.status)===st)&&(!from||d>=from)&&(!to||d<=to)}).sort((a,b)=>{const sa=normalizeApplicationStatus(a.status),sb=normalizeApplicationStatus(b.status);const done=['Successfully Completed','Rejected','Declined'];if(done.includes(sa)!==done.includes(sb))return done.includes(sa)?1:-1;return new Date(b.created_at||0)-new Date(a.created_at||0)});
+ if(!rows.length){body.innerHTML='<tr><td colspan="9" class="admin-empty">No matching applications found.</td></tr>';return}
+ body.innerHTML=rows.map(o=>{const status=normalizeApplicationStatus(o.status);return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td><select class="admin-status-select" aria-label="Application status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td>${o.file_path?'<span class="admin-muted">PDF available in All Orders</span>':escapeHtml(o.requirement||'—')}</td></tr>`}).join('');
+}
+function resetApplicationFilters(){['applicationSearch','applicationStatusFilter','applicationFromDate','applicationToDate'].forEach(id=>{if($(id))$(id).value=''});renderAdminApplications()}
+async function updateApplicationStatus(orderId,status){const msg=$('applicationAdminMessage');let reason='';if(status==='Rejected'||status==='Declined'){reason=prompt('Enter the reason for '+status+' (required):')||'';if(!reason.trim()){msg.textContent='Status change cancelled: a reason is required.';renderAdminApplications();return}}
+ msg.textContent='Updating status...';const {error}=await supabaseClient.from('orders').update({status:status+(reason?' — Reason: '+reason.trim():'')}).eq('order_id',orderId);if(error){msg.textContent='Could not update status: '+error.message;await loadAdminData();return}msg.textContent='Application status updated.';await loadAdminData();}
+function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
 
 async function renderAdminOrders(rows){
   const body=$('adminOrdersBody');
@@ -1015,8 +1042,11 @@ async function adminLogout(){
         <button class="active" onclick="switchAdminSection('adminOverview',this)">📊 Overview</button>
         <button onclick="switchAdminSection('adminCustomers',this)">👥 All Customers</button>
         <button onclick="switchAdminSection('adminOrders',this)">📦 All Orders</button>
+        <button onclick="switchAdminSection('adminApplications',this);loadAdminData()">📝 Applications</button>
+        <button onclick="switchAdminSection('adminPayments',this);loadAdminData()">💳 Payments</button>
         <button onclick="switchAdminSection('adminAppointments',this)">📅 Appointments</button>
         <button onclick="switchAdminSection('adminNoticeBoard',this);loadAdminNotices()">📢 Notice Board</button>
+        <button onclick="switchAdminSection('adminServices',this)">🛠️ Service Management</button>
       </div>
       <button class="admin-btn danger" style="width:100%;margin-top:18px" onclick="adminLogout()">Logout Admin</button>
     </aside>
@@ -1032,6 +1062,14 @@ async function adminLogout(){
           <div class="admin-stat"><div class="label">📦 TOTAL ORDERS</div><div class="value" id="adminOrderCount">0</div><div class="sub">Orders + appointments</div></div>
           <div class="admin-stat"><div class="label">📅 APPOINTMENTS</div><div class="value" id="adminAppointmentCount">0</div><div class="sub">Appointment requests</div></div>
           <div class="admin-stat"><div class="label">💰 TOTAL AMOUNT</div><div class="value green" id="adminRevenue">₹0.00</div><div class="sub">Recorded order amounts</div></div>
+        </div>
+        <div class="admin-stat-grid-6">
+          <div class="admin-stat-mini"><span>Today's Applications</span><b id="adminTodayCount">0</b></div>
+          <div class="admin-stat-mini"><span>Application Submitted</span><b id="adminSubmittedCount">0</b></div>
+          <div class="admin-stat-mini"><span>Under Process</span><b id="adminProcessingCount">0</b></div>
+          <div class="admin-stat-mini"><span>Successfully Completed</span><b id="adminCompletedCount">0</b></div>
+          <div class="admin-stat-mini"><span>Rejected</span><b id="adminRejectedCount">0</b></div>
+          <div class="admin-stat-mini"><span>Declined</span><b id="adminDeclinedCount">0</b></div>
         </div>
         <div class="admin-card">
           <div class="section-head"><h2>Quick Summary</h2><span id="adminLastUpdated">Loading...</span></div>
@@ -1060,6 +1098,23 @@ async function adminLogout(){
           <div id="noticeCurrentPreview" class="notice-preview">No notice loaded.</div>
         </div>
       </section>
+
+      <section id="adminApplications" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>📝 Application Management</h2><span>Update application status and review submitted details</span></div>
+          <div class="admin-filter-row"><input id="applicationSearch" placeholder="Search ID, name, mobile or service" oninput="renderAdminApplications()"><select id="applicationStatusFilter" onchange="renderAdminApplications()"><option value="">All statuses</option><option>Application Submitted</option><option>Under Process</option><option>Successfully Completed</option><option>Rejected</option><option>Declined</option></select><label>From <input type="date" id="applicationFromDate" onchange="renderAdminApplications()"></label><label>To <input type="date" id="applicationToDate" onchange="renderAdminApplications()"></label><button class="admin-btn" onclick="resetApplicationFilters()">Reset</button></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Application ID</th><th>Customer</th><th>Mobile</th><th>Service</th><th>Amount</th><th>Payment</th><th>Application Status</th><th>Apply Date</th><th>Details / File</th></tr></thead><tbody id="adminApplicationsBody"></tbody></table></div>
+          <p class="note" id="applicationAdminMessage">Status updates are saved to the existing orders table.</p>
+        </div>
+      </section>
+      <section id="adminPayments" class="admin-section">
+        <div class="admin-card"><div class="section-head"><h2>💳 Payment Management</h2><span>Payment information recorded with orders</span></div>
+          <div class="admin-filter-row"><input id="paymentSearch" placeholder="Search transaction/order, customer or service" oninput="renderAdminPayments()"><select id="paymentStatusFilter" onchange="renderAdminPayments()"><option value="">All payment records</option><option value="paid">Paid / Confirmed</option><option value="pending">Pending</option><option value="failed">Failed</option><option value="refunded">Refunded</option></select></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order ID</th><th>Customer</th><th>Service</th><th>Amount</th><th>Payment Method</th><th>Payment Status</th><th>Date</th></tr></thead><tbody id="adminPaymentsBody"></tbody></table></div>
+          <p class="note">The current database stores payment method and order amount, but does not yet contain verified gateway transaction IDs or refund records. Do not mark a payment as gateway-verified without server-side verification.</p>
+        </div>
+      </section>
+      <section id="adminServices" class="admin-section"><div class="admin-card"><div class="section-head"><h2>🛠️ Service Management</h2></div><p class="desc">Service add/edit, price, required documents and maintenance controls need a dedicated services table and website service cards connected to it. This section is a setup note only; it will not change live service availability yet.</p><div class="note">Next database step: create a services table and connect the customer-facing service list before enabling these controls.</div></div></section>
 
       <section id="adminCustomers" class="admin-section">
         <div class="admin-card">
