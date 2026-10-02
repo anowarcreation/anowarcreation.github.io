@@ -309,7 +309,8 @@ body{background:#020814;overflow-x:hidden}
 @media(max-width:600px){.customer-notice-popup{right:10px;bottom:66px;width:calc(100vw - 20px);max-height:36vh}.notice-admin-actions button{flex:1}}
 
 
-.admin-filter-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.admin-filter-row input,.admin-filter-row select{background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:9px;padding:10px;min-width:150px}.admin-status-select{max-width:210px;background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:8px;padding:7px}.admin-mini-btn{background:#2563eb;color:white;border:0;border-radius:7px;padding:7px 10px}.admin-stat-grid-6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.admin-stat-mini{border:1px solid #2c3b55;background:#101d32;border-radius:10px;padding:13px}.admin-stat-mini span{display:block;color:#91a2bd;font-size:12px}.admin-stat-mini b{display:block;font-size:22px;margin-top:5px}@media(max-width:800px){.admin-stat-grid-6{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filter-row>*{flex:1;min-width:120px}}
+.admin-filter-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.admin-filter-row input,.admin-filter-row select{background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:9px;padding:10px;min-width:150px}.admin-status-select{max-width:210px;background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:8px;padding:7px}.admin-mini-btn{background:#2563eb;color:white;border:0;border-radius:7px;padding:7px 10px}
+.admin-status-pill{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:normal}.status-submitted{background:#243b63;color:#93c5fd}.status-processing{background:#4a3512;color:#fcd34d}.status-completed{background:#123d31;color:#6ee7b7}.status-rejected{background:#4b1f28;color:#fca5a5}.status-declined{background:#4b1f28;color:#fca5a5}.rejection-reason{display:block;color:#f87171;font-size:11px;margin-top:5px;max-width:280px;white-space:normal}.customer-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.customer-profile-stat{padding:14px;border:1px solid #344157;border-radius:12px;background:#101d32}.customer-profile-stat span{display:block;color:#91a2bd;font-size:12px}.customer-profile-stat b{display:block;font-size:23px;margin-top:5px}.profile-detail-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid #2c3b55}.profile-detail-row .detail-value{font-weight:700;min-width:160px}.pencil-btn{border:0;background:#263b58;color:#fff;border-radius:8px;padding:7px 10px}.profile-order-row{padding:13px 0;border-bottom:1px solid #2c3b55}.profile-order-row .order-detail{font-size:12px;color:#9aa9bf;margin-top:6px}@media(max-width:650px){.customer-profile-grid{grid-template-columns:1fr 1fr}}.admin-stat-grid-6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.admin-stat-mini{border:1px solid #2c3b55;background:#101d32;border-radius:10px;padding:13px}.admin-stat-mini span{display:block;color:#91a2bd;font-size:12px}.admin-stat-mini b{display:block;font-size:22px;margin-top:5px}@media(max-width:800px){.admin-stat-grid-6{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filter-row>*{flex:1;min-width:120px}}
 </style>
 
 <style>
@@ -844,7 +845,7 @@ function generateId(prefix){const d=new Date(),stamp=String(d.getFullYear()).sli
 async function createAppointment(service,name,phone,requirement){const o=await createOrder(service,0,'N/A',name,phone,requirement,'Appointment Created');if(o)showResult('🎉','Appointment Created','Thank You, Our Team Will Connect You Soon.','Your Appointment No.',o.id,o.service)}
 async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();return obj}
 async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error)return;const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders()}
-function renderOrders(){const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');if(!orders.length){box.innerHTML='<div style="text-align:center;color:#8391a7;padding:25px">No orders or appointments yet.</div>';return}box.innerHTML=orders.map(o=>'<div class="order-item"><div class="order-top"><b>'+escapeHtml(o.service)+'</b><span class="status">'+escapeHtml(o.status)+'</span></div><div class="order-meta"><b>'+escapeHtml(o.id)+'</b> · '+escapeHtml(o.payment==='N/A'?'Appointment':o.payment)+(o.amount?' · ₹'+o.amount:'')+'<br>'+escapeHtml(o.date)+(o.requirement?' · '+escapeHtml(o.requirement):'')+'</div></div>').join('')}
+function renderOrders(){const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');if(!orders.length){box.innerHTML='<div style="text-align:center;color:#8391a7;padding:25px">No orders or appointments yet.</div>';return}box.innerHTML=orders.map(o=>{const reason=(String(o.status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||'';const clean=normalizeApplicationStatus(o.status);return '<div class="order-item"><div class="order-top"><b>'+escapeHtml(o.service)+'</b><span class="admin-status-pill '+statusClass(o.status)+'">'+escapeHtml(clean)+'</span></div><div class="order-meta"><b>'+escapeHtml(o.id)+'</b> · '+escapeHtml(o.payment==='N/A'?'Appointment':o.payment)+(o.amount?' · ₹'+o.amount:'')+'<br>'+escapeHtml(o.date)+(o.requirement?' · '+escapeHtml(o.requirement):'')+'</div>'+(reason?'<div class="rejection-reason">Reason: '+escapeHtml(reason)+'</div>':'')+'</div>'}).join('')}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function showOrders(){showPanel('orders');renderOrders()}
 function showResult(icon,title,text,label,num,service){$('resultIcon').textContent=icon;$('resultTitle').textContent=title;$('resultText').textContent=text;$('resultNumberLabel').textContent=label;$('resultNumber').textContent=num;$('resultService').textContent=service;$('resultModal').classList.add('show')}
@@ -958,8 +959,26 @@ function renderAdminApplications(){
  body.innerHTML=rows.map(o=>{const status=normalizeApplicationStatus(o.status);return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td><select class="admin-status-select" aria-label="Application status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td>${o.file_path?'<span class="admin-muted">PDF available in All Orders</span>':escapeHtml(o.requirement||'—')}</td></tr>`}).join('');
 }
 function resetApplicationFilters(){['applicationSearch','applicationStatusFilter','applicationFromDate','applicationToDate'].forEach(id=>{if($(id))$(id).value=''});renderAdminApplications()}
-async function updateApplicationStatus(orderId,status){const msg=$('applicationAdminMessage');let reason='';if(status==='Rejected'||status==='Declined'){reason=prompt('Enter the reason for '+status+' (required):')||'';if(!reason.trim()){msg.textContent='Status change cancelled: a reason is required.';renderAdminApplications();return}}
- msg.textContent='Updating status...';const {error}=await supabaseClient.from('orders').update({status:status+(reason?' — Reason: '+reason.trim():'')}).eq('order_id',orderId);if(error){msg.textContent='Could not update status: '+error.message;await loadAdminData();return}msg.textContent='Application status updated.';await loadAdminData();}
+async function updateApplicationStatus(orderId,status,isAppointment=false){
+ const msg=$('applicationAdminMessage');let reason='';
+ if(status==='Rejected'||status==='Declined'){
+   const existing=adminOrdersCache.find(o=>String(o.order_id)===String(orderId));
+   const existingReason=(String(existing?.status||'').match(/(?:Reason|reason):\s*(.*)$/)||[])[1]||'';
+   reason=prompt('Enter the reason for '+status+' (required):',existingReason)||'';
+   if(!reason.trim()){
+     if(msg)msg.textContent='Status change cancelled: a reason is required.';
+     await loadAdminData();
+     alert('Status change cancelled: please enter the reason.');
+     return;
+   }
+ }
+ if(msg)msg.textContent='Updating status...';
+ const savedStatus=status+(reason?' — Reason: '+reason.trim():'');
+ const {error}=await supabaseClient.from('orders').update({status:savedStatus}).eq('order_id',orderId);
+ if(error){if(msg)msg.textContent='Could not update status: '+error.message;alert('Could not update status: '+error.message);await loadAdminData();return}
+ if(msg)msg.textContent=(isAppointment?'Appointment':'Order/application')+' status updated.';
+ await loadAdminData();
+}
 function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
 
 async function renderAdminOrders(rows){
@@ -983,7 +1002,7 @@ async function renderAdminOrders(rows){
     <td>${escapeHtml(o.payment_method||'')}</td>
     <td>${escapeHtml(o.requirement||'')}</td>
     <td>${fileHtml}</td>
-    <td>${escapeHtml(o.status||'')}</td>
+    <td><select class="admin-status-select" aria-label="Order status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===normalizeApplicationStatus(o.status)?'selected':''}>${x}</option>`).join('')}</select><div class="admin-muted" style="margin-top:6px;max-width:220px;white-space:normal">${escapeHtml((String(o.status||'').match(/(?:Reason|reason):\s*(.*)$/)||[])[1]||'')}</div></td>
     <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
   </tr>`;
   }));
@@ -1011,16 +1030,45 @@ function renderAdminCustomers(rows){
     <td>${escapeHtml(p.email||'')}</td>
     <td>${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):''}</td>
     <td><span class="admin-badge">Customer</span></td>
-    <td><button class="admin-mini-btn" onclick="editCustomerProfile('${String(p.id||'').replace(/'/g,'')}')">Edit Profile</button> <button class="admin-mini-btn" onclick="adminResetCustomerPassword('${String(p.id||'').replace(/'/g,'')}','${escapeHtml(p.email||'').replace(/'/g,'')}')">Temporary Password</button></td>
+    <td><button class="admin-mini-btn" onclick="viewCustomerProfile('${String(p.id||'').replace(/'/g,'')}')">View Profile</button> <button class="admin-mini-btn" onclick="adminResetCustomerPassword('${String(p.id||'').replace(/'/g,'')}','${escapeHtml(p.email||'').replace(/'/g,'')}')">Temporary Password</button></td>
   </tr>`}).join(''):'<tr><td colspan="6" class="admin-empty">No customers found</td></tr>';
 }
 
+let activeCustomerProfileId=null;
+function backToCustomers(){switchAdminSection('adminCustomers');}
+function statusClass(status){const s=normalizeApplicationStatus(status);if(s==='Under Process')return 'status-processing';if(s==='Successfully Completed')return 'status-completed';if(s==='Rejected')return 'status-rejected';if(s==='Declined')return 'status-declined';return 'status-submitted'}
+function cleanOrderStatus(status){return normalizeApplicationStatus(status)}
+function getStatusReason(status){return (String(status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||((String(status||'').match(/Reason:\s*(.*)$/i)||[])[1]||'')}
+function viewCustomerProfile(id){
+  const p=adminCustomersCache.find(x=>String(x.id)===String(id));
+  if(!p)return alert('Customer profile not found. Please refresh.');
+  activeCustomerProfileId=String(id);
+  const orders=adminOrdersCache.filter(o=>String(o.user_id||'')===String(id));
+  const successful=orders.filter(o=>normalizeApplicationStatus(o.status)==='Successfully Completed').length;
+  const rejected=orders.filter(o=>['Rejected','Declined'].includes(normalizeApplicationStatus(o.status))).length;
+  const pending=orders.length-successful-rejected;
+  $('customerProfileDetails').innerHTML=`<div class="profile-detail-row"><span style="color:#91a2bd">Customer Name</span><span class="detail-value">${escapeHtml(p.name||'Customer')}</span><button class="pencil-btn" aria-label="Edit customer name" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Phone Number</span><span class="detail-value">${escapeHtml(p.phone||'Not provided')}</span><button class="pencil-btn" aria-label="Edit customer phone" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Email</span><span class="detail-value">${escapeHtml(p.email||'Not provided')}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Registered</span><span class="detail-value">${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):'—'}</span></div><div class="customer-profile-grid"><div class="customer-profile-stat"><span>Total Orders / Appointments</span><b>${orders.length}</b></div><div class="customer-profile-stat"><span>Successfully Completed</span><b style="color:#6ee7b7">${successful}</b></div><div class="customer-profile-stat"><span>Rejected / Declined</span><b style="color:#fca5a5">${rejected}</b></div><div class="customer-profile-stat"><span>Pending / In Process</span><b style="color:#fcd34d">${pending}</b></div></div>`;
+  $('customerProfileOrderMeta').textContent=orders.length+' record(s)';
+  $('customerProfileOrders').innerHTML=orders.length?orders.slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).map(o=>{const reason=getStatusReason(o.status);return `<div class="profile-order-row"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${escapeHtml(o.service||'Service')}</b><span class="admin-status-pill ${statusClass(o.status)}">${escapeHtml(cleanOrderStatus(o.status))}</span></div><div class="order-detail">Order ID: ${escapeHtml(o.order_id||'—')} · Amount: ₹${Number(o.amount||0).toFixed(2)} · ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div>${reason?`<div class="rejection-reason">Reason: ${escapeHtml(reason)}</div>`:''}<div class="order-detail">Payment: ${escapeHtml(o.payment_method||'N/A')}${o.requirement?' · Details: '+escapeHtml(o.requirement):''}</div></div>`}).join(''):'<p class="note">No orders or appointments found for this customer.</p>';
+  switchAdminSection('adminCustomerProfile');
+}
+function openCustomerProfileEdit(id){
+  const p=adminCustomersCache.find(x=>String(x.id)===String(id));
+  if(!p)return alert('Customer profile not found. Please refresh.');
+  $('editCustomerProfileId').value=String(id);$('editCustomerName').value=p.name||'';$('editCustomerPhone').value=p.phone||'';$('editCustomerProfileMessage').textContent='';$('editCustomerProfileModal').classList.add('show');
+}
+async function submitCustomerProfileEdit(event){
+  event.preventDefault();const id=$('editCustomerProfileId').value;const name=$('editCustomerName').value.trim();const phone=$('editCustomerPhone').value.trim();
+  if(!name||!phone){$('editCustomerProfileMessage').textContent='Name and phone number are required.';return;}
+  const button=event.submitter;if(button){button.disabled=true;button.textContent='Saving...';}
+  const {error}=await supabaseClient.from('profiles').update({name,phone}).eq('id',id);
+  if(button){button.disabled=false;button.textContent='Save Changes';}
+  if(error){$('editCustomerProfileMessage').textContent='Could not update: '+error.message;return;}
+  closeModal('editCustomerProfileModal');await loadAdminData();viewCustomerProfile(id);
+}
+
 async function updateAppointmentStatus(orderId,status){
-  let reason='';
-  if(status==='Rejected'||status==='Declined'){reason=prompt('Enter the reason for '+status+' (required):')||'';if(!reason.trim()){await loadAdminData();return alert('Status change cancelled: reason is required.')}}
-  const {error}=await supabaseClient.from('orders').update({status:status+(reason?' — Reason: '+reason.trim():'')}).eq('order_id',orderId);
-  if(error){alert('Could not update appointment status: '+error.message);await loadAdminData();return}
-  alert('Appointment status updated.');await loadAdminData();
+  await updateApplicationStatus(orderId,status,true);
 }
 
 function editCustomerProfile(id){
@@ -1056,6 +1104,8 @@ async function adminLogout(){
 }
 
 </script>
+
+<div class="modal" id="editCustomerProfileModal"><div class="box"><button class="close" onclick="closeModal('editCustomerProfileModal')">×</button><h2>✏️ Edit Customer Details</h2><p class="desc">Update the customer's name and phone number.</p><form class="form" onsubmit="submitCustomerProfileEdit(event)"><input type="hidden" id="editCustomerProfileId"><label>Customer Name<input id="editCustomerName" required maxlength="150"></label><label>Phone Number<input id="editCustomerPhone" type="tel" maxlength="30" required></label><div id="editCustomerProfileMessage" class="auth-msg"></div><button class="primary" type="submit">Save Changes</button></form></div></div>
 
 <!-- ADMIN LOGIN -->
 <div class="modal" id="adminLoginModal">
@@ -1160,6 +1210,15 @@ async function adminLogout(){
           <div class="section-head"><h2>👥 All Customers</h2><span>Customer profiles</span></div>
           <p class="note">Edit Profile changes the customer name and mobile number. Temporary Password requires the secure Supabase Edge Function to be deployed.</p><input id="customerSearch" class="admin-search" oninput="filterCustomers()" placeholder="Search name, phone or email">
           <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Registered</th><th>Type</th><th>Admin Actions</th></tr></thead><tbody id="adminCustomersBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="adminCustomerProfile" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>👤 Customer Profile</h2><button class="admin-btn" onclick="backToCustomers()">← Back to All Customers</button></div>
+          <div id="customerProfileDetails"></div>
+          <div class="section-head" style="margin-top:22px"><h2>📦 Customer Orders & Appointments</h2><span id="customerProfileOrderMeta"></span></div>
+          <div id="customerProfileOrders"></div>
         </div>
       </section>
 
