@@ -904,6 +904,7 @@ function switchAdminSection(id,btn){
 }
 
 let adminOrdersCache=[];
+let adminCustomersCache=[];
 function filterCustomers(){
   const q=($('customerSearch').value||'').toLowerCase().trim();
   document.querySelectorAll('#adminCustomersBody tr[data-search]').forEach(tr=>{tr.style.display=!q||tr.dataset.search.includes(q)?'':'none'});
@@ -916,10 +917,10 @@ async function loadAdminData(){
     supabaseClient.from('profiles').select('*').order('created_at',{ascending:false})
   ]);
   const orders=ordersRes.data||[],profiles=profilesRes.data||[];
-  adminOrdersCache=orders;
+  adminOrdersCache=orders;adminCustomersCache=profiles;
   if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="11" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>'}
   else { renderAdminOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
-  if(profilesRes.error){console.error(profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="5" class="admin-empty">Could not load customers. Please check Admin SQL/RLS.</td></tr>'}
+  if(profilesRes.error){console.error(profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customers. Please check Admin SQL/RLS.</td></tr>'}
   else renderAdminCustomers(profiles);
   const appointments=orders.filter(o=>String(o.status||'').toLowerCase().includes('appointment')).length;
   const printOrders=orders.filter(o=>String(o.service||'').toLowerCase().includes('pdf print')).length;
@@ -991,7 +992,7 @@ function renderAdminAppointments(rows){
     <td>${escapeHtml(o.phone||'')}</td>
     <td>${escapeHtml(o.service||'')}</td>
     <td>${escapeHtml(o.requirement||'')}</td>
-    <td><span class="admin-badge">${escapeHtml(o.status||'')}</span></td>
+    <td><select class="admin-status-select" aria-label="Appointment status" onchange="updateAppointmentStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===normalizeApplicationStatus(o.status)?'selected':''}>${x}</option>`).join('')}</select></td>
     <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
   </tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No appointments yet.</td></tr>';
 }
@@ -1004,7 +1005,39 @@ function renderAdminCustomers(rows){
     <td>${escapeHtml(p.email||'')}</td>
     <td>${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):''}</td>
     <td><span class="admin-badge">Customer</span></td>
-  </tr>`}).join(''):'<tr><td colspan="5" class="admin-empty">No customers found.</td></tr>';
+    <td><button class="admin-mini-btn" onclick="editCustomerProfile('${String(p.id||'').replace(/'/g,'')}')">Edit Profile</button> <button class="admin-mini-btn" onclick="adminResetCustomerPassword('${String(p.id||'').replace(/'/g,'')}','${escapeHtml(p.email||'').replace(/'/g,'')}')">Temporary Password</button></td>
+  </tr>`}).join(''):'<tr><td colspan="6" class="admin-empty">No customers found</td></tr>';
+}
+
+async function updateAppointmentStatus(orderId,status){
+  let reason='';
+  if(status==='Rejected'||status==='Declined'){reason=prompt('Enter the reason for '+status+' (required):')||'';if(!reason.trim()){await loadAdminData();return alert('Status change cancelled: reason is required.')}}
+  const {error}=await supabaseClient.from('orders').update({status:status+(reason?' — Reason: '+reason.trim():'')}).eq('order_id',orderId);
+  if(error){alert('Could not update appointment status: '+error.message);await loadAdminData();return}
+  alert('Appointment status updated.');await loadAdminData();
+}
+
+function editCustomerProfile(id){
+  const p=(adminCustomersCache||[]).find(x=>String(x.id)===String(id));
+  if(!p)return alert('Customer profile not found. Please refresh.');
+  const name=prompt('Customer name:',p.name||'');if(name===null)return;
+  const phone=prompt('Customer mobile number:',p.phone||'');if(phone===null)return;
+  saveCustomerProfile(id,name.trim(),phone.trim());
+}
+async function saveCustomerProfile(id,name,phone){
+  if(!name)return alert('Customer name is required.');
+  const {error}=await supabaseClient.from('profiles').update({name,phone}).eq('id',id);
+  if(error){alert('Could not update profile: '+error.message);return}
+  alert('Customer profile updated.');await loadAdminData();
+}
+function makeTemporaryPassword(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';const bytes=new Uint8Array(14);crypto.getRandomValues(bytes);return Array.from(bytes,b=>chars[b%chars.length]).join('')+'a7!';}
+async function adminResetCustomerPassword(userId,email){
+  if(!userId)return alert('Customer ID is missing.');
+  if(!confirm('Generate a temporary password for '+(email||'this customer')+'? Share it privately and ask the customer to change it after login.'))return;
+  const temp=makeTemporaryPassword();
+  const {data,error}=await supabaseClient.functions.invoke('admin-reset-customer-password',{body:{user_id:userId,temporary_password:temp}});
+  if(error||data?.error){alert('Password reset failed: '+(error?.message||data.error)+'\n\nDeploy the admin-reset-customer-password Edge Function and try again.');return}
+  prompt('Temporary password created. Copy it now and share it privately with the customer. Ask them to change it after login:',temp);
 }
 
 async function adminLogout(){
@@ -1119,8 +1152,8 @@ async function adminLogout(){
       <section id="adminCustomers" class="admin-section">
         <div class="admin-card">
           <div class="section-head"><h2>👥 All Customers</h2><span>Customer profiles</span></div>
-          <input id="customerSearch" class="admin-search" oninput="filterCustomers()" placeholder="Search name, phone or email">
-          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Registered</th><th>Type</th></tr></thead><tbody id="adminCustomersBody"></tbody></table></div>
+          <p class="note">Edit Profile changes the customer name and mobile number. Temporary Password requires the secure Supabase Edge Function to be deployed.</p><input id="customerSearch" class="admin-search" oninput="filterCustomers()" placeholder="Search name, phone or email">
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Registered</th><th>Type</th><th>Admin Actions</th></tr></thead><tbody id="adminCustomersBody"></tbody></table></div>
         </div>
       </section>
 
