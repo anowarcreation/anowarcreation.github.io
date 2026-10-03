@@ -985,7 +985,7 @@ async function loadAdminData(){
   const orders=ordersRes.data||[],profiles=profilesRes.data||[];
   adminOrdersCache=orders;adminCustomersCache=profiles;
   if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="11" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>'}
-  else { renderAdminOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
+  else { renderAdminOrders(orders); renderAdminPrintOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
   if(profilesRes.error){console.error(profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customers. Please check Admin SQL/RLS.</td></tr>'}
   else renderAdminCustomers(profiles);
   const appointments=orders.filter(o=>String(o.status||'').toLowerCase().includes('appointment')).length;
@@ -1039,6 +1039,29 @@ async function updateApplicationStatus(orderId,status,isAppointment=false){
  await loadAdminData();
 }
 function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
+
+async function renderAdminPrintOrders(rows){
+  const body=$('adminPrintOrdersBody');if(!body)return;
+  const printRows=(rows||adminOrdersCache).filter(o=>String(o.service||'').toLowerCase().includes('pdf print'));
+  if(!printRows.length){body.innerHTML='<tr><td colspan="8" class="admin-empty">No PDF print orders yet.</td></tr>';return;}
+  body.innerHTML='<tr><td colspan="8" class="admin-empty">Loading print queue...</td></tr>';
+  const rendered=await Promise.all(printRows.map(async o=>{
+    const id=String(o.order_id||'');
+    let fileHtml='<span class="admin-muted">File unavailable</span>';
+    if(o.file_path){
+      const {data,error}=await supabaseClient.storage.from('pdf-orders').createSignedUrl(o.file_path,3600);
+      if(!error&&data?.signedUrl) fileHtml=`<a href="${data.signedUrl}" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a><br><button type="button" class="admin-btn primary" style="margin-top:6px" onclick="adminPrintNow('${escapeHtml(id)}')">Print Now</button>`;
+    }
+    const requirement=String(o.requirement||'');
+    const printType=(requirement.match(/Colour|Black & White/i)||[])[0]||'Not specified';
+    const pages=(requirement.match(/Pages:\s*\d+/i)||[])[0]||'';
+    const status=normalizeApplicationStatus(o.status);
+    const allowed=['Waiting for Printing','Printing','Printing Completed','Print Failed'];
+    const statusSelect=`<select class="admin-status-select" aria-label="Print order status" onchange="updateApplicationStatus('${escapeHtml(id)}',this.value)">${allowed.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select>`;
+    return `<tr><td><b>${escapeHtml(id)}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(printType)}<br><span class="admin-muted">${escapeHtml(pages)}</span></td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${fileHtml}</td><td>${statusSelect}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`;
+  }));
+  body.innerHTML=rendered.join('');
+}
 
 async function renderAdminOrders(rows){
   const body=$('adminOrdersBody');
@@ -1190,6 +1213,7 @@ async function adminLogout(){
         <button class="active" onclick="switchAdminSection('adminOverview',this)">📊 Overview</button>
         <button onclick="switchAdminSection('adminCustomers',this)">👥 All Customers</button>
         <button onclick="switchAdminSection('adminOrders',this)">📦 All Orders</button>
+        <button onclick="switchAdminSection('adminPrintPDF',this);loadAdminData();loadPrintSettings()">🖨️ Print PDF (Manual / Auto)</button>
         <button onclick="switchAdminSection('adminApplications',this);loadAdminData()">📝 Applications</button>
         <button onclick="switchAdminSection('adminPayments',this);loadAdminData()">💳 Payments</button>
         <button onclick="switchAdminSection('adminAppointments',this)">📅 Appointments</button>
@@ -1281,20 +1305,29 @@ async function adminLogout(){
         </div>
       </section>
 
-      <section id="adminOrders" class="admin-section">
+      <section id="adminPrintPDF" class="admin-section">
         <div class="admin-card">
-          <div class="section-head"><h2>📦 All Orders</h2><span>Every customer order</span></div>
+          <div class="section-head"><h2>🖨️ Print PDF — Manual / Automatic</h2><span>Manage PDF print orders</span></div>
           <div class="admin-card" style="margin-bottom:14px;padding:15px;background:#0d1729">
             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-              <div><b>🖨️ Print PDF Mode</b><div class="admin-muted" style="margin-top:5px">Mode applies to new customer print orders.</div></div>
+              <div><b>Printing Mode</b><div class="admin-muted" style="margin-top:5px">Choose how new customer Print PDF orders should be handled.</div></div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <select id="adminPrintMode" class="admin-status-select" aria-label="Print PDF mode" onchange="savePrintMode()"><option value="Custom">Custom / Manual</option><option value="Automatic">Automatic</option></select>
-                <button class="admin-btn" type="button" onclick="loadPrintSettings()">Refresh</button>
+                <button class="admin-btn" type="button" onclick="loadPrintSettings()">Refresh Mode</button>
+                <button class="admin-btn primary" type="button" onclick="loadAdminData()">Refresh Queue</button>
               </div>
             </div>
             <div id="printModeMessage" class="admin-muted" style="margin-top:9px">Custom mode: Admin prints orders manually.</div>
-            <div class="admin-muted" style="margin-top:6px">Automatic mode requires a separately installed Windows Print Agent. This page alone cannot send silent print jobs or confirm physical printing.</div>
+            <div class="admin-muted" style="margin-top:6px">Automatic printing requires the Windows Print Agent to be installed and online. Until then, use Print Now to open the PDF and print it manually.</div>
           </div>
+          <div class="section-head"><h3>📥 Print Queue</h3><span>PDF orders only</span></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order No.</th><th>Customer</th><th>Phone</th><th>Print Type / Pages</th><th>Amount</th><th>File</th><th>Status</th><th>Order Date</th></tr></thead><tbody id="adminPrintOrdersBody"><tr><td colspan="8" class="admin-empty">Loading print queue...</td></tr></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="adminOrders" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>📦 All Orders</h2><span>Every customer order</span></div>
           <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Amount</th><th>Payment</th><th>Requirement</th><th>File</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminOrdersBody"></tbody></table></div>
         </div>
       </section>
