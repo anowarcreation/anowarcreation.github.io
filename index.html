@@ -311,6 +311,8 @@ body{background:#020814;overflow-x:hidden}
 
 .admin-filter-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.admin-filter-row input,.admin-filter-row select{background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:9px;padding:10px;min-width:150px}.admin-status-select{max-width:210px;background:#0b1527;color:#f5f7fb;border:1px solid #34445f;border-radius:8px;padding:7px}.admin-mini-btn{background:#2563eb;color:white;border:0;border-radius:7px;padding:7px 10px}
 .admin-status-pill{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:normal}.status-submitted{background:#243b63;color:#93c5fd}.status-processing{background:#4a3512;color:#fcd34d}.status-completed{background:#123d31;color:#6ee7b7}.status-rejected{background:#4b1f28;color:#fca5a5}.status-declined{background:#4b1f28;color:#fca5a5}.rejection-reason{display:block;color:#f87171;font-size:11px;margin-top:5px;max-width:280px;white-space:normal}.customer-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.customer-profile-stat{padding:14px;border:1px solid #344157;border-radius:12px;background:#101d32}.customer-profile-stat span{display:block;color:#91a2bd;font-size:12px}.customer-profile-stat b{display:block;font-size:23px;margin-top:5px}.profile-detail-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid #2c3b55}.profile-detail-row .detail-value{font-weight:700;min-width:160px}.pencil-btn{border:0;background:#263b58;color:#fff;border-radius:8px;padding:7px 10px}.profile-order-row{padding:13px 0;border-bottom:1px solid #2c3b55}.profile-order-row .order-detail{font-size:12px;color:#9aa9bf;margin-top:6px}@media(max-width:650px){.customer-profile-grid{grid-template-columns:1fr 1fr}}.admin-stat-grid-6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.admin-stat-mini{border:1px solid #2c3b55;background:#101d32;border-radius:10px;padding:13px}.admin-stat-mini span{display:block;color:#91a2bd;font-size:12px}.admin-stat-mini b{display:block;font-size:22px;margin-top:5px}@media(max-width:800px){.admin-stat-grid-6{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filter-row>*{flex:1;min-width:120px}}
+
+.admin-small-print-btn{font-size:12px!important;padding:5px 9px!important;margin:3px 0 3px 5px!important;min-height:26px!important;line-height:1.2!important;vertical-align:middle}
 </style>
 
 <style>
@@ -1030,6 +1032,14 @@ async function updateApplicationStatus(orderId,status,isAppointment=false){
 }
 function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
 
+function openAdminPrintPdf(button){
+  const url=button?.dataset?.url;
+  if(!url){alert('PDF link is unavailable. Refresh orders and try again.');return;}
+  // Open the PDF in a new tab so the browser PDF viewer can print it.
+  const win=window.open(url,'_blank','noopener');
+  if(!win)alert('Your browser blocked the PDF tab. Allow pop-ups for this website and try again.');
+}
+
 async function renderAdminPrintOrders(){
   const body=$('adminPDFPrintOrdersBody');
   if(!body)return;
@@ -1045,7 +1055,7 @@ async function renderAdminPrintOrders(){
     let fileHtml='<span class="admin-muted">No PDF file</span>';
     if(o.file_path){
       const {data,error}=await supabaseClient.storage.from('pdf-orders').createSignedUrl(o.file_path,3600);
-      if(!error&&data?.signedUrl)fileHtml='<a href="'+data.signedUrl+'" target="_blank" rel="noopener" class="admin-file-link">📄 View / Print PDF</a>';
+      if(!error&&data?.signedUrl)fileHtml='<a href="'+escapeHtml(data.signedUrl)+'" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a> <button type="button" class="admin-btn admin-small-print-btn" data-url="'+escapeHtml(data.signedUrl)+'" onclick="openAdminPrintPdf(this)">Print</button>';
       else fileHtml='<span class="admin-muted">File unavailable</span>';
     }
     const isCompleted=String(o.status||'').toLowerCase().includes('completed');
