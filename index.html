@@ -36,6 +36,24 @@ drop policy if exists "Admins manage notices" on public.site_notices;
 create policy "Admins manage notices" on public.site_notices
 for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
+-- PRINT PDF MODE SETUP (run once in Supabase SQL Editor)
+-- Note: automatic physical printing also requires a separate trusted Windows Print Agent;
+-- this web page cannot silently print or reliably detect that paper has finished printing.
+create table if not exists public.print_settings (
+  id integer primary key default 1 check (id = 1),
+  mode text not null default 'Custom' check (mode in ('Automatic','Custom')),
+  printer_name text not null default '',
+  updated_at timestamptz not null default now()
+);
+alter table public.print_settings enable row level security;
+drop policy if exists "Admins manage print settings" on public.print_settings;
+create policy "Admins manage print settings" on public.print_settings
+for all to authenticated using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "Authenticated can read print mode" on public.print_settings;
+create policy "Authenticated can read print mode" on public.print_settings
+for select to authenticated using (true);
+insert into public.print_settings (id, mode) values (1, 'Custom') on conflict (id) do nothing;
+
 drop policy if exists "Users can view own orders" on public.orders;
 create policy "Users and admin can view orders"
 on public.orders
@@ -755,7 +773,7 @@ function openScholarship(){$('scholarshipStep1').classList.remove('hidden');$('s
 function selectScholarship(name){scholarshipName=name;$('scholarshipStep2').classList.remove('hidden')}
 function selectScholarshipType(type){scholarshipType=type;$('scholarshipDetails').classList.remove('hidden')}
 async function submitScholarship(){const n=$('scholarName').value.trim(),p=$('scholarPhone').value.trim(),r=$('scholarReq').value.trim();if(!n||!p){$('scholarMsg').textContent='Please enter name and mobile number.';return}closeModal('scholarshipModal');await createAppointment('Scholarship - '+scholarshipName+' - '+scholarshipType,n,p,r||'Scholarship application')}
-function openPrint(){$('pdfFile').value='';$('pdfInfo').textContent='';pdfPages=0;currentAmount=0;calculatePrint();$('printModal').classList.add('show')}
+function openPrint(){$('pdfFile').value='';$('pdfInfo').textContent='';pdfPages=0;currentAmount=0;calculatePrint();loadCustomerPrintModeInfo();$('printModal').classList.add('show')}
 function openPdfTools(){openInfo('📑 PDF Tools — Under Maintenance','PDF Tools are temporarily disabled while all tools are repaired and tested. Please check back later.')}
 function closePdfWorkspace(){ $('pdfWorkspaceModal').classList.remove('show'); if($('pdfToolsModal')) $('pdfToolsModal').classList.add('show'); }
 function openPdfMaintenance(name){$('pdfWorkspaceModal').classList.remove('show');$('pdfToolsModal').classList.add('show');openInfo('🛠️ '+name+' — Under Maintenance','This tool is temporarily unavailable because its required PDF engine is not installed. Other PDF tools remain available.');}
@@ -839,7 +857,45 @@ function loadPdfJs(){return new Promise((resolve,reject)=>{if(window.pdfjsLib){r
 function readPDF(){const f=$('pdfFile').files[0];if(!f)return;if(f.type!=='application/pdf'){$('pdfInfo').textContent='Please select a PDF file.';return}$('pdfInfo').textContent='Reading PDF pages...';if(!window.pdfjsLib){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';countPDF(f)};s.onerror=()=>{$('pdfInfo').textContent='Could not load PDF reader. Please refresh and try again.'};document.head.appendChild(s)}else countPDF(f)}
 async function countPDF(f){try{const data=await f.arrayBuffer(),pdf=await window.pdfjsLib.getDocument({data}).promise;pdfPages=pdf.numPages;$('pdfInfo').textContent=f.name+' • '+pdfPages+' page(s)';calculatePrint()}catch(e){pdfPages=0;$('pdfInfo').textContent='Could not read this PDF. Please try another PDF.';calculatePrint()}}
 function calculatePrint(){const rate=$('printType').value==='color'?10:5;$('rate').textContent='₹'+rate+' / page';currentAmount=pdfPages*rate;$('pageCount').textContent=pdfPages;$('printTotal').textContent='₹'+currentAmount}
-function confirmPrint(){if(pdfPages<1){alert('Please upload a valid PDF first.');return}const payment=$('paymentMethod').value;pendingPrint={service:'PDF Print',amount:currentAmount,payment,requirement:'Pages: '+pdfPages+' | '+($('printType').value==='color'?'Colour':'Black & White')+' | File: '+(($('pdfFile').files[0]||{}).name||'PDF')};closeModal('printModal');if(payment==='UPI'){$('upiAmount').textContent='₹'+currentAmount;$('upiModal').classList.add('show')}else{createPrintOrder('COD')}}
+let currentPrintMode='Custom';
+async function loadPrintSettings(){
+  const msg=$('printModeMessage');
+  try{
+    const {data,error}=await supabaseClient.from('print_settings').select('mode,printer_name').eq('id',1).maybeSingle();
+    if(error){if(msg)msg.textContent='Print settings table not ready. Run the PRINT PDF MODE SQL at the top of this file. '+error.message;return currentPrintMode;}
+    currentPrintMode=data?.mode==='Automatic'?'Automatic':'Custom';
+    if($('adminPrintMode'))$('adminPrintMode').value=currentPrintMode;
+    if(msg)msg.textContent=currentPrintMode==='Automatic'?'Automatic mode is ON for new orders. Print Agent setup is still required.':'Custom mode is ON. Admin prints orders manually.';
+    return currentPrintMode;
+  }catch(e){if(msg)msg.textContent='Could not load print settings. Check connection.';return currentPrintMode;}
+}
+async function savePrintMode(){
+  const mode=$('adminPrintMode')?.value==='Automatic'?'Automatic':'Custom';
+  const msg=$('printModeMessage');if(msg)msg.textContent='Saving print mode...';
+  const {error}=await supabaseClient.from('print_settings').upsert({id:1,mode,updated_at:new Date().toISOString()},{onConflict:'id'});
+  if(error){if(msg)msg.textContent='Could not save mode. Run the PRINT PDF MODE SQL at the top of this file. '+error.message;return;}
+  currentPrintMode=mode;
+  if(msg)msg.textContent=mode==='Automatic'?'Automatic mode is ON for new orders. Print Agent setup is still required.':'Custom mode is ON. Admin prints orders manually.';
+}
+async function loadCustomerPrintModeInfo(){
+  const el=$('customerPrintModeInfo');if(!el)return;
+  const mode=await loadPrintSettings();
+  el.textContent=mode==='Automatic'?'Office Auto Mode is ON. Your order will enter the automatic print queue; actual automatic printing requires the office Print Agent to be online.':'Custom Mode is ON. Your order will wait for the Admin to print it manually.';
+}
+async function adminPrintNow(orderId){
+  const o=adminOrdersCache.find(x=>String(x.order_id)===String(orderId));
+  if(!o||!o.file_path)return alert('PDF file is not available for this order.');
+  const {data,error}=await supabaseClient.storage.from('pdf-orders').createSignedUrl(o.file_path,3600);
+  if(error||!data?.signedUrl)return alert('Could not open PDF. Check Storage permissions.');
+  window.open(data.signedUrl,'_blank','noopener');
+  alert('PDF opened in a new tab. Choose your printer and B&W/Colour settings, then print. After the print finishes, mark it as Printing Completed in the order status.');
+}
+async function markPrintCompleted(orderId){
+  if(!confirm('Have you confirmed that this PDF has physically finished printing?'))return;
+  await updateApplicationStatus(orderId,'Printing Completed');
+}
+
+async function confirmPrint(){if(pdfPages<1){alert('Please upload a valid PDF first.');return}const payment=$('paymentMethod').value,mode=await loadPrintSettings();pendingPrint={service:'PDF Print',amount:currentAmount,payment,printMode:mode,requirement:'Pages: '+pdfPages+' | '+($('printType').value==='color'?'Colour':'Black & White')+' | Mode: '+mode+' | File: '+(($('pdfFile').files[0]||{}).name||'PDF')};closeModal('printModal');if(payment==='UPI'){$('upiAmount').textContent='₹'+currentAmount;$('upiModal').classList.add('show')}else{createPrintOrder('COD')}}
 function openUPI(){window.location.href='upi://pay?pa='+encodeURIComponent('anowarali0499@ptyes')+'&pn='+encodeURIComponent('Anowar Creation')+'&am='+encodeURIComponent(currentAmount.toFixed(2))+'&cu=INR'}
 function confirmUPIPrint(){closeModal('upiModal');createPrintOrder('UPI')}
 async function createPrintOrder(payment){if(!pendingPrint)return;const f=$('pdfFile').files[0];if(!f){openInfo('PDF Required','Please upload your PDF again.');return}const orderId=generateId('AC'),safeName=f.name.replace(/[^a-zA-Z0-9._-]/g,'_'),filePath=currentUser.id+'/'+orderId+'-'+safeName;const {error:uploadError}=await supabaseClient.storage.from('pdf-orders').upload(filePath,f,{contentType:'application/pdf',upsert:false});if(uploadError){console.error(uploadError);openInfo('Could not upload PDF','Your PDF could not be uploaded. Please try again.');return}const o=await createOrder(pendingPrint.service,pendingPrint.amount,payment,currentProfile?.name||'Customer',currentProfile?.phone||'',pendingPrint.requirement,'Confirmed',filePath);if(!o){await supabaseClient.storage.from('pdf-orders').remove([filePath]);return}pendingPrint=null;$('pdfFile').value='';showResult('✓','Thank You','Your PDF print order has been confirmed.<br><strong>You will receive the item at Sister Nivedita University.</strong>','Order No.',o.id,o.service)}
@@ -902,6 +958,7 @@ async function adminLogin(){
   document.querySelector('.app').style.display='none';
   $('adminPage').classList.add('show');
   await loadAdminData();
+  await loadPrintSettings();
   await loadAdminNotices();
 }
 
@@ -951,8 +1008,8 @@ async function loadAdminData(){
   $('adminLastUpdated').textContent='Updated: '+new Date().toLocaleString('en-IN');
 }
 
-const APPLICATION_STATUSES=['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'];
-function normalizeApplicationStatus(status){const s=String(status||'').toLowerCase();if(s.includes('reject'))return 'Rejected';if(s.includes('declin'))return 'Declined';if(s.includes('complete')||s==='done')return 'Successfully Completed';if(s.includes('process'))return 'Under Process';return 'Application Submitted'}
+const APPLICATION_STATUSES=['Waiting for Printing','Printing','Printing Completed','Print Failed','Application Submitted','Under Process','Successfully Completed','Rejected','Declined'];
+function normalizeApplicationStatus(status){const s=String(status||'').toLowerCase();if(s.includes('waiting for printing'))return 'Waiting for Printing';if(s==='printing'||s.includes('printing in progress'))return 'Printing';if(s.includes('printing completed')||s==='printed'||s.includes('successfully printed'))return 'Printing Completed';if(s.includes('print failed'))return 'Print Failed';if(s.includes('reject'))return 'Rejected';if(s.includes('declin'))return 'Declined';if(s.includes('complete')||s==='done')return 'Successfully Completed';if(s.includes('process'))return 'Under Process';return 'Application Submitted'}
 function renderAdminApplications(){
  const body=$('adminApplicationsBody');if(!body)return;
  const q=($('applicationSearch')?.value||'').toLowerCase().trim(),st=$('applicationStatusFilter')?.value||'',from=$('applicationFromDate')?.value||'',to=$('applicationToDate')?.value||'';
@@ -991,7 +1048,7 @@ async function renderAdminOrders(rows){
     let fileHtml='';
     if(o.file_path){
       const {data,error}=await supabaseClient.storage.from('pdf-orders').createSignedUrl(o.file_path,3600);
-      if(!error && data?.signedUrl) fileHtml='<a href="'+data.signedUrl+'" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a>';
+      if(!error && data?.signedUrl) fileHtml='<a href="'+data.signedUrl+'" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a>'+(String(o.service||'').toLowerCase().includes('pdf print')?' <button type="button" class="admin-btn" style="margin-top:6px" onclick="adminPrintNow(\''+String(o.order_id||'').replace(/'/g,"&#39;")+'\')">Print Now</button>':'');
       else fileHtml='<span class="admin-muted">File unavailable</span>';
     } else fileHtml='<span class="admin-muted">—</span>';
     return `<tr>
@@ -1227,6 +1284,17 @@ async function adminLogout(){
       <section id="adminOrders" class="admin-section">
         <div class="admin-card">
           <div class="section-head"><h2>📦 All Orders</h2><span>Every customer order</span></div>
+          <div class="admin-card" style="margin-bottom:14px;padding:15px;background:#0d1729">
+            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+              <div><b>🖨️ Print PDF Mode</b><div class="admin-muted" style="margin-top:5px">Mode applies to new customer print orders.</div></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select id="adminPrintMode" class="admin-status-select" aria-label="Print PDF mode" onchange="savePrintMode()"><option value="Custom">Custom / Manual</option><option value="Automatic">Automatic</option></select>
+                <button class="admin-btn" type="button" onclick="loadPrintSettings()">Refresh</button>
+              </div>
+            </div>
+            <div id="printModeMessage" class="admin-muted" style="margin-top:9px">Custom mode: Admin prints orders manually.</div>
+            <div class="admin-muted" style="margin-top:6px">Automatic mode requires a separately installed Windows Print Agent. This page alone cannot send silent print jobs or confirm physical printing.</div>
+          </div>
           <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Amount</th><th>Payment</th><th>Requirement</th><th>File</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminOrdersBody"></tbody></table></div>
         </div>
       </section>
