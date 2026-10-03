@@ -943,6 +943,7 @@ function renderPrintMode(){
   const pill=$('printModeStatus'),btn=$('printModeToggle');if(!pill||!btn)return;
   const automatic=printMode==='automatic';pill.textContent=automatic?'Auto printing active':'Manual Printing Mode';pill.className='print-mode-pill '+(automatic?'automatic':'manual');
   btn.textContent=automatic?'Turn Auto Printing OFF':'Enable Auto Printing';btn.classList.toggle('auto-on',automatic);
+  if(typeof renderAdminPrintOrders==='function')renderAdminPrintOrders();
 }
 async function loadPrintMode(){
   const msg=$('printModeMessage');if(msg)msg.textContent='Checking print mode…';
@@ -974,6 +975,7 @@ async function loadAdminData(){
   adminOrdersCache=orders;adminCustomersCache=profiles;
   if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="11" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>'}
   else { renderAdminOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
+  renderAdminPrintOrders();
   if(profilesRes.error){console.error(profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customers. Please check Admin SQL/RLS.</td></tr>'}
   else renderAdminCustomers(profiles);
   const appointments=orders.filter(o=>String(o.status||'').toLowerCase().includes('appointment')).length;
@@ -1027,6 +1029,31 @@ async function updateApplicationStatus(orderId,status,isAppointment=false){
  await loadAdminData();
 }
 function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
+
+async function renderAdminPrintOrders(){
+  const body=$('adminPDFPrintOrdersBody');
+  if(!body)return;
+  const query=String($('pdfPrintSearch')?.value||'').trim().toLowerCase();
+  const statusFilter=String($('pdfPrintStatusFilter')?.value||'');
+  const rows=(adminOrdersCache||[]).filter(o=>String(o.service||'').toLowerCase().includes('pdf print'))
+    .filter(o=>!statusFilter||String(o.status||'')===statusFilter)
+    .filter(o=>!query||[o.order_id,o.customer_name,o.phone,o.status,o.requirement].some(v=>String(v||'').toLowerCase().includes(query)))
+    .sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  if(!rows.length){body.innerHTML='<tr><td colspan="8" class="admin-empty">No PDF Print orders match.</td></tr>';return;}
+  body.innerHTML='<tr><td colspan="8" class="admin-empty">Loading PDF links...</td></tr>';
+  const rendered=await Promise.all(rows.map(async o=>{
+    let fileHtml='<span class="admin-muted">No PDF file</span>';
+    if(o.file_path){
+      const {data,error}=await supabaseClient.storage.from('pdf-orders').createSignedUrl(o.file_path,3600);
+      if(!error&&data?.signedUrl)fileHtml='<a href="'+data.signedUrl+'" target="_blank" rel="noopener" class="admin-file-link">📄 View / Print PDF</a>';
+      else fileHtml='<span class="admin-muted">File unavailable</span>';
+    }
+    const isCompleted=String(o.status||'').toLowerCase().includes('completed');
+    const action=(printMode!=='automatic'&&!isCompleted)?`<button type="button" class="admin-btn" style="margin-top:6px" onclick="confirmManualPrintComplete('${String(o.order_id||'').replace(/'/g,'&#39;')}')">Mark Printing Completed</button>`:'';
+    return '<tr><td><b>'+escapeHtml(o.order_id||'')+'</b></td><td>'+escapeHtml(o.customer_name||'')+'</td><td>'+escapeHtml(o.phone||'')+'</td><td>'+escapeHtml(o.requirement||'—')+'</td><td>₹'+Number(o.amount||0).toFixed(2)+'</td><td>'+fileHtml+'</td><td>'+escapeHtml(o.status||'Not recorded')+'<br>'+action+'</td><td>'+(o.created_at?new Date(o.created_at).toLocaleString('en-IN'):'')+'</td></tr>';
+  }));
+  body.innerHTML=rendered.join('');
+}
 
 async function renderAdminOrders(rows){
   const body=$('adminOrdersBody');
@@ -1179,6 +1206,7 @@ async function adminLogout(){
         <button onclick="switchAdminSection('adminCustomers',this)">👥 All Customers</button>
         <button onclick="switchAdminSection('adminOrders',this)">📦 All Orders</button>
         <button onclick="switchAdminSection('adminApplications',this);loadAdminData()">📝 Applications</button>
+        <button onclick="switchAdminSection('adminPDFPrinting',this);loadAdminData();loadPrintMode()">🖨️ PDF Printing</button>
         <button onclick="switchAdminSection('adminPayments',this);loadAdminData()">💳 Payments</button>
         <button onclick="switchAdminSection('adminAppointments',this)">📅 Appointments</button>
         <button onclick="switchAdminSection('adminNoticeBoard',this);loadAdminNotices()">📢 Notice Board</button>
@@ -1206,12 +1234,6 @@ async function adminLogout(){
           <div class="admin-stat-mini"><span>Successfully Completed</span><b id="adminCompletedCount">0</b></div>
           <div class="admin-stat-mini"><span>Rejected</span><b id="adminRejectedCount">0</b></div>
           <div class="admin-stat-mini"><span>Declined</span><b id="adminDeclinedCount">0</b></div>
-        </div>
-        <div class="admin-card print-mode-card">
-          <div class="section-head"><h2>🖨️ PDF Print Control</h2><span id="printModeStatus" class="print-mode-pill manual">Manual Printing Mode</span></div>
-          <p class="desc">Automatic mode prints confirmed PDF Print orders through your Windows Print Agent. Keep Manual mode enabled until the end-to-end test succeeds.</p>
-          <div class="print-mode-actions"><button id="printModeToggle" class="admin-btn" type="button" onclick="togglePrintMode()">Enable Auto Printing</button><button class="admin-btn" type="button" onclick="loadPrintMode()">↻ Refresh Mode</button></div>
-          <div id="printModeMessage" class="note" role="status" aria-live="polite">Loading print mode…</div>
         </div>
         <div class="admin-card">
           <div class="section-head"><h2>Quick Summary</h2><span id="adminLastUpdated">Loading...</span></div>
@@ -1249,6 +1271,21 @@ async function adminLogout(){
           <p class="note" id="applicationAdminMessage">Status updates are saved to the existing orders table.</p>
         </div>
       </section>
+      <section id="adminPDFPrinting" class="admin-section">
+        <div class="admin-card print-mode-card">
+          <div class="section-head"><h2>🖨️ PDF Print Control</h2><span id="printModeStatus" class="print-mode-pill manual">Manual Printing Mode</span></div>
+          <p class="desc">Automatic mode sends Confirmed PDF Print orders to the queue for your Windows Print Agent. In Manual mode, print the PDF yourself and mark it completed only after checking the printed copies.</p>
+          <div class="print-mode-actions"><button id="printModeToggle" class="admin-btn" type="button" onclick="togglePrintMode()">Enable Auto Printing</button><button class="admin-btn" type="button" onclick="loadPrintMode()">↻ Refresh Mode</button><button class="admin-btn" type="button" onclick="loadAdminData()">↻ Refresh Orders</button></div>
+          <div id="printModeMessage" class="note" role="status" aria-live="polite">Loading print mode…</div>
+        </div>
+        <div class="admin-card">
+          <div class="section-head"><h2>📄 PDF Print Orders</h2><span>Confirmed orders, PDF files and print status</span></div>
+          <div class="admin-filter-row"><input id="pdfPrintSearch" placeholder="Search order ID, customer or status" oninput="renderAdminPrintOrders()"><select id="pdfPrintStatusFilter" onchange="renderAdminPrintOrders()"><option value="">All print statuses</option><option>Confirmed</option><option>Queued for Printing</option><option>Printing</option><option>Printing Completed</option><option>Print Failed</option><option>Rejected</option><option>Declined</option></select></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order ID</th><th>Customer</th><th>Mobile</th><th>Copies / Details</th><th>Amount</th><th>PDF File</th><th>Status / Action</th><th>Date</th></tr></thead><tbody id="adminPDFPrintOrdersBody"></tbody></table></div>
+          <p class="note">Auto mode requires the Supabase print queue, deployed backend functions, and the Windows Print Agent to be configured and running. The agent's successful response means the job was sent to the printer queue; check the physical output before relying on completion status.</p>
+        </div>
+      </section>
+
       <section id="adminPayments" class="admin-section">
         <div class="admin-card"><div class="section-head"><h2>💳 Payment Management</h2><span>Payment information recorded with orders</span></div>
           <div class="admin-filter-row"><input id="paymentSearch" placeholder="Search transaction/order, customer or service" oninput="renderAdminPayments()"><select id="paymentStatusFilter" onchange="renderAdminPayments()"><option value="">All payment records</option><option value="paid">Paid / Confirmed</option><option value="pending">Pending</option><option value="failed">Failed</option><option value="refunded">Refunded</option></select></div>
