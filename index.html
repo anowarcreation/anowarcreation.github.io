@@ -951,6 +951,7 @@ body{background:#020814;overflow-x:hidden}
       <label class="afp-theme-option"><input type="radio" name="afpDesign" value="layout13"><span class="afp-theme-thumb"><img class="afp-theme-image" data-afp-theme="layout13" alt="Elegant Blue & Gold Wave"></span><span class="afp-theme-name">Elegant Blue & Gold Wave</span></label>
       <label class="afp-theme-option"><input type="radio" name="afpDesign" value="layout14"><span class="afp-theme-thumb"><img class="afp-theme-image" data-afp-theme="layout14" alt="Navy & Gold Geometric Frame"></span><span class="afp-theme-name">Navy & Gold Geometric Frame</span></label>
 </div>
+  <div class="afp-actions" style="margin-top:14px"><button type="button" class="primary" onclick="previewAssignment()">👁 Preview Selected Theme</button></div>
   <div id="afpMessage" class="note"></div>
   <div id="afpPreviewWrap" class="hidden" style="margin-top:18px"><div class="section-head"><h3>Preview</h3><span>A4 portrait — print layout</span></div><div class="afp-preview" id="afpPreview"></div><div class="afp-actions"><button class="primary" onclick="downloadAssignmentPDF()">⬇ Download PDF</button><button class="primary" onclick="orderAssignmentFrontPage()">📦 Order</button></div><div class="note">Download opens the print window. Choose “Save as PDF”. Orders appear in My Orders and the Admin Panel.</div></div>
 </div></div>
@@ -1089,6 +1090,9 @@ function previewAssignment(){
   $('afpPreview').innerHTML=buildAssignmentMarkup(d);$('afpPreviewWrap').classList.remove('hidden');
   $('afpMessage').textContent='Preview ready. Check the page, then Download PDF or Order.';afpPreviewReady=true;
 }
+document.querySelectorAll('input[name="afpDesign"]').forEach(input=>input.addEventListener('change',()=>{
+  if(!$('afpThemeStep').classList.contains('hidden')) previewAssignment();
+}));
 function assignmentPrintDocument(customData=null,customMarkup=null,includeBrandFooter=false){
   const d=customData||getAssignmentData(),markup=customMarkup||buildAssignmentMarkup(d);
   const w=window.open('','_blank');if(!w){openInfo('Pop-up blocked','Please allow pop-ups for this website, then try Download PDF again.');return null;}
