@@ -1065,7 +1065,13 @@ async function renderAdminPrintOrders(){
     const qm=req.match(/Quantity:\s*(\d+)/i)||req.match(/(\d+)\s*cop(?:y|ies)/i);
     const qty=Math.max(1,Number(o.quantity)||Number(qm?.[1])||1);
     const printType=/\bcolour\b|\bcolor\b/i.test(req)?'Colour':'Black & White';
-    return '<tr><td><b>'+escapeHtml(o.order_id||'')+'</b></td><td>'+escapeHtml(o.customer_name||'')+'</td><td>'+escapeHtml(o.phone||'')+'</td><td>'+qty+'</td><td>'+printType+'</td><td>₹'+Number(o.amount||0).toFixed(2)+'</td><td>'+fileHtml+'</td><td>'+escapeHtml(o.status||'Not recorded')+'</td><td>'+(o.created_at?new Date(o.created_at).toLocaleString('en-IN'):'')+'</td></tr>';
+    const currentStatus=String(o.status||'Confirmed');
+    const printStatuses=['Confirmed','Queued for Printing','Printing','Printing Completed','Rejected','Declined'];
+    if(!printStatuses.includes(currentStatus)) printStatuses.push(currentStatus);
+    const statusOptions=printStatuses.map(st=>'<option value="'+escapeHtml(st)+'" '+(st===currentStatus?'selected':'')+'>'+escapeHtml(st)+'</option>').join('');
+    const safeOrderId=String(o.order_id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const reason=(String(currentStatus).match(/(?:Reason|reason):\s*(.*)$/)||[])[1]||'';
+    return '<tr><td><b>'+escapeHtml(o.order_id||'')+'</b></td><td>'+escapeHtml(o.customer_name||'')+'</td><td>'+escapeHtml(o.phone||'')+'</td><td>'+qty+'</td><td>'+printType+'</td><td>₹'+Number(o.amount||0).toFixed(2)+'</td><td>'+fileHtml+'</td><td><select class="admin-status-select" aria-label="PDF print order status" onchange="updateApplicationStatus(\''+safeOrderId+'\',this.value)">'+statusOptions+'</select>'+(reason?'<div class="admin-muted" style="margin-top:6px;max-width:220px;white-space:normal">'+escapeHtml(reason)+'</div>':'')+'</td><td>'+(o.created_at?new Date(o.created_at).toLocaleString('en-IN'):'')+'</td></tr>';
   }));
   body.innerHTML=rendered.join('');
 }
