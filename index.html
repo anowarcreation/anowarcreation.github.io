@@ -800,6 +800,17 @@ body{background:#020814;overflow-x:hidden}
 @media(max-width:650px){.afp-reference-theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 
 </style>
+
+<style id="anowar-performance-optimization">
+/* Performance mode: keep the existing design, but stop continuous background motion. */
+html:focus-within { scroll-behavior: auto !important; }
+*, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+.space-ship, .space-rocket, .space-ufo { display: none !important; }
+body::after, .space-stage::before, .space-stage::after { animation: none !important; }
+.space-nebula { animation: none !important; filter: none !important; }
+.space-planet, .space-planet.small { animation: none !important; }
+.custom-logo-main, .ac-mark::after, .ship-flag { animation: none !important; }
+</style>
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -1235,7 +1246,25 @@ function generateId(prefix){const d=new Date(),stamp=String(d.getFullYear()).sli
 async function createAppointment(service,name,phone,requirement){const o=await createOrder(service,0,'N/A',name,phone,requirement,'Appointment Created');if(o)showResult('🎉','Appointment Created','Thank You, Our Team Will Connect You Soon.','Your Appointment No.',o.id,o.service)}
 async function createOrder(service,amount,payment,name,phone,requirement,status,filePath='',quantity=1){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null,quantity:Math.max(1,Math.min(500,Math.floor(Number(quantity)||1)))});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();return obj}
 async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error)return;const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders()}
-function renderOrders(){const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');if(!orders.length){box.innerHTML='<div style="text-align:center;color:#8391a7;padding:25px">No orders or appointments yet.</div>';return}box.innerHTML=orders.map(o=>{const reason=(String(o.status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||'';const clean=normalizeApplicationStatus(o.status);return '<div class="order-item"><div class="order-top"><b>'+escapeHtml(o.service)+'</b><span class="admin-status-pill '+statusClass(o.status)+'">'+escapeHtml(clean)+'</span></div><div class="order-meta"><b>'+escapeHtml(o.id)+'</b> · '+escapeHtml(o.payment==='N/A'?'Appointment':o.payment)+(o.amount?' · ₹'+o.amount:'')+'<br>'+escapeHtml(o.date)+(o.requirement?' · '+escapeHtml(o.requirement):'')+'</div>'+(reason?'<div class="rejection-reason">Reason: '+escapeHtml(reason)+'</div>':'')+'</div>'}).join('')}
+function customerOrderDetails(o){
+ const req=String(o.requirement||'');
+ if(String(o.service||'').toLowerCase().includes('assignment front page maker')){
+   const base=req.split(/\|\s*AFP_HTML:/i)[0];
+   const fields=base.split('|').map(x=>x.trim()).filter(Boolean);
+   const labels=['College','Student','Roll/Student ID','Registration','Year','Semester','Department','Program','Subject','Topic','Design'];
+   const items=[];
+   for(const field of fields){
+     const idx=field.indexOf(':'); if(idx<0) continue;
+     const label=field.slice(0,idx).trim(), value=field.slice(idx+1).trim();
+     if(!labels.includes(label)||!value||value==='N/A') continue;
+     items.push('<div style="min-width:0;background:#0d1729;border:1px solid #263650;border-radius:8px;padding:9px 11px"><div style="font-size:10px;color:#8290a7;margin-bottom:4px">'+escapeHtml(label)+'</div><div style="font-size:12px;color:#e8eef8;font-weight:700;overflow-wrap:anywhere">'+escapeHtml(value)+'</div></div>');
+   }
+   return items.length?'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:10px">'+items.join('')+'</div>':'';
+ }
+ const clean=req.split(/\|\s*AFP_HTML:/i)[0].trim();
+ return clean?'<div class="order-meta" style="margin-top:8px;overflow-wrap:anywhere">'+escapeHtml(clean)+'</div>':'';
+}
+function renderOrders(){const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');if(!orders.length){box.innerHTML='<div style="text-align:center;color:#8391a7;padding:25px">No orders or appointments yet.</div>';return}box.innerHTML=orders.map(o=>{const reason=(String(o.status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||'';const clean=normalizeApplicationStatus(o.status);return '<div class="order-item"><div class="order-top"><b>'+escapeHtml(o.service)+'</b><span class="admin-status-pill '+statusClass(o.status)+'">'+escapeHtml(clean)+'</span></div><div class="order-meta"><b>'+escapeHtml(o.id)+'</b> · '+escapeHtml(o.payment==='N/A'?'Appointment':o.payment)+(o.amount?' · ₹'+o.amount:'')+'<br>'+escapeHtml(o.date)+'</div>'+customerOrderDetails(o)+(reason?'<div class="rejection-reason">Reason: '+escapeHtml(reason)+'</div>':'')+'</div>'}).join('')}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function showOrders(){showPanel('orders');renderOrders()}
 function showResult(icon,title,text,label,num,service){$('resultIcon').textContent=icon;$('resultTitle').textContent=title;$('resultText').textContent=text;$('resultNumberLabel').textContent=label;$('resultNumber').textContent=num;$('resultService').textContent=service;$('resultModal').classList.add('show')}
