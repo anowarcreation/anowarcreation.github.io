@@ -314,19 +314,45 @@ body{background:#020814;overflow-x:hidden}
 
 .admin-small-print-btn{font-size:12px!important;padding:5px 9px!important;margin:3px 0 3px 5px!important;min-height:26px!important;line-height:1.2!important;vertical-align:middle}
 
-/* Assignment Front Page Maker */
-.afp-preview{background:#fff;color:#172033;border-radius:12px;padding:24px;min-height:390px;position:relative;overflow:hidden}
-.afp-sheet{background:#fff;color:#172033;min-height:440px;border:3px double #2563eb;padding:28px 22px;text-align:center;position:relative;font-family:Georgia,'Times New Roman',serif}
-.afp-sheet .afp-college{font-size:21px;font-weight:800;text-transform:uppercase;margin:16px 0 28px;overflow-wrap:anywhere}
-.afp-sheet .afp-label{font-family:Arial,sans-serif;font-size:12px;letter-spacing:2px;color:#64748b;text-transform:uppercase}
-.afp-sheet .afp-topic{font-size:22px;font-weight:800;margin:12px auto 28px;overflow-wrap:anywhere}
-.afp-sheet .afp-details{font-family:Arial,sans-serif;text-align:left;max-width:340px;margin:0 auto;font-size:13px;line-height:1.9;overflow-wrap:anywhere}
-.afp-sheet .afp-footer{font-family:Arial,sans-serif;margin-top:26px;font-size:12px;color:#475569}
-.afp-sheet.design-green{border-color:#059669}.afp-sheet.design-green .afp-topic{color:#047857}
-.afp-sheet.design-maroon{border-color:#9f1239}.afp-sheet.design-maroon .afp-topic{color:#9f1239}
+/* Assignment Front Page Maker — responsive A4 preview + elegant academic themes */
+.afp-preview{width:100%;background:#e8edf5;color:#172033;border-radius:12px;padding:clamp(8px,2vw,18px);position:relative;overflow:auto;display:flex;justify-content:center;align-items:flex-start}
+.afp-sheet{--afp-accent:#245781;--afp-pale:#dce8f5;position:relative;isolation:isolate;width:100%;max-width:520px;aspect-ratio:180 / 267;min-height:0;height:auto;flex:none;overflow:hidden;background:#f8fbff;color:#183653;border:4px double var(--afp-accent);padding:8% 7%;text-align:center;font-family:Georgia,'Times New Roman',serif;box-shadow:0 2px 8px #1e293b22}
+.afp-sheet:before{content:"";position:absolute;inset:2.2%;border:1px solid var(--afp-accent);pointer-events:none;z-index:-1;background:radial-gradient(circle at 0 0,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 100% 0,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 0 100%,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 100% 100%,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px)}
+.afp-sheet:after{content:"✦  ❦  ✦";position:absolute;left:0;right:0;bottom:3.5%;color:var(--afp-accent);font-size:clamp(10px,2vw,16px);letter-spacing:5px;opacity:.8;pointer-events:none}
+.afp-sheet .afp-college{font-size:clamp(12px,3.1vw,22px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:5% 0 8%;overflow-wrap:anywhere;color:var(--afp-accent);text-shadow:0 1px 0 #fff}
+.afp-sheet .afp-label{font-family:Arial,sans-serif;font-size:clamp(7px,1.6vw,11px);letter-spacing:2px;color:var(--afp-accent);text-transform:uppercase}
+.afp-sheet .afp-topic{display:inline-block;max-width:100%;font-size:clamp(13px,3.2vw,23px);font-weight:800;margin:5% auto 8%;padding:3% 5%;border:1px solid var(--afp-accent);background:var(--afp-pale);color:var(--afp-accent);overflow-wrap:anywhere;box-shadow:0 2px 0 #18365322}
+.afp-sheet .afp-subtopic{font-family:Arial,sans-serif;font-size:clamp(9px,1.8vw,13px);margin:0 auto 0;max-width:90%;overflow-wrap:anywhere;color:var(--afp-accent)}.afp-sheet .afp-details{font-family:Arial,sans-serif;text-align:left;width:88%;max-width:340px;margin:18% auto 0;font-size:clamp(8px,1.8vw,13px);line-height:1.9;overflow-wrap:anywhere;border-left:2px solid var(--afp-accent);padding-left:5%;background:linear-gradient(90deg,var(--afp-pale),transparent 85%)}
+.afp-sheet .afp-footer{font-family:Arial,sans-serif;margin-top:7%;font-size:clamp(7px,1.5vw,11px);color:var(--afp-accent)}
+.afp-sheet.design-green{--afp-accent:#17634f;--afp-pale:#e0f1e9;background:#fbfffc}
+.afp-sheet.design-maroon{--afp-accent:#812b45;--afp-pale:#f3e3e8;background:#fffafb}
+.afp-sheet.design-purple{--afp-accent:#62418a;--afp-pale:#eee7f7;background:#fdfbff}
+.afp-sheet.design-blackgold{--afp-accent:#8a6825;--afp-pale:#f4ecd6;background:#fffdf7}
+.afp-sheet.design-teal{--afp-accent:#087e8b;--afp-pale:#dff3f4;background:#f8ffff}
+.afp-sheet.design-rose{--afp-accent:#a23d65;--afp-pale:#f8e5ed;background:#fffafd}
+.afp-sheet.design-classic:before{background:none;border:3px solid var(--afp-accent);inset:3.5%}
+.afp-sheet.design-blackgold:before{background:none;border:1px solid var(--afp-accent);inset:3.5%;outline:1px solid var(--afp-accent);outline-offset:4px}
+.afp-sheet.design-purple:after{content:'❧  ✦  ❧'}
+.afp-sheet.design-teal:before{background:radial-gradient(circle at 0 0,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 100% 0,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 0 100%,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 100% 100%,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px)}
+.afp-theme-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.afp-theme-option{display:block;position:relative;border:2px solid #cbd5e1;border-radius:12px;padding:8px;background:#fff;color:#172033;cursor:pointer;text-align:center;min-width:0}
+.afp-theme-option:has(input:checked){border-color:#2563eb;box-shadow:0 0 0 2px #2563eb22;background:#eff6ff}
+.afp-theme-option input{position:absolute;top:10px;left:10px;accent-color:#2563eb}
+.afp-theme-thumb{width:100%;aspect-ratio:3/4;display:flex;justify-content:center;align-items:center;background:#e8edf5;border-radius:6px;padding:5px;margin-bottom:7px}
+.afp-theme-thumb .afp-sheet{width:100%;height:100%;aspect-ratio:auto;max-width:none;border-width:2px;padding:8% 5%;box-shadow:none}
+.afp-theme-thumb .afp-sheet:before{inset:3%;background:none;border:1px solid var(--afp-accent)}
+.afp-theme-thumb .afp-college{font-size:clamp(5px,1.2vw,9px);margin:10% 0 13%;letter-spacing:0}
+.afp-theme-thumb .afp-label{font-size:clamp(4px,.8vw,6px);letter-spacing:.5px}
+.afp-theme-thumb .afp-topic{font-size:clamp(6px,1.4vw,10px);margin:0 auto;padding:4%;border-width:1px}
+.afp-theme-thumb .afp-details{font-size:clamp(4px,.9vw,7px);line-height:1.7;width:90%;padding-left:4%;border-left-width:1px}
+.afp-theme-thumb .afp-footer{font-size:4px;margin-top:12%}
+.afp-theme-name{font-size:12px;font-weight:700;display:block;padding:2px 0 4px}
+@media(max-width:520px){.afp-theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .afp-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.afp-actions button{flex:1;min-width:140px}
 .afp-admin-table{min-width:900px}
-@media print{body.afp-print-body{background:#fff!important;color:#111!important}body.afp-print-body:before,body.afp-print-body:after{display:none!important}.afp-print-page{width:210mm;min-height:297mm;padding:15mm;margin:0 auto;background:#fff;color:#111}.afp-sheet{min-height:267mm;padding:25mm 18mm;border-width:4px}.afp-sheet .afp-college{font-size:25px}.afp-sheet .afp-topic{font-size:28px}.afp-sheet .afp-details{font-size:15px}}
+@media(max-width:520px){.afp-preview{padding:6px}.afp-sheet{border-width:3px}.afp-sheet:before{inset:2%}}
+@media print{body.afp-print-body{background:#fff!important;color:#111!important}body.afp-print-body:before,body.afp-print-body:after{display:none!important}.afp-print-page{width:210mm;height:297mm;padding:15mm;margin:0 auto;background:#fff;color:#111;break-after:avoid}.afp-print-page .afp-sheet{width:180mm;height:267mm;min-height:267mm;max-width:none;aspect-ratio:auto;padding:21mm 13mm;border-width:4px;box-shadow:none}.afp-print-page .afp-sheet .afp-college{font-size:25px}.afp-print-page .afp-sheet .afp-topic{font-size:28px}.afp-print-page .afp-sheet .afp-details{font-size:15px;margin-top:48mm}.afp-print-page .afp-sheet .afp-subtopic{font-size:14px}.afp-print-page .afp-sheet .afp-label{font-size:12px}.afp-print-page .afp-sheet .afp-footer{font-size:12px}.afp-preview{padding:0;background:white}}
+@media(max-width:650px){.afp-sheet .afp-details{line-height:1.65}}
 
 </style>
 
@@ -716,8 +742,15 @@ body{background:#020814;overflow-x:hidden}
     <label>Department / Course<input id="afpCourse" placeholder="e.g. B.Sc. BMLT"></label>
     <label>Subject Name<input id="afpSubject" required placeholder="Enter subject name"></label>
     <label>Assignment Topic<input id="afpTopic" required placeholder="Enter assignment topic"></label>
-    <label>Subject Teacher Name<input id="afpTeacher" placeholder="Enter teacher name"></label>
-    <label>Front Page Design<select id="afpDesign"><option value="blue">Classic Blue</option><option value="green">Academic Green</option><option value="maroon">Maroon Elegance</option></select></label>
+    <label>Front Page Theme</label>
+    <div class="afp-theme-grid" role="radiogroup" aria-label="Choose a front page theme">
+      <label class="afp-theme-option"><input type="radio" name="afpDesign" value="blue" checked onchange="selectAssignmentTheme()"><span class="afp-theme-thumb"><span class="afp-sheet"><span class="afp-label">Assignment</span><span class="afp-college">College Name</span><span class="afp-topic">Subject Name</span><span class="afp-details">✦ Name: Student<br>✦ Roll: 0000<br>✦ Department: B.Sc.</span></span></span><span class="afp-theme-name">Royal Blue</span></label>
+      <label class="afp-theme-option"><input type="radio" name="afpDesign" value="green" onchange="selectAssignmentTheme()"><span class="afp-theme-thumb"><span class="afp-sheet design-green"><span class="afp-label">Assignment</span><span class="afp-college">College Name</span><span class="afp-topic">Subject Name</span><span class="afp-details">✦ Name: Student<br>✦ Roll: 0000<br>✦ Department: B.Sc.</span></span></span><span class="afp-theme-name">Academic Green</span></label>
+      <label class="afp-theme-option"><input type="radio" name="afpDesign" value="maroon" onchange="selectAssignmentTheme()"><span class="afp-theme-thumb"><span class="afp-sheet design-maroon"><span class="afp-label">Assignment</span><span class="afp-college">College Name</span><span class="afp-topic">Subject Name</span><span class="afp-details">✦ Name: Student<br>✦ Roll: 0000<br>✦ Department: B.Sc.</span></span></span><span class="afp-theme-name">Maroon Elegance</span></label>
+      <label class="afp-theme-option"><input type="radio" name="afpDesign" value="purple" onchange="selectAssignmentTheme()"><span class="afp-theme-thumb"><span class="afp-sheet design-purple"><span class="afp-label">Assignment</span><span class="afp-college">College Name</span><span class="afp-topic">Subject Name</span><span class="afp-details">✦ Name: Student<br>✦ Roll: 0000<br>✦ Department: B.Sc.</span></span></span><span class="afp-theme-name">Royal Purple</span></label>
+      <label class="afp-theme-option"><input type="radio" name="afpDesign" value="blackgold" onchange="selectAssignmentTheme()"><span class="afp-theme-thumb"><span class="afp-sheet design-blackgold"><span class="afp-label">Assignment</span><span class="afp-college">College Name</span><span class="afp-topic">Subject Name</span><span class="afp-details">✦ Name: Student<br>✦ Roll: 0000<br>✦ Department: B.Sc.</span></span></span><span class="afp-theme-name">Black & Gold</span></label>
+      <label class="afp-theme-option"><input type="radio" name="afpDesign" value="teal" onchange="selectAssignmentTheme()"><span class="afp-theme-thumb"><span class="afp-sheet design-teal"><span class="afp-label">Assignment</span><span class="afp-college">College Name</span><span class="afp-topic">Subject Name</span><span class="afp-details">✦ Name: Student<br>✦ Roll: 0000<br>✦ Department: B.Sc.</span></span></span><span class="afp-theme-name">Teal Ornamental</span></label>
+      <label class="afp-theme-option"><input type="radio" name="afpDesign" value="rose" onchange="selectAssignmentTheme()"><span class="afp-theme-thumb"><span class="afp-sheet design-rose"><span class="afp-label">Assignment</span><span class="afp-college">College Name</span><span class="afp-topic">Subject Name</span><span class="afp-details">✦ Name: Student<br>✦ Roll: 0000<br>✦ Department: B.Sc.</span></span></span><span class="afp-theme-name">Rose Classic</span></label>
   </div>
   <div id="afpMessage" class="note"></div>
   <div class="afp-actions"><button class="primary" onclick="previewAssignment()">Preview Front Page</button></div>
@@ -799,16 +832,17 @@ function openAssignmentMaker(){
   $('assignmentMakerModal').classList.add('show');
 }
 function getAssignmentData(){
-  const ids=['afpCollege','afpStudent','afpRoll','afpReg','afpSemester','afpCourse','afpSubject','afpTopic','afpTeacher'];
+  const ids=['afpCollege','afpStudent','afpRoll','afpReg','afpSemester','afpCourse','afpSubject','afpTopic'];
   const values={};ids.forEach(id=>values[id]=$(id).value.trim());
-  values.design=$('afpDesign').value;
+  values.design=document.querySelector('input[name="afpDesign"]:checked')?.value||'blue';
   return values;
 }
 function buildAssignmentMarkup(d){
-  const design=d.design==='green'?'design-green':d.design==='maroon'?'design-maroon':'';
-  const row=(label,value)=>value?`<div><b>${label}:</b> ${escapeHtml(value)}</div>`:'';
-  return `<div class="afp-sheet ${design}"><div class="afp-label">Assignment / Project</div><div class="afp-college">${escapeHtml(d.afpCollege)}</div><div class="afp-label">Topic</div><div class="afp-topic">${escapeHtml(d.afpTopic)}</div><div class="afp-details">${row('Name',d.afpStudent)}${row('Roll Number',d.afpRoll)}${row('Registration Number',d.afpReg)}${row('Semester / Year',d.afpSemester)}${row('Course / Department',d.afpCourse)}${row('Subject',d.afpSubject)}${row('Submitted To',d.afpTeacher)}</div><div class="afp-footer">Submitted in partial fulfilment of academic requirements</div></div>`;
+  const design=({green:'design-green',maroon:'design-maroon',purple:'design-purple',blackgold:'design-blackgold',teal:'design-teal',rose:'design-rose'})[d.design]||'';
+  const row=(label,value)=>value?`<div>✦ <b>${label} →</b> ${escapeHtml(value)}</div>`:'';
+  return `<div class="afp-sheet ${design}"><div class="afp-college">${escapeHtml(d.afpCollege)}</div><div class="afp-topic">${escapeHtml(d.afpSubject)}</div>${d.afpTopic?`<div class="afp-label">Assignment Topic</div><div class="afp-subtopic">${escapeHtml(d.afpTopic)}</div>`:''}<div class="afp-details">${row('Name',d.afpStudent)}${row('Student ID / Roll',d.afpRoll)}${row('Registration No.',d.afpReg)}${row('Department',d.afpCourse)}${row('Program / Semester',d.afpSemester)}</div></div>`;
 }
+function selectAssignmentTheme(){if(afpPreviewReady)previewAssignment();}
 function previewAssignment(){
   const d=getAssignmentData();
   if(!d.afpCollege||!d.afpStudent||!d.afpSubject||!d.afpTopic){$('afpMessage').textContent='Please fill College/University, Student Name, Subject Name and Assignment Topic.';return;}
@@ -823,7 +857,7 @@ function assignmentPrintDocument(){
   const w=window.open('','_blank');
   if(!w){openInfo('Pop-up blocked','Please allow pop-ups for this website, then try Download PDF again.');return null;}
   w.document.open();
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Assignment Front Page</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#172033;font-family:Arial,sans-serif}.page{width:210mm;min-height:297mm;padding:15mm;margin:0 auto}.afp-sheet{background:#fff;color:#172033;min-height:267mm;border:4px double ${d.design==='green'?'#059669':d.design==='maroon'?'#9f1239':'#2563eb'};padding:25mm 18mm;text-align:center;position:relative;font-family:Georgia,'Times New Roman',serif}.afp-college{font-size:25px;font-weight:800;text-transform:uppercase;margin:16px 0 28px;overflow-wrap:anywhere}.afp-label{font-family:Arial,sans-serif;font-size:12px;letter-spacing:2px;color:#64748b;text-transform:uppercase}.afp-topic{font-size:28px;font-weight:800;margin:12px auto 28px;color:${d.design==='green'?'#047857':d.design==='maroon'?'#9f1239':'#1d4ed8'};overflow-wrap:anywhere}.afp-details{font-family:Arial,sans-serif;text-align:left;max-width:125mm;margin:0 auto;font-size:15px;line-height:1.9;overflow-wrap:anywhere}.afp-footer{font-family:Arial,sans-serif;margin-top:26px;font-size:12px;color:#475569}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page">${markup}</div><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Assignment Front Page</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#172033;font-family:Arial,sans-serif}.page{width:210mm;height:297mm;padding:15mm;margin:0 auto;box-sizing:border-box}.afp-sheet{--afp-accent:${({'green':'#17634f','maroon':'#812b45','purple':'#62418a','blackgold':'#8a6825','teal':'#087e8b','rose':'#a23d65'}[d.design]||'#245781')};--afp-pale:${({'green':'#e0f1e9','maroon':'#f3e3e8','purple':'#eee7f7','blackgold':'#f4ecd6','teal':'#dff3f4','rose':'#f8e5ed'}[d.design]||'#dce8f5')};box-sizing:border-box;width:180mm;height:267mm;min-height:267mm;overflow:hidden;background:${({'green':'#fbfffc','maroon':'#fffafb','purple':'#fdfbff','blackgold':'#fffdf7','teal':'#f8ffff','rose':'#fffafd'}[d.design]||'#f8fbff')};color:#183653;border:4px double var(--afp-accent);padding:21mm 13mm;text-align:center;position:relative;isolation:isolate;font-family:Georgia,'Times New Roman',serif}.afp-sheet:before{content:'';position:absolute;inset:6mm;border:1px solid var(--afp-accent);pointer-events:none;z-index:-1;background:radial-gradient(circle at 0 0,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 100% 0,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 0 100%,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px),radial-gradient(circle at 100% 100%,transparent 0 18px,var(--afp-accent) 19px 20px,transparent 21px)}.afp-sheet:after{content:'✦  ❦  ✦';position:absolute;left:0;right:0;bottom:9mm;color:var(--afp-accent);letter-spacing:5px}.afp-college{font-size:25px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:10mm 0 16mm;overflow-wrap:anywhere;color:var(--afp-accent)}.afp-label{font-family:Arial,sans-serif;font-size:12px;letter-spacing:2px;color:var(--afp-accent);text-transform:uppercase}.afp-topic{display:inline-block;max-width:100%;font-size:28px;font-weight:800;margin:10mm auto 16mm;padding:5mm 7mm;border:1px solid var(--afp-accent);background:var(--afp-pale);color:var(--afp-accent);overflow-wrap:anywhere}.afp-details{font-family:Arial,sans-serif;text-align:left;width:88%;max-width:125mm;margin:0 auto;font-size:15px;line-height:1.9;overflow-wrap:anywhere;border-left:2px solid var(--afp-accent);padding-left:7mm;background:linear-gradient(90deg,var(--afp-pale),transparent 85%)}.afp-footer{font-family:Arial,sans-serif;margin-top:14mm;font-size:12px;color:var(--afp-accent)}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body class="afp-print-body"><div class="page afp-print-page">${markup}</div><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);
   w.document.close();return w;
 }
 function downloadAssignmentPDF(){assignmentPrintDocument();}
@@ -834,7 +868,7 @@ async function orderAssignmentFrontPage(){
     'College: '+d.afpCollege,'Student: '+d.afpStudent,'Roll: '+(d.afpRoll||'N/A'),
     'Registration: '+(d.afpReg||'N/A'),'Semester/Year: '+(d.afpSemester||'N/A'),
     'Course/Department: '+(d.afpCourse||'N/A'),'Subject: '+d.afpSubject,
-    'Topic: '+d.afpTopic,'Teacher: '+(d.afpTeacher||'N/A'),'Design: '+d.design
+    'Topic: '+d.afpTopic,'Design: '+d.design
   ].join(' | ');
   const btns=$('assignmentMakerModal').querySelectorAll('.afp-actions button');
   btns.forEach(b=>b.disabled=true);
