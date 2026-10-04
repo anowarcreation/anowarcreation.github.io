@@ -1032,12 +1032,30 @@ async function updateApplicationStatus(orderId,status,isAppointment=false){
 }
 function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
 
-function openAdminPrintPdf(button){
+async function openAdminPrintPdf(button){
   const url=button?.dataset?.url;
   if(!url){alert('PDF link is unavailable. Refresh orders and try again.');return;}
-  // Open the PDF in a new tab so the browser PDF viewer can print it.
-  const win=window.open(url,'_blank','noopener');
-  if(!win)alert('Your browser blocked the PDF tab. Allow pop-ups for this website and try again.');
+  const printType=button.dataset.printType==='color'?'color':'bw';
+  const copies=Math.max(1,Math.min(500,Number(button.dataset.copies)||1));
+  if(printMode==='automatic'){
+    alert('Auto mode is active. Confirmed orders are handled by the Windows Print Agent.');
+    return;
+  }
+  button.disabled=true;
+  const oldText=button.textContent;button.textContent='Opening print dialog…';
+  try{
+    const response=await fetch('http://127.0.0.1:8765/manual-print',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({file_url:url,print_type:printType,copies})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.ok)throw new Error(data.error||'Windows Print Agent did not accept the request.');
+    alert('Print dialog opened for this order. Check Copies ('+copies+') and '+(printType==='color'?'Colour':'Black & White')+', then click Print.');
+  }catch(e){
+    // Fallback lets the admin still print if the local agent is not running.
+    const win=window.open(url,'_blank');
+    alert('Could not connect to the Windows Print Agent. '+e.message+'\n\n'+(win?'PDF opened in a new tab. Press Ctrl+P and set '+copies+' copies, '+(printType==='color'?'Colour':'Black & White')+'.':'Allow pop-ups and try again.'));
+  }finally{button.disabled=false;button.textContent=oldText;}
 }
 
 async function renderAdminPrintOrders(){
@@ -1055,7 +1073,7 @@ async function renderAdminPrintOrders(){
     let fileHtml='<span class="admin-muted">No PDF file</span>';
     if(o.file_path){
       const {data,error}=await supabaseClient.storage.from('pdf-orders').createSignedUrl(o.file_path,3600);
-      if(!error&&data?.signedUrl)fileHtml='<a href="'+escapeHtml(data.signedUrl)+'" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a> <button type="button" class="admin-btn admin-small-print-btn" data-url="'+escapeHtml(data.signedUrl)+'" onclick="openAdminPrintPdf(this)">Print</button>';
+      if(!error&&data?.signedUrl){const req=String(o.requirement||'');const type=/\bcolour\b|\bcolor\b/i.test(req)?'color':'bw';const qm=req.match(/Quantity:\s*(\d+)/i)||req.match(/(\d+)\s*cop(?:y|ies)/i);const copies=Math.max(1,Number(qm?.[1])||1);fileHtml='<a href="'+escapeHtml(data.signedUrl)+'" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a> <button type="button" class="admin-btn admin-small-print-btn" data-url="'+escapeHtml(data.signedUrl)+'" data-print-type="'+type+'" data-copies="'+copies+'" onclick="openAdminPrintPdf(this)">Print · '+(type==='color'?'Colour':'B&W')+' × '+copies+'</button>';} 
       else fileHtml='<span class="admin-muted">File unavailable</span>';
     }
     const isCompleted=String(o.status||'').toLowerCase().includes('completed');
