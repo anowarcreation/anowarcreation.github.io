@@ -313,6 +313,21 @@ body{background:#020814;overflow-x:hidden}
 .admin-status-pill{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:normal}.status-submitted{background:#243b63;color:#93c5fd}.status-processing{background:#4a3512;color:#fcd34d}.status-completed{background:#123d31;color:#6ee7b7}.status-rejected{background:#4b1f28;color:#fca5a5}.status-declined{background:#4b1f28;color:#fca5a5}.rejection-reason{display:block;color:#f87171;font-size:11px;margin-top:5px;max-width:280px;white-space:normal}.customer-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.customer-profile-stat{padding:14px;border:1px solid #344157;border-radius:12px;background:#101d32}.customer-profile-stat span{display:block;color:#91a2bd;font-size:12px}.customer-profile-stat b{display:block;font-size:23px;margin-top:5px}.profile-detail-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid #2c3b55}.profile-detail-row .detail-value{font-weight:700;min-width:160px}.pencil-btn{border:0;background:#263b58;color:#fff;border-radius:8px;padding:7px 10px}.profile-order-row{padding:13px 0;border-bottom:1px solid #2c3b55}.profile-order-row .order-detail{font-size:12px;color:#9aa9bf;margin-top:6px}@media(max-width:650px){.customer-profile-grid{grid-template-columns:1fr 1fr}}.admin-stat-grid-6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.admin-stat-mini{border:1px solid #2c3b55;background:#101d32;border-radius:10px;padding:13px}.admin-stat-mini span{display:block;color:#91a2bd;font-size:12px}.admin-stat-mini b{display:block;font-size:22px;margin-top:5px}@media(max-width:800px){.admin-stat-grid-6{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filter-row>*{flex:1;min-width:120px}}
 
 .admin-small-print-btn{font-size:12px!important;padding:5px 9px!important;margin:3px 0 3px 5px!important;min-height:26px!important;line-height:1.2!important;vertical-align:middle}
+
+/* Assignment Front Page Maker */
+.afp-preview{background:#fff;color:#172033;border-radius:12px;padding:24px;min-height:390px;position:relative;overflow:hidden}
+.afp-sheet{background:#fff;color:#172033;min-height:440px;border:3px double #2563eb;padding:28px 22px;text-align:center;position:relative;font-family:Georgia,'Times New Roman',serif}
+.afp-sheet .afp-college{font-size:21px;font-weight:800;text-transform:uppercase;margin:16px 0 28px;overflow-wrap:anywhere}
+.afp-sheet .afp-label{font-family:Arial,sans-serif;font-size:12px;letter-spacing:2px;color:#64748b;text-transform:uppercase}
+.afp-sheet .afp-topic{font-size:22px;font-weight:800;margin:12px auto 28px;overflow-wrap:anywhere}
+.afp-sheet .afp-details{font-family:Arial,sans-serif;text-align:left;max-width:340px;margin:0 auto;font-size:13px;line-height:1.9;overflow-wrap:anywhere}
+.afp-sheet .afp-footer{font-family:Arial,sans-serif;margin-top:26px;font-size:12px;color:#475569}
+.afp-sheet.design-green{border-color:#059669}.afp-sheet.design-green .afp-topic{color:#047857}
+.afp-sheet.design-maroon{border-color:#9f1239}.afp-sheet.design-maroon .afp-topic{color:#9f1239}
+.afp-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.afp-actions button{flex:1;min-width:140px}
+.afp-admin-table{min-width:900px}
+@media print{body.afp-print-body{background:#fff!important;color:#111!important}body.afp-print-body:before,body.afp-print-body:after{display:none!important}.afp-print-page{width:210mm;min-height:297mm;padding:15mm;margin:0 auto;background:#fff;color:#111}.afp-sheet{min-height:267mm;padding:25mm 18mm;border-width:4px}.afp-sheet .afp-college{font-size:25px}.afp-sheet .afp-topic{font-size:28px}.afp-sheet .afp-details{font-size:15px}}
+
 </style>
 
 <style>
@@ -663,7 +678,8 @@ body{background:#020814;overflow-x:hidden}
       <article class="card"><div class="icon">🚗</div><h3>DL PDF</h3><p>Request driving licence PDF assistance.</p><button onclick="openAppointment('DL PDF','Provide the details required for the DL PDF service.')">Start</button></article>
       <article class="card"><div class="icon">🚘</div><h3>RC PDF</h3><p>Request registration certificate PDF assistance.</p><button onclick="openAppointment('RC PDF','Provide the details required for the RC PDF service.')">Start</button></article>
       <article class="card disabled"><div class="icon">📑</div><h3>PDF Tools</h3><p>PDF tools are temporarily unavailable while the tools are being repaired and tested.</p><button type="button" disabled>Under Maintenance</button></article>
-      <article class="card"><div class="icon">🖨️</div><h3>PDF Print</h3><p>Only for Sister Nivedita University students. Upload PDF, choose B&W or Colour.</p><button onclick="openPrint()">Start</button></article>
+      <article class="card"><div class="icon">📝</div><h3>Assignment Front Page Maker</h3><p>Create a professional A4 assignment front page, preview it, then download the PDF or place an order.</p><button onclick="openAssignmentMaker()">Create Front Page</button></article>
+            <article class="card"><div class="icon">🖨️</div><h3>PDF Print</h3><p>Only for Sister Nivedita University students. Upload PDF, choose B&W or Colour.</p><button onclick="openPrint()">Start</button></article>
       
       <article class="card disabled"><div class="icon">🏛️</div><h3>Government Schemes</h3><p>Service is temporarily unavailable.</p><button onclick="showUnavailable()">Temporarily Unavailable</button></article>
       <article class="card"><div class="icon">💰</div><h3>Service Rates</h3><p>Check service pricing and charges.</p><button onclick="showRates()">View Rates</button></article>
@@ -688,6 +704,25 @@ body{background:#020814;overflow-x:hidden}
 
 <!-- Scholarship Modal -->
 <div class="modal" id="scholarshipModal"><div class="box"><button class="close" onclick="closeModal('scholarshipModal')">×</button><h2>🎓 Scholarship</h2><div class="desc">First select the scholarship, then choose New or Renewal.</div><div id="scholarshipStep1"><div class="choice-grid"><button class="choice" onclick="selectScholarship('SVMCM')">SVMCM</button><button class="choice" onclick="selectScholarship('NSP-WB / Aikyashree')">NSP-WB / Aikyashree</button></div></div><div id="scholarshipStep2" class="hidden" style="margin-top:14px"><div class="choice-grid"><button class="choice" onclick="selectScholarshipType('New')">New</button><button class="choice" onclick="selectScholarshipType('Renewal')">Renewal</button></div></div><div id="scholarshipDetails" class="form hidden" style="margin-top:14px"><label>Your Name<input id="scholarName" placeholder="Enter your name"></label><label>Mobile Number<input id="scholarPhone" type="tel" placeholder="Enter mobile number"></label><label>Additional Details<textarea id="scholarReq" rows="3" placeholder="College, course, application details etc."></textarea></label><button class="primary" onclick="submitScholarship()">Submit Appointment</button><div id="scholarMsg" class="note"></div></div></div></div>
+
+<!-- Assignment Front Page Maker -->
+<div class="modal" id="assignmentMakerModal"><div class="box" style="width:min(900px,100%)"><button class="close" onclick="closeModal('assignmentMakerModal')">×</button><h2>📝 Assignment Front Page Maker</h2><div class="desc">Enter your details, choose a design and preview your A4 front page. After preview, download the PDF or place an order.</div>
+  <div id="assignmentFormWrap" class="form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+    <label>College / University Name<input id="afpCollege" required placeholder="Enter college or university name"></label>
+    <label>Student Name<input id="afpStudent" required placeholder="Enter student name"></label>
+    <label>Roll Number<input id="afpRoll" placeholder="Enter roll number"></label>
+    <label>Registration Number<input id="afpReg" placeholder="Enter registration number"></label>
+    <label>Semester / Year<input id="afpSemester" placeholder="e.g. Semester 2"></label>
+    <label>Department / Course<input id="afpCourse" placeholder="e.g. B.Sc. BMLT"></label>
+    <label>Subject Name<input id="afpSubject" required placeholder="Enter subject name"></label>
+    <label>Assignment Topic<input id="afpTopic" required placeholder="Enter assignment topic"></label>
+    <label>Subject Teacher Name<input id="afpTeacher" placeholder="Enter teacher name"></label>
+    <label>Front Page Design<select id="afpDesign"><option value="blue">Classic Blue</option><option value="green">Academic Green</option><option value="maroon">Maroon Elegance</option></select></label>
+  </div>
+  <div id="afpMessage" class="note"></div>
+  <div class="afp-actions"><button class="primary" onclick="previewAssignment()">Preview Front Page</button></div>
+  <div id="afpPreviewWrap" class="hidden" style="margin-top:18px"><div class="section-head"><h3>Preview</h3><span>A4 portrait layout</span></div><div class="afp-preview" id="afpPreview"></div><div class="afp-actions"><button class="primary" onclick="downloadAssignmentPDF()">⬇ Download PDF</button><button class="primary" onclick="orderAssignmentFrontPage()">📦 Order</button></div><div class="note">Download opens your browser's print window. Choose “Save as PDF” to download the file. Order submits the details to your My Orders and the Admin Panel.</div></div>
+</div></div>
 
 <!-- Print Modal -->
 <div class="modal" id="printModal"><div class="box"><button class="close" onclick="closeModal('printModal')">×</button><h2>🖨️ PDF Print</h2><div class="desc"><strong>This service is only for Sister Nivedita University's students.</strong><br><span style="display:block;margin-top:7px">Upload your PDF. Pages are counted automatically. B&W ₹5/page, Colour ₹10/page.</span></div><div class="form"><label>Upload PDF<input id="pdfFile" type="file" accept="application/pdf" onchange="readPDF()"></label><div id="pdfInfo" class="note"></div>
@@ -753,6 +788,63 @@ function openInfo(t,x){$('infoTitle').textContent=t;$('infoText').textContent=x;
 function openSupport(){openInfo('💬 Support','For service support, please contact Anowar Creation. Your submitted appointments are available in My Orders.')}
 function showUnavailable(){openInfo('🏛️ Government Schemes','Temporarily Not Available. This service is currently unavailable. Please try again later.')}
 function showRates(){openInfo('💰 Service Rates','PDF Print: Black & White ₹5/page, Colour ₹10/page. Other services are appointment-based and the team will confirm the applicable service charge.')}
+let afpPreviewReady=false;
+function openAssignmentMaker(){
+  if(!currentUser){openInfo('Login Required','Please login to use Assignment Front Page Maker.');return;}
+  const profileName=currentProfile?.name||'';
+  if(!$('afpStudent').value)$('afpStudent').value=profileName;
+  $('afpMessage').textContent='';
+  $('afpPreviewWrap').classList.add('hidden');
+  afpPreviewReady=false;
+  $('assignmentMakerModal').classList.add('show');
+}
+function getAssignmentData(){
+  const ids=['afpCollege','afpStudent','afpRoll','afpReg','afpSemester','afpCourse','afpSubject','afpTopic','afpTeacher'];
+  const values={};ids.forEach(id=>values[id]=$(id).value.trim());
+  values.design=$('afpDesign').value;
+  return values;
+}
+function buildAssignmentMarkup(d){
+  const design=d.design==='green'?'design-green':d.design==='maroon'?'design-maroon':'';
+  const row=(label,value)=>value?`<div><b>${label}:</b> ${escapeHtml(value)}</div>`:'';
+  return `<div class="afp-sheet ${design}"><div class="afp-label">Assignment / Project</div><div class="afp-college">${escapeHtml(d.afpCollege)}</div><div class="afp-label">Topic</div><div class="afp-topic">${escapeHtml(d.afpTopic)}</div><div class="afp-details">${row('Name',d.afpStudent)}${row('Roll Number',d.afpRoll)}${row('Registration Number',d.afpReg)}${row('Semester / Year',d.afpSemester)}${row('Course / Department',d.afpCourse)}${row('Subject',d.afpSubject)}${row('Submitted To',d.afpTeacher)}</div><div class="afp-footer">Submitted in partial fulfilment of academic requirements</div></div>`;
+}
+function previewAssignment(){
+  const d=getAssignmentData();
+  if(!d.afpCollege||!d.afpStudent||!d.afpSubject||!d.afpTopic){$('afpMessage').textContent='Please fill College/University, Student Name, Subject Name and Assignment Topic.';return;}
+  $('afpPreview').innerHTML=buildAssignmentMarkup(d);
+  $('afpPreviewWrap').classList.remove('hidden');
+  $('afpMessage').textContent='Preview ready. Check all details before downloading or ordering.';
+  afpPreviewReady=true;
+}
+function assignmentPrintDocument(){
+  if(!afpPreviewReady){previewAssignment();if(!afpPreviewReady)return null;}
+  const d=getAssignmentData(),markup=buildAssignmentMarkup(d);
+  const w=window.open('','_blank');
+  if(!w){openInfo('Pop-up blocked','Please allow pop-ups for this website, then try Download PDF again.');return null;}
+  w.document.open();
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Assignment Front Page</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#172033;font-family:Arial,sans-serif}.page{width:210mm;min-height:297mm;padding:15mm;margin:0 auto}.afp-sheet{background:#fff;color:#172033;min-height:267mm;border:4px double ${d.design==='green'?'#059669':d.design==='maroon'?'#9f1239':'#2563eb'};padding:25mm 18mm;text-align:center;position:relative;font-family:Georgia,'Times New Roman',serif}.afp-college{font-size:25px;font-weight:800;text-transform:uppercase;margin:16px 0 28px;overflow-wrap:anywhere}.afp-label{font-family:Arial,sans-serif;font-size:12px;letter-spacing:2px;color:#64748b;text-transform:uppercase}.afp-topic{font-size:28px;font-weight:800;margin:12px auto 28px;color:${d.design==='green'?'#047857':d.design==='maroon'?'#9f1239':'#1d4ed8'};overflow-wrap:anywhere}.afp-details{font-family:Arial,sans-serif;text-align:left;max-width:125mm;margin:0 auto;font-size:15px;line-height:1.9;overflow-wrap:anywhere}.afp-footer{font-family:Arial,sans-serif;margin-top:26px;font-size:12px;color:#475569}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page">${markup}</div><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);
+  w.document.close();return w;
+}
+function downloadAssignmentPDF(){assignmentPrintDocument();}
+async function orderAssignmentFrontPage(){
+  if(!afpPreviewReady){previewAssignment();if(!afpPreviewReady)return;}
+  const d=getAssignmentData();
+  const requirement='Assignment Front Page Maker | '+[
+    'College: '+d.afpCollege,'Student: '+d.afpStudent,'Roll: '+(d.afpRoll||'N/A'),
+    'Registration: '+(d.afpReg||'N/A'),'Semester/Year: '+(d.afpSemester||'N/A'),
+    'Course/Department: '+(d.afpCourse||'N/A'),'Subject: '+d.afpSubject,
+    'Topic: '+d.afpTopic,'Teacher: '+(d.afpTeacher||'N/A'),'Design: '+d.design
+  ].join(' | ');
+  const btns=$('assignmentMakerModal').querySelectorAll('.afp-actions button');
+  btns.forEach(b=>b.disabled=true);
+  $('afpMessage').textContent='Submitting your order...';
+  try{
+    const order=await createOrder('Assignment Front Page Maker',0,'N/A',currentProfile?.name||d.afpStudent,currentProfile?.phone||'',requirement,'Application Submitted');
+    if(order){closeModal('assignmentMakerModal');showResult('📦','Order Submitted','Your Assignment Front Page order has been submitted successfully. You can track it in My Orders.','Your Order No.',order.id,order.service);}
+  }finally{btns.forEach(b=>b.disabled=false);}
+}
+
 function openAppointment(service,desc){currentService=service;currentAppointmentType='generic';$('appointmentTitle').textContent='📋 '+service;$('appointmentDesc').textContent=desc;$('aptName').value=currentProfile?.name||'';$('aptPhone').value=currentProfile?.phone||'';$('aptRequirement').value='';$('aptMsg').textContent='';$('appointmentModal').classList.add('show')}
 async function submitAppointment(){const n=$('aptName').value.trim(),p=$('aptPhone').value.trim(),r=$('aptRequirement').value.trim();if(!n||!p||!r){$('aptMsg').textContent='Please fill all fields.';return}closeModal('appointmentModal');await createAppointment(currentService,n,p,r)}
 function openPan(){$('panCorrection').classList.add('hidden');$('panDetails').classList.add('hidden');$('panMsg').textContent='';$('panName').value=currentProfile?.name||'';$('panPhone').value=currentProfile?.phone||'';$('panNumber').value='';$('panReq').value='';$('panModal').classList.add('show')}
@@ -966,6 +1058,17 @@ async function confirmManualPrintComplete(orderId){
   if(error){alert('Could not update status: '+error.message);return;}await loadAdminData();
 }
 
+function renderAssignmentAdminOrders(){
+  const body=$('assignmentAdminOrdersBody');if(!body)return;
+  const q=($('assignmentOrderSearch')?.value||'').trim().toLowerCase();
+  const st=$('assignmentOrderStatus')?.value||'';
+  const rows=(adminOrdersCache||[]).filter(o=>String(o.service||'').toLowerCase()==='assignment front page maker').filter(o=>{
+    const text=[o.order_id,o.customer_name,o.phone,o.requirement].join(' ').toLowerCase();
+    return (!q||text.includes(q))&&(!st||normalizeApplicationStatus(o.status)===st||String(o.status||'')===st);
+  });
+  body.innerHTML=rows.length?rows.map(o=>`<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td style="white-space:normal;min-width:280px;max-width:480px">${escapeHtml(o.requirement||'')}</td><td><select class="admin-status-select" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===String(o.status||'')?'selected':''}>${x}</option>`).join('')}</select></td><td>${escapeHtml(o.created_at?new Date(o.created_at).toLocaleString('en-IN'):'')}</td></tr>`).join(''):'<tr><td colspan="6" class="admin-empty">No Assignment Front Page orders yet.</td></tr>';
+}
+
 async function loadAdminData(){
   $('adminLastUpdated').textContent='Loading...';
   const [ordersRes,profilesRes]=await Promise.all([
@@ -976,6 +1079,7 @@ async function loadAdminData(){
   adminOrdersCache=orders;adminCustomersCache=profiles;
   if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="11" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>'}
   else { renderAdminOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
+  renderAssignmentAdminOrders();
   renderAdminPrintOrders();
   if(profilesRes.error){console.error(profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customers. Please check Admin SQL/RLS.</td></tr>'}
   else renderAdminCustomers(profiles);
@@ -1227,6 +1331,7 @@ async function adminLogout(){
         <button onclick="switchAdminSection('adminCustomers',this)">👥 All Customers</button>
         <button onclick="switchAdminSection('adminOrders',this)">📦 All Orders</button>
         <button onclick="switchAdminSection('adminApplications',this);loadAdminData()">📝 Applications</button>
+        <button onclick="switchAdminSection('adminAssignmentOrders',this);loadAdminData()">📝 Assignment Front Pages</button>
         <button onclick="switchAdminSection('adminPDFPrinting',this);loadAdminData()">🖨️ PDF Printing</button>
         <button onclick="switchAdminSection('adminPayments',this);loadAdminData()">💳 Payments</button>
         <button onclick="switchAdminSection('adminAppointments',this)">📅 Appointments</button>
@@ -1292,6 +1397,15 @@ async function adminLogout(){
           <p class="note" id="applicationAdminMessage">Status updates are saved to the existing orders table.</p>
         </div>
       </section>
+      <section id="adminAssignmentOrders" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>📝 Assignment Front Page Orders</h2><span>Review customer-submitted assignment details</span></div>
+          <div class="admin-filter-row"><input id="assignmentOrderSearch" placeholder="Search order, student, subject or topic" oninput="renderAssignmentAdminOrders()"><select id="assignmentOrderStatus" onchange="renderAssignmentAdminOrders()"><option value="">All statuses</option><option>Application Submitted</option><option>Under Process</option><option>Successfully Completed</option><option>Rejected</option><option>Declined</option></select></div>
+          <div class="admin-table-wrap"><table class="admin-table afp-admin-table"><thead><tr><th>Order No.</th><th>Customer</th><th>Mobile</th><th>Student / Assignment Details</th><th>Status</th><th>Date</th></tr></thead><tbody id="assignmentAdminOrdersBody"></tbody></table></div>
+          <p class="note">Orders are saved in the existing Supabase orders table. Update status here or in Applications; status changes are saved to the same order record.</p>
+        </div>
+      </section>
+
       <section id="adminPDFPrinting" class="admin-section">
         <div class="admin-card">
           <div class="section-head"><h2>📄 PDF Print Orders</h2><span>Confirmed orders, PDF files and print status</span></div>
