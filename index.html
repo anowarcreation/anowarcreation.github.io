@@ -594,6 +594,7 @@ body{background:#020814;overflow-x:hidden}
       <label>Email<input id="loginEmail" type="email" placeholder="Enter email"></label>
       <label>Password<input id="loginPassword" type="password" placeholder="Enter password"></label>
       <button class="primary" onclick="loginUser()">Login</button>
+      <button type="button" class="google-login-btn" onclick="signInWithGoogle()"><span class="google-g">G</span> Continue with Google</button>
       <button type="button" class="forgot-link" onclick="showForgotPassword()">Forgot Password?</button>
       <div id="authMessage" class="auth-msg"></div>
     </div>
@@ -651,6 +652,25 @@ body{background:#020814;overflow-x:hidden}
     <div class="stat"><div class="label">📦 MY ORDERS</div><div class="value" id="orderCount">0</div><div class="sub">Appointments and print orders</div></div>
   </section>
   <div class="announce">✨ Choose a service, submit your details, and get your appointment number. PDF Print orders are confirmed after payment selection. ✨</div>
+  <section class="ac-dashboard-hero">
+    <div class="ac-hero-copy">
+      <span class="ac-kicker">ANOWAR CREATION</span>
+      <h2>Welcome Back, <strong id="heroProfileName">Customer</strong> 👋</h2>
+      <p>Manage your services, track your orders and get the support you need, all in one place.</p>
+      <button class="hero-action" onclick="activateServices()">Explore Services →</button>
+    </div>
+    <div class="ac-hero-art" aria-hidden="true"><span>AC</span><small>Your Needs<br>Our Priority</small></div>
+  </section>
+  <div class="ac-dashboard-bottom">
+    <section class="ac-dashboard-panel">
+      <div class="section-head"><h2>📦 Recent Orders</h2><button class="mini-link" onclick="showOrders()">View All →</button></div>
+      <div id="dashboardRecentOrders" class="ac-recent-list"><div class="ac-empty">No recent orders yet.</div></div>
+    </section>
+    <section class="ac-dashboard-panel">
+      <div class="section-head"><h2>📢 Important Notice</h2></div>
+      <div id="dashboardNotice" class="ac-notice-content"><div class="ac-empty">No active notice.</div></div>
+    </section>
+  </div>
   <div class="tabs"><button class="tab active" onclick="showPanel('services',this)">🚀 Our Services</button></div>
   <section id="services" class="panel active">
     <div class="section-head"><h2>Available Services</h2><span>All service buttons are functional</span></div>
@@ -729,7 +749,32 @@ function openChangePassword(){if(!currentUser){alert('Please log in first.');ret
 async function changeCustomerPassword(event){event.preventDefault();const oldPassword=$('oldCustomerPassword').value,newPassword=$('newCustomerPassword').value,confirm=$('confirmCustomerPassword').value,msg=$('changePasswordMessage');if(!currentUser?.email){msg.textContent='Please log in again and try.';return}if(newPassword.length<8){msg.textContent='New password must be at least 8 characters.';return}if(newPassword!==confirm){msg.textContent='New passwords do not match.';return}if(oldPassword===newPassword){msg.textContent='New password must be different from old password.';return}msg.textContent='Verifying old password...';const {error:verifyError}=await supabaseClient.auth.signInWithPassword({email:currentUser.email,password:oldPassword});if(verifyError){msg.textContent='Old password is incorrect.';return}msg.textContent='Updating password...';const {error}=await supabaseClient.auth.updateUser({password:newPassword});if(error){msg.textContent=error.message;return}$('oldCustomerPassword').value='';$('newCustomerPassword').value='';$('confirmCustomerPassword').value='';msg.textContent='Password changed successfully.';alert('Your password has been changed successfully.');closeModal('changePasswordModal')}
 
 async function loginUser(){const email=$('loginEmail').value.trim(),password=$('loginPassword').value,msg=$('authMessage');if(!email||!password){msg.textContent='Enter email and password.';return}msg.textContent='Logging in...';const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error){msg.textContent=error.message;return}msg.textContent='';await loadUser()}
-async function loadUser(){const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;currentUser=user;const {data:profile}=await supabaseClient.from('profiles').select('*').eq('id',user.id).maybeSingle();currentProfile=profile||{name:user.user_metadata?.name||'Customer',phone:user.user_metadata?.phone||'',email:user.email||''};$('profileName').textContent=currentProfile.name||'Customer';$('profileAvatar').textContent=(currentProfile.name||'C').slice(0,2).toUpperCase();$('authScreen').style.display='none';document.querySelector('.app').style.display='flex';$('adminPage').classList.remove('show');await loadCloudOrders();loadPublicNotice()}
+
+async function signInWithGoogle(){
+  const msg=$('authMessage');
+  if(msg)msg.textContent='Opening Google sign-in...';
+  const {error}=await supabaseClient.auth.signInWithOAuth({
+    provider:'google',
+    options:{redirectTo:window.location.origin+window.location.pathname}
+  });
+  if(error&&msg)msg.textContent=error.message||'Google sign-in is not available right now.';
+}
+function renderDashboardRecentOrders(){
+  const box=$('dashboardRecentOrders'); if(!box)return;
+  const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]').slice(0,4);
+  if(!orders.length){box.innerHTML='<div class="ac-empty">No recent orders yet.</div>';return}
+  box.innerHTML=orders.map(o=>{
+    const clean=normalizeApplicationStatus(o.status);
+    const cls=clean==='Under Process'?'process':(clean==='Rejected'||clean==='Declined'?'reject':'');
+    return `<div class="ac-recent-row"><div><div class="ac-recent-title">${escapeHtml(o.service||'Service')}</div><div class="ac-recent-meta">${escapeHtml(o.id||'')} · ${escapeHtml(o.date||'')}</div></div><span class="ac-status ${cls}">${escapeHtml(clean)}</span></div>`;
+  }).join('');
+}
+function renderDashboardNotice(data){
+  const box=$('dashboardNotice'); if(!box)return;
+  if(!data){box.innerHTML='<div class="ac-empty">No active notice.</div>';return}
+  box.innerHTML=`<div class="ac-notice-title">${escapeHtml(data.title||'Important Notice')}</div><div class="ac-notice-date">${data.updated_at?new Date(data.updated_at).toLocaleDateString('en-IN'):''}</div><div>${sanitizeNoticeHtml(data.content||'')}</div>`;
+}
+async function loadUser(){const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;currentUser=user;const {data:profile}=await supabaseClient.from('profiles').select('*').eq('id',user.id).maybeSingle();currentProfile=profile||{name:user.user_metadata?.name||'Customer',phone:user.user_metadata?.phone||'',email:user.email||''};$('profileName').textContent=currentProfile.name||'Customer';$('profileAvatar').textContent=(currentProfile.name||'C').slice(0,2).toUpperCase();if($('heroProfileName'))$('heroProfileName').textContent=currentProfile.name||'Customer';$('authScreen').style.display='none';document.querySelector('.app').style.display='flex';$('adminPage').classList.remove('show');await loadCloudOrders();loadPublicNotice()}
 async function logoutUser(){await supabaseClient.auth.signOut();currentUser=null;currentProfile=null;document.querySelector('.app').style.display='none';$('authScreen').style.display='flex';authMode('login')}
 let recoveryMode=false;
 function isRecoveryUrl(){const hash=window.location.hash||'';const search=window.location.search||'';return hash.includes('type=recovery')||search.includes('type=recovery')||search.includes('code=')}
@@ -817,7 +862,115 @@ async function runPdfTool(name){const status=$('pdfWorkspaceStatus'),btn=$('pdfW
  if(name==='Merge PDF'){const fs=[...$('pdfToolFiles').files];if(fs.length<2)throw Error('Choose at least two PDF files.');const out=await PDFLib.PDFDocument.create();for(const f of fs){let doc;try{doc=await PDFLib.PDFDocument.load(await f.arrayBuffer())}catch(err){const pw=window.prompt('Enter the password for '+f.name+' (leave blank to cancel):');if(pw===null||!pw)throw Error('Password is required for '+f.name+'.');doc=await rasterizePdfWithPassword(f,pw)}const pages=await out.copyPages(doc,doc.getPageIndices());pages.forEach(p=>out.addPage(p))}downloadBlob(new Blob([await out.save()],{type:'application/pdf'}),'merged.pdf');status.textContent='Done. Your merged PDF has downloaded.';return}
  if(['JPG to PDF','Create PDF from Images','Scan to PDF'].includes(name)){const fs=[...$('pdfToolFiles').files];if(!fs.length)throw Error('Choose at least one image.');const out=await PDFLib.PDFDocument.create();for(const f of fs){const bytes=await f.arrayBuffer();let img;if(/png/i.test(f.type)||/\.png$/i.test(f.name))img=await out.embedPng(bytes);else if(/jpe?g/i.test(f.type)||/\.jpe?g$/i.test(f.name))img=await out.embedJpg(bytes);else{const bitmap=await createImageBitmap(f),canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;canvas.getContext('2d').drawImage(bitmap,0,0);const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',.92));img=await out.embedJpg(await blob.arrayBuffer())}const page=out.addPage([img.width,img.height]);page.drawImage(img,{x:0,y:0,width:img.width,height:img.height})}downloadBlob(new Blob([await out.save()],{type:'application/pdf'}),'images.pdf');status.textContent='Done. Your PDF has downloaded.';return}
  if(name==='PDF to JPG'){const f=$('pdfToolFile').files[0];if(!f)throw Error('Choose a PDF file.');if(!window.pdfjsLib)await loadPdfJs();const doc=await pdfjsLib.getDocument({data:await f.arrayBuffer(),password:$('pdfToolPassword')?.value||undefined}).promise;for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i),vp=page.getViewport({scale:Math.max(1,Math.min(2,Number($('pdfToolQuality').value)||1.5))}),canvas=document.createElement('canvas');canvas.width=vp.width;canvas.height=vp.height;await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',.92));downloadBlob(blob,`${safeName(f.name.replace(/\.pdf$/i,''))}-page-${i}.jpg`)}status.textContent='Converted. JPG files are downloading one by one.';return}
- if(name==='HTML to PDF'){const html=$('pdfToolHtml').value;if(!html.trim())throw Error('Enter some HTML first.');const w=window.open('','_blank');if(!w)throw Error('Allow pop-ups for this site, then try again.');w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Save as PDF</title><style>body{font-family:Arial,sans-serif;padding:24px;overflow-wrap:anywhere}</style></head><body>'+html+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),400);status.textContent='Print dialog opened. Choose “Save as PDF”.';return}
+ if(name==='HTML to PDF'){const html=$('pdfToolHtml').value;if(!html.trim())throw Error('Enter some HTML first.');const w=window.open('','_blank');if(!w)throw Error('Allow pop-ups for this site, then try again.');w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Save as PDF</title><style>body{font-family:Arial,sans-serif;padding:24px;overflow-wrap:anywhere}
+/* ANOWAR CREATION - STATIC PREMIUM THEME OVERRIDE */
+html,body{background:#030712!important;color:#f5f7fb}
+body:before,body:after{display:none!important;animation:none!important}
+.space-stage{display:none!important}
+*,*::before,*::after{animation:none!important;transition:none!important}
+.auth-screen{
+  background:
+    radial-gradient(circle at 18% 30%,rgba(36,105,232,.24),transparent 28%),
+    radial-gradient(circle at 84% 72%,rgba(123,46,255,.20),transparent 30%),
+    linear-gradient(135deg,#02050d 0%,#061329 52%,#030712 100%)!important;
+  overflow:hidden;
+}
+.auth-screen:before{
+  content:"WELCOME TO\A ANOWAR CREATION";
+  white-space:pre;
+  position:absolute;
+  left:6vw;
+  top:50%;
+  transform:translateY(-50%);
+  color:rgba(255,255,255,.94);
+  font-size:clamp(38px,5.3vw,78px);
+  line-height:.98;
+  font-weight:900;
+  letter-spacing:-3px;
+  max-width:48vw;
+  text-shadow:0 0 35px rgba(42,128,255,.25);
+  pointer-events:none;
+}
+.auth-screen:after{
+  content:"Your Needs\A Our Priority";
+  white-space:pre;
+  position:absolute;
+  left:6.2vw;
+  top:calc(50% + 150px);
+  color:#8ea4c2;
+  font-size:15px;
+  line-height:1.55;
+  letter-spacing:1px;
+  pointer-events:none;
+}
+.auth-card{position:relative;z-index:2;background:rgba(5,12,25,.92)!important;border:1px solid rgba(70,150,255,.48)!important;box-shadow:0 25px 90px rgba(0,0,0,.7),0 0 45px rgba(44,105,255,.12)!important;backdrop-filter:blur(14px)!important}
+.auth-brand{color:#fff!important}
+.auth-card .primary{background:linear-gradient(90deg,#1677ff,#7b35ff)!important}
+.google-login-btn{
+  width:100%;border:1px solid rgba(115,130,160,.48);background:#0b1324;color:#fff;
+  border-radius:12px;padding:13px;font-weight:800;margin-top:9px;cursor:pointer;
+}
+.google-login-btn:hover{background:#101c32;border-color:#6c7da0}
+.google-g{display:inline-grid;place-items:center;width:20px;height:20px;margin-right:8px;border-radius:50%;background:#fff;color:#4285f4;font-weight:900;font-family:Arial}
+
+.app{
+  background:
+    radial-gradient(circle at 75% 10%,rgba(52,93,255,.16),transparent 25%),
+    radial-gradient(circle at 25% 85%,rgba(123,46,255,.12),transparent 28%),
+    linear-gradient(180deg,#020611 0%,#071326 55%,#030712 100%)!important;
+}
+.sidebar{background:rgba(4,11,23,.94)!important;border-right:1px solid rgba(86,128,190,.28)!important}
+.nav a:hover,.nav a.active{background:linear-gradient(90deg,rgba(37,105,232,.25),rgba(123,53,255,.16))!important;border-left-color:#5b6dff!important}
+.main{padding-top:28px}
+.top h1{font-size:30px}
+.profile{background:rgba(8,17,34,.86)!important;border-color:rgba(85,130,200,.30)!important}
+.stat,.card,.manual,.ac-dashboard-panel{
+  background:linear-gradient(145deg,rgba(10,24,45,.94),rgba(5,13,28,.94))!important;
+  border-color:rgba(76,126,204,.27)!important;
+  box-shadow:0 12px 38px rgba(0,0,0,.22)!important;
+}
+.card:hover{transform:none!important}
+.ac-dashboard-hero{
+  min-height:210px;border-radius:20px;border:1px solid rgba(76,145,255,.34);
+  background:
+    radial-gradient(circle at 78% 50%,rgba(102,48,255,.28),transparent 28%),
+    linear-gradient(120deg,#07182e 0%,#08152a 52%,#0b0a1c 100%);
+  padding:30px 34px;display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;overflow:hidden;position:relative;
+}
+.ac-dashboard-hero:after{
+  content:"";position:absolute;width:480px;height:180px;right:-100px;bottom:-95px;
+  border-radius:50%;border:2px solid rgba(77,134,255,.25);transform:rotate(-13deg);
+  box-shadow:0 0 30px rgba(77,134,255,.08);
+}
+.ac-hero-copy{position:relative;z-index:1;max-width:65%}
+.ac-kicker{font-size:10px;letter-spacing:3px;color:#43a8ff;font-weight:900}
+.ac-hero-copy h2{font-size:32px;margin:8px 0 9px;letter-spacing:-.7px}
+.ac-hero-copy h2 strong{background:linear-gradient(90deg,#fff,#8f7cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ac-hero-copy p{color:#91a4c0;font-size:13px;line-height:1.6;max-width:600px}
+.hero-action{margin-top:18px;border:1px solid rgba(93,147,255,.55);background:linear-gradient(90deg,#176dff,#7137ff);color:#fff;border-radius:10px;padding:11px 16px;font-weight:800}
+.ac-hero-art{position:relative;z-index:1;width:190px;height:150px;border:1px solid rgba(101,138,255,.32);border-radius:22px;background:linear-gradient(145deg,rgba(28,65,130,.32),rgba(65,25,130,.26));display:grid;place-items:center;box-shadow:inset 0 0 35px rgba(80,110,255,.08)}
+.ac-hero-art span{font-size:65px;font-weight:950;letter-spacing:-7px;background:linear-gradient(135deg,#23a6ff,#743cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ac-hero-art small{position:absolute;right:12px;bottom:10px;color:#aab9d0;font-size:9px;line-height:1.4;text-align:right}
+.ac-dashboard-bottom{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin:0 0 20px}
+.ac-dashboard-panel{border-radius:16px;padding:18px;min-height:205px}
+.mini-link{border:0;background:transparent;color:#5aa8ff;font-size:12px;font-weight:800;cursor:pointer}
+.ac-recent-list{display:grid;gap:4px}
+.ac-recent-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid rgba(67,86,120,.35)}
+.ac-recent-row:last-child{border-bottom:0}
+.ac-recent-title{font-size:13px;font-weight:800}.ac-recent-meta{font-size:10px;color:#8294ae;margin-top:4px}
+.ac-status{padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap;background:#183d34;color:#51e5b0}
+.ac-status.process{background:#3b3217;color:#ffd36b}.ac-status.reject{background:#401f29;color:#ff9eae}
+.ac-notice-content{border:1px solid rgba(255,193,7,.20);background:rgba(112,87,0,.10);border-radius:12px;padding:14px;color:#d8e0ec;font-size:12px;line-height:1.6;min-height:135px}
+.ac-notice-title{font-size:14px;font-weight:900;color:#ffd45c;margin-bottom:7px}.ac-notice-date{font-size:10px;color:#8090a8;margin-bottom:8px}.ac-empty{color:#71819a;text-align:center;padding:30px 10px;font-size:11px}
+@media(max-width:950px){.auth-screen:before,.auth-screen:after{display:none}.ac-dashboard-bottom{grid-template-columns:1fr}.ac-hero-copy{max-width:100%}.ac-hero-art{display:none}}
+@media(max-width:700px){
+  .auth-card{width:min(430px,94vw)}
+  .ac-dashboard-hero{padding:24px 20px;min-height:185px}.ac-hero-copy h2{font-size:25px}.ac-hero-copy p{font-size:12px}
+  .top{padding-left:52px}
+}
+
+</style></head><body>'+html+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),400);status.textContent='Print dialog opened. Choose “Save as PDF”.';return}
  if(name==='Compare PDF'){const fs=[...$('pdfToolFiles').files];if(fs.length!==2)throw Error('Choose exactly two PDF files.');const counts=[];for(const f of fs){let password='';try{const d=await PDFLib.PDFDocument.load(await f.arrayBuffer());counts.push(d.getPageCount());continue}catch(e){password=window.prompt('If '+f.name+' is password-protected, enter its password (leave blank if not protected):')||''}if(!window.pdfjsLib)await loadPdfJs();const d=await pdfjsLib.getDocument({data:await f.arrayBuffer(),password:password||undefined}).promise;counts.push(d.numPages)}status.textContent=`Comparison summary\n${fs[0].name}: ${counts[0]} pages\n${fs[1].name}: ${counts[1]} pages\nPage counts ${counts[0]===counts[1]?'match':'differ'}. This compares page counts only, not visual/text differences.`;return}
  if(!['PDF Metadata Viewer','PDF Forms'].includes(name)&&!$('pdfToolFile')?.files?.length)throw Error('Please choose a PDF file.');
  if(name==='PDF Metadata Viewer'||name==='PDF Forms'){const {file,pdf}=await loadPdfFile();if(name==='PDF Metadata Viewer'){const m=pdf.getTitle();status.textContent=`File: ${file.name}\nPages: ${pdf.getPageCount()}\nTitle: ${pdf.getTitle()||'(none)'}\nAuthor: ${pdf.getAuthor()||'(none)'}\nSubject: ${pdf.getSubject()||'(none)'}\nCreator: ${pdf.getCreator()||'(none)'}\nProducer: ${pdf.getProducer()||'(none)'}`;}else{const fields=pdf.getForm().getFields();status.textContent=fields.length?'Form fields:\n'+fields.map(x=>`${x.getName()} (${x.constructor.name})`).join('\n'):'No interactive form fields found.';}return}
@@ -845,8 +998,8 @@ function confirmUPIPrint(){closeModal('upiModal');createPrintOrder('UPI')}
 async function createPrintOrder(payment){if(!pendingPrint)return;const f=$('pdfFile').files[0];if(!f){openInfo('PDF Required','Please upload your PDF again.');return}const orderId=generateId('AC'),safeName=f.name.replace(/[^a-zA-Z0-9._-]/g,'_'),filePath=currentUser.id+'/'+orderId+'-'+safeName;const {error:uploadError}=await supabaseClient.storage.from('pdf-orders').upload(filePath,f,{contentType:'application/pdf',upsert:false});if(uploadError){console.error(uploadError);openInfo('Could not upload PDF','Your PDF could not be uploaded. Please try again.');return}const o=await createOrder(pendingPrint.service,pendingPrint.amount,payment,currentProfile?.name||'Customer',currentProfile?.phone||'',pendingPrint.requirement,'Confirmed',filePath);if(!o){await supabaseClient.storage.from('pdf-orders').remove([filePath]);return}pendingPrint=null;$('pdfFile').value='';showResult('✓','Thank You','Your PDF print order has been confirmed.<br><strong>You will receive the item at Sister Nivedita University.</strong>','Order No.',o.id,o.service)}
 function generateId(prefix){const d=new Date(),stamp=String(d.getFullYear()).slice(-2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'),rand=Math.floor(1000+Math.random()*9000);return prefix+'-'+stamp+'-'+rand}
 async function createAppointment(service,name,phone,requirement){const o=await createOrder(service,0,'N/A',name,phone,requirement,'Appointment Created');if(o)showResult('🎉','Appointment Created','Thank You, Our Team Will Connect You Soon.','Your Appointment No.',o.id,o.service)}
-async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();return obj}
-async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error)return;const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders()}
+async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders();return obj}
+async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error)return;const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders()}
 function renderOrders(){const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');if(!orders.length){box.innerHTML='<div style="text-align:center;color:#8391a7;padding:25px">No orders or appointments yet.</div>';return}box.innerHTML=orders.map(o=>{const reason=(String(o.status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||'';const clean=normalizeApplicationStatus(o.status);return '<div class="order-item"><div class="order-top"><b>'+escapeHtml(o.service)+'</b><span class="admin-status-pill '+statusClass(o.status)+'">'+escapeHtml(clean)+'</span></div><div class="order-meta"><b>'+escapeHtml(o.id)+'</b> · '+escapeHtml(o.payment==='N/A'?'Appointment':o.payment)+(o.amount?' · ₹'+o.amount:'')+'<br>'+escapeHtml(o.date)+(o.requirement?' · '+escapeHtml(o.requirement):'')+'</div>'+(reason?'<div class="rejection-reason">Reason: '+escapeHtml(reason)+'</div>':'')+'</div>'}).join('')}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function showOrders(){showPanel('orders');renderOrders()}
@@ -874,7 +1027,7 @@ function clearNoticeEditor(){$('noticeTitle').value='';$('noticeEditor').innerHT
 async function loadAdminNotices(){const msg=$('noticeAdminMessage');if(!msg)return;msg.textContent='Loading notice...';const {data,error}=await supabaseClient.from('site_notices').select('*').order('updated_at',{ascending:false}).limit(10);if(error){msg.textContent='Notice Board database is not ready. Run the NOTICE BOARD SQL from the top comment in this file in Supabase SQL Editor. ('+error.message+')';$('noticeCurrentPreview').textContent='Notice Board setup required.';$('noticeCurrentMeta').textContent='Not configured';return}const active=(data||[]).find(n=>n.is_active);if(!active){currentNoticeId=null;$('noticeTitle').value='';$('noticeEditor').innerHTML='';$('noticeCurrentPreview').textContent='No active notice.';$('noticeCurrentMeta').textContent='No active notice';msg.textContent='No active notice. You can publish one above.';return}currentNoticeId=active.id;$('noticeTitle').value=active.title||'';$('noticeEditor').innerHTML=sanitizeNoticeHtml(active.content||'');$('noticeCurrentPreview').innerHTML=sanitizeNoticeHtml(active.content||'');$('noticeCurrentMeta').textContent='Updated '+new Date(active.updated_at).toLocaleString('en-IN');msg.textContent='Current active notice loaded. Publishing will update it.'}
 async function publishNotice(){const title=$('noticeTitle').value.trim(),html=sanitizeNoticeHtml($('noticeEditor').innerHTML);const msg=$('noticeAdminMessage');if(!title||!$('noticeEditor').innerText.trim()){msg.textContent='Please enter a title and notice content.';return}if(html.length>1800000){msg.textContent='Notice is too large. Please reduce text or image size.';return}msg.textContent='Publishing notice...';const {data:userData}=await supabaseClient.auth.getUser();const user=userData?.user;if(!user||user.email?.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){msg.textContent='Admin login is required to publish notices.';return}const {error:deactivateError}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);if(deactivateError){msg.textContent='Could not update notices. Check Notice Board SQL/RLS: '+deactivateError.message;return}const payload={title,content:html,is_active:true,updated_at:new Date().toISOString()};const result=currentNoticeId?await supabaseClient.from('site_notices').update(payload).eq('id',currentNoticeId).select().single():await supabaseClient.from('site_notices').insert(payload).select().single();if(result.error){msg.textContent='Could not publish notice: '+result.error.message;return}currentNoticeId=result.data.id;$('noticeCurrentPreview').innerHTML=sanitizeNoticeHtml(html);$('noticeCurrentMeta').textContent='Updated '+new Date().toLocaleString('en-IN');msg.textContent='Notice published. Customers will see it as a small popup.';}
 async function deactivateNotice(){const msg=$('noticeAdminMessage');if(!currentNoticeId){msg.textContent='There is no active notice to remove.';return}const {error}=await supabaseClient.from('site_notices').update({is_active:false,updated_at:new Date().toISOString()}).eq('id',currentNoticeId);if(error){msg.textContent='Could not remove notice: '+error.message;return}currentNoticeId=null;$('noticeCurrentPreview').textContent='No active notice.';$('noticeCurrentMeta').textContent='No active notice';clearNoticeEditor();msg.textContent='Active notice removed.'}
-async function loadPublicNotice(){if(!currentUser)return;const {data,error}=await supabaseClient.from('site_notices').select('id,title,content,updated_at').eq('is_active',true).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error||!data)return;let dismissed='';try{dismissed=localStorage.getItem('ac-dismissed-notice')||''}catch(e){}if(String(data.id)===dismissed)return;$('customerNoticeTitle').textContent=data.title||'Notice';$('customerNoticeContent').innerHTML=sanitizeNoticeHtml(data.content||'');$('customerNoticePopup').dataset.noticeId=String(data.id);$('customerNoticePopup').hidden=false}
+async function loadPublicNotice(){if(!currentUser)return;const {data,error}=await supabaseClient.from('site_notices').select('id,title,content,updated_at').eq('is_active',true).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error||!data){renderDashboardNotice(null);return}renderDashboardNotice(data);let dismissed='';try{dismissed=localStorage.getItem('ac-dismissed-notice')||''}catch(e){}if(String(data.id)===dismissed)return;$('customerNoticeTitle').textContent=data.title||'Notice';$('customerNoticeContent').innerHTML=sanitizeNoticeHtml(data.content||'');$('customerNoticePopup').dataset.noticeId=String(data.id);$('customerNoticePopup').hidden=false}
 function dismissCustomerNotice(){const popup=$('customerNoticePopup');try{localStorage.setItem('ac-dismissed-notice',popup.dataset.noticeId||'')}catch(e){}popup.hidden=true}
 
 let adminLoginInProgress=false;
