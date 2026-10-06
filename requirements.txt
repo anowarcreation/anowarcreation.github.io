@@ -1,4 +1,0 @@
-Flask
-pyHanko
-gunicorn
-flask-cors
