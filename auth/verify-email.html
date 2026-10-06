@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verify Email | Anowar Creation</title>
+<link rel="stylesheet" href="auth.css">
+</head>
+<body>
+<main class="auth-wrap">
+  <div class="brand"><h1>Anowar Creation</h1><p>Verify your email address</p></div>
+  <section class="card">
+    <a class="back" href="register.html">← Back to Create Account</a>
+    <h2>Enter OTP</h2>
+    <p style="color:var(--muted)">We sent a 6-digit verification code to your email. The code expires in 10 minutes.</p>
+    <label>Email</label>
+    <input id="email" type="email" readonly>
+    <label>6-Digit OTP</label>
+    <input id="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit OTP">
+    <button class="btn" onclick="verifyEmail()">Verify Email →</button>
+    <button class="btn secondary" type="button" onclick="resendEmailOtp()">Resend OTP</button>
+    <div id="message" class="msg hidden"></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config/supabase.js"></script>
+<script>window.supabaseClient=supabaseClient;
+const params=new URLSearchParams(location.search); const e=params.get('email')||sessionStorage.getItem('pendingEmail')||''; document.getElementById('email').value=e;
+</script>
+<script src="../js/auth.js"></script>
+</body>
+</html>
