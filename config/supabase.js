@@ -1,4 +1,5 @@
-// Backend placeholder. Add the Supabase URL and anon public key in the backend stage.
-// NEVER put a Supabase service-role key in frontend code.
-export const SUPABASE_URL="YOUR_SUPABASE_URL";
-export const SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY";
+// Anowar Creation - Supabase public client configuration
+// Safe for browser use: this file contains ONLY the Supabase project URL
+// and the Publishable key. NEVER put a sb_secret_ key here.
+export const SUPABASE_URL = "https://tlsrvyqyhonrlcdmlzo.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_znUuYPAf3U-FQoUtp4JRcA_kGZOIvoh";
