@@ -1,1 +1,54 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create Account | Anowar Creation</title><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="auth.css"></head><body class="auth-page"><main class="auth-wrap"><div class="auth-brand"><div class="brand-mark">AC</div><h1>Anowar Creation</h1><p>Create your customer account</p></div><section class="auth-card"><h2>Create Account</h2><p class="sub">Register once and manage your services and orders from the dashboard.</p><div id="message" class="auth-message"></div><form id="registerForm"><div class="field"><label for="name">Full Name</label><input id="name" type="text" autocomplete="name" required placeholder="Your full name"></div><div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="field"><label for="password">Password</label><div class="password-row"><input id="password" type="password" autocomplete="new-password" required minlength="6" placeholder="Minimum 6 characters"><button class="show-pass" type="button" data-toggle="password">SHOW</button></div></div><div class="field"><label for="confirmPassword">Confirm Password</label><input id="confirmPassword" type="password" autocomplete="new-password" required minlength="6" placeholder="Re-enter password"></div><button class="btn btn-primary auth-submit" type="submit">Create Account →</button></form><div class="auth-links"><a href="login.html">Already have an account? Login</a></div></section><div class="back-home"><a href="../index.html">← Back to Anowar Creation</a></div></main><script type="module" src="../js/auth.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Create Account • Anowar Creation</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-card">
+      <div class="brand">ANOWAR CREATION</div>
+      <h1>Create Account</h1>
+      <p class="muted">Create your account and verify your mobile number with OTP.</p>
+
+      <div id="message" class="message" hidden></div>
+
+      <form id="registerForm">
+        <label>Full Name</label>
+        <input id="name" type="text" placeholder="Your full name" required>
+
+        <label>Email ID <span class="hint">(User ID)</span></label>
+        <input id="email" type="email" placeholder="you@example.com" required>
+
+        <label>Mobile Number</label>
+        <input id="phone" type="tel" inputmode="tel" placeholder="+91 9876543210" required>
+        <small class="hint">Use country code, e.g. +91XXXXXXXXXX</small>
+
+        <label>Password</label>
+        <input id="password" type="password" minlength="6" placeholder="Minimum 6 characters" required>
+
+        <label>Confirm Password</label>
+        <input id="confirmPassword" type="password" minlength="6" placeholder="Re-enter password" required>
+
+        <button id="createBtn" type="submit">Create Account →</button>
+      </form>
+
+      <div id="otpBox" hidden>
+        <div class="otp-title">Verify Mobile Number</div>
+        <p class="muted">Enter the OTP sent to <strong id="otpPhone"></strong>.</p>
+        <input id="otp" class="otp-input" inputmode="numeric" maxlength="6" placeholder="6-digit OTP">
+        <button id="verifyBtn" type="button">Verify OTP →</button>
+        <button id="resendBtn" class="secondary" type="button">Resend OTP</button>
+      </div>
+
+      <p class="footer-link">Already have an account? <a href="login.html">Login</a></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config/supabase.js"></script>
+  <script src="../js/auth.js"></script>
+</body>
+</html>

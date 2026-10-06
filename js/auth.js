@@ -1,117 +1,137 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/supabase.js';
+const $ = (id) => document.getElementById(id);
 
-const configured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('YOUR_SUPABASE') && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE'));
-const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-const message = document.getElementById('message');
-
-function showMessage(text, type='info') {
-  if (!message) return;
-  message.textContent = text;
-  message.dataset.type = type;
-  message.classList.add('show');
-}
-function setBusy(form, busy) {
-  const btn = form?.querySelector('button[type="submit"]');
-  if (btn) { btn.disabled = busy; btn.style.opacity = busy ? '.6' : '1'; }
-}
-function goDashboard() { window.location.href = '../pages/dashboard.html'; }
-
-for (const btn of document.querySelectorAll('[data-toggle="password"]')) {
-  btn.addEventListener('click', () => {
-    const input = btn.previousElementSibling;
-    if (!input) return;
-    input.type = input.type === 'password' ? 'text' : 'password';
-    btn.textContent = input.type === 'password' ? 'SHOW' : 'HIDE';
-  });
+function showMessage(message, type = 'info') {
+  const box = $('message');
+  if (!box) return;
+  box.hidden = false;
+  box.className = `message ${type}`;
+  box.textContent = message;
 }
 
-// Customer login
-const loginForm = document.getElementById('loginForm');
-if (loginForm) loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!supabase) return showMessage('Supabase is not configured.', 'error');
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  setBusy(loginForm, true);
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  setBusy(loginForm, false);
-  if (error) return showMessage(error.message, 'error');
-  goDashboard();
-});
+function normalizePhone(value) {
+  let phone = value.trim().replace(/[\s()-]/g, '');
+  if (/^0\d{10}$/.test(phone)) phone = '+91' + phone.slice(1);
+  if (/^\d{10}$/.test(phone)) phone = '+91' + phone;
+  return phone;
+}
 
-// Customer registration
-const registerForm = document.getElementById('registerForm');
-if (registerForm) registerForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!supabase) return showMessage('Supabase is not configured.', 'error');
-  const name = document.getElementById('name').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const confirmPassword = document.getElementById('confirmPassword').value;
-  if (password !== confirmPassword) return showMessage('Passwords do not match.', 'error');
-  setBusy(registerForm, true);
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: name } }
-  });
-  setBusy(registerForm, false);
-  if (error) return showMessage(error.message, 'error');
-  if (data.session) return goDashboard();
-  showMessage('Account created. If email confirmation is enabled, check your email before logging in.', 'success');
-});
+async function saveProfile(user, name, email, phone, verified = false) {
+  const { error } = await supabaseClient.from('profiles').upsert({
+    auth_id: user.id,
+    user_id: email.toLowerCase(),
+    name,
+    email: email.toLowerCase(),
+    mobile_number: phone,
+    phone_verified: verified,
+    account_created: user.created_at
+  }, { onConflict: 'auth_id' });
+  if (error) throw error;
+}
 
-// Admin login: admin users must have user_metadata.role === 'admin'.
-const adminForm = document.getElementById('adminLoginForm');
-if (adminForm) adminForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!supabase) return showMessage('Supabase is not configured.', 'error');
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  setBusy(adminForm, true);
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  setBusy(adminForm, false);
-  if (error) return showMessage(error.message, 'error');
-  if (data.user?.user_metadata?.role !== 'admin') {
-    await supabase.auth.signOut();
-    return showMessage('This account does not have admin access.', 'error');
-  }
-  window.location.href = '../pages/admin.html';
-});
+let pendingRegistration = null;
 
-// Forgot password
-const forgot = document.getElementById('forgotLink');
-if (forgot) forgot.addEventListener('click', async (e) => {
-  e.preventDefault();
-  if (!supabase) return showMessage('Supabase is not configured.', 'error');
-  const email = document.getElementById('email')?.value.trim();
-  if (!email) return showMessage('Enter your email first, then click Forgot Password.', 'error');
-  const redirectTo = `${window.location.origin}/auth/reset-password.html`;
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-  showMessage(error ? error.message : 'Password reset instructions have been sent if this email is registered.', error ? 'error' : 'success');
-});
-
-// Password recovery page
-const resetForm = document.getElementById('resetForm');
-if (resetForm) {
-  if (supabase) {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) showMessage('Open this page using the password reset link sent to your email.', 'error');
-    });
-  }
-  resetForm.addEventListener('submit', async (e) => {
+const registerForm = $('registerForm');
+if (registerForm) {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!supabase) return showMessage('Supabase is not configured.', 'error');
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    if (password !== confirmPassword) return showMessage('Passwords do not match.', 'error');
-    setBusy(resetForm, true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(resetForm, false);
-    if (error) return showMessage(error.message, 'error');
-    showMessage('Password updated successfully. Redirecting to login...', 'success');
-    await supabase.auth.signOut();
-    setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+    const name = $('name').value.trim();
+    const email = $('email').value.trim().toLowerCase();
+    const phone = normalizePhone($('phone').value);
+    const password = $('password').value;
+    const confirm = $('confirmPassword').value;
+
+    if (password !== confirm) return showMessage('Passwords do not match.', 'error');
+    if (!/^\+\d{8,15}$/.test(phone)) return showMessage('Enter a valid mobile number with country code, e.g. +919876543210.', 'error');
+
+    $('createBtn').disabled = true;
+    showMessage('Creating your account...', 'info');
+
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: { data: { name } }
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error('Account could not be created.');
+
+      pendingRegistration = { name, email, phone, userId: data.user.id };
+
+      // Keep the same Auth user and verify its phone number with OTP.
+      const { error: phoneError } = await supabaseClient.auth.updateUser({ phone });
+      if (phoneError) throw phoneError;
+
+      await saveProfile(data.user, name, email, phone, false);
+      $('registerForm').hidden = true;
+      $('otpBox').hidden = false;
+      $('otpPhone').textContent = phone;
+      showMessage('OTP sent to your mobile number.', 'success');
+    } catch (err) {
+      showMessage(err.message || 'Registration failed.', 'error');
+      $('createBtn').disabled = false;
+    }
   });
 }
+
+async function verifyRegistrationOtp() {
+  if (!pendingRegistration) return showMessage('Registration session expired. Please start again.', 'error');
+  const token = $('otp').value.trim();
+  if (!/^\d{6}$/.test(token)) return showMessage('Enter the 6-digit OTP.', 'error');
+
+  $('verifyBtn').disabled = true;
+  try {
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      phone: pendingRegistration.phone,
+      token,
+      type: 'phone_change'
+    });
+    if (error) throw error;
+
+    const user = data.user || (await supabaseClient.auth.getUser()).data.user;
+    await saveProfile(user, pendingRegistration.name, pendingRegistration.email, pendingRegistration.phone, true);
+    showMessage('Mobile verified successfully. Account created!', 'success');
+    setTimeout(() => { window.location.href = '../pages/dashboard.html'; }, 900);
+  } catch (err) {
+    showMessage(err.message || 'Invalid OTP.', 'error');
+    $('verifyBtn').disabled = false;
+  }
+}
+
+$('verifyBtn')?.addEventListener('click', verifyRegistrationOtp);
+$('resendBtn')?.addEventListener('click', async () => {
+  if (!pendingRegistration) return;
+  $('resendBtn').disabled = true;
+  try {
+    const { error } = await supabaseClient.auth.updateUser({ phone: pendingRegistration.phone });
+    if (error) throw error;
+    showMessage('A new OTP has been sent.', 'success');
+  } catch (err) {
+    showMessage(err.message || 'Could not resend OTP.', 'error');
+  } finally {
+    setTimeout(() => { $('resendBtn').disabled = false; }, 30000);
+  }
+});
+
+const loginForm = $('loginForm');
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('email').value.trim().toLowerCase();
+    const password = $('password').value;
+    const button = $('loginBtn');
+    button.disabled = true;
+    try {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      window.location.href = '../pages/dashboard.html';
+    } catch (err) {
+      showMessage(err.message || 'Login failed.', 'error');
+      button.disabled = false;
+    }
+  });
+}
+
+$('showPassword')?.addEventListener('click', () => {
+  const input = $('password');
+  if (input) input.type = input.type === 'password' ? 'text' : 'password';
+});
