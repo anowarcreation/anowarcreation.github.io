@@ -954,7 +954,7 @@ async function logoutUser(){await supabaseClient.auth.signOut();currentUser=null
 let recoveryMode=false;
 function isRecoveryUrl(){const hash=window.location.hash||'';const search=window.location.search||'';return hash.includes('type=recovery')||search.includes('type=recovery')||search.includes('code=')}
 supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){recoveryMode=true;showPasswordRecovery();return}if(session&&!currentUser&&!recoveryMode&&!isRecoveryUrl())loadUser()});
-supabaseClient.auth.getSession().then(({data})=>{if(isRecoveryUrl()){recoveryMode=true;showPasswordRecovery();return}if(data.session){loadUser()}else{$('authScreen').style.display='flex';document.querySelector('.app').style.display='none';$('adminPage').classList.remove('show')}});
+supabaseClient.auth.getSession().then(({data})=>{if(isRecoveryUrl()){recoveryMode=true;showPasswordRecovery();return}if(data.session){loadUser()}else{const auth=$('authScreen');if(auth)auth.style.display='flex';const app=document.querySelector('.app');if(app)app.style.display='none';const admin=$('adminPage');if(admin)admin.classList.remove('show')}}).catch(err=>console.error('Supabase session check failed:',err));
 function showPanel(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active')}
 function activateServices(){showPanel('services',document.querySelector('.tabs .tab'))}
 function closeModal(id){$(id).classList.remove('show')}
@@ -1099,14 +1099,18 @@ function dismissCustomerNotice(){const popup=$('customerNoticePopup');try{localS
 
 let adminLoginInProgress=false;
 function openAdmin(){
-  $('adminLoginModal').classList.add('show');
-  $('adminLoginMessage').textContent='';
-  $('adminEmail').value='';
-  $('adminPassword').value='';
+  const modal=$('adminLoginModal');
+  if(!modal){alert('Admin Login window could not be loaded. Please refresh the page.');return}
+  modal.classList.add('show');
+  const msg=$('adminLoginMessage'); if(msg)msg.textContent='';
+  const email=$('adminEmail'); if(email)email.value='';
+  const pass=$('adminPassword'); if(pass)pass.value='';
 }
 
 async function adminLogin(){
-  const email=$('adminEmail').value.trim(),password=$('adminPassword').value,msg=$('adminLoginMessage');
+  const emailEl=$('adminEmail'), passwordEl=$('adminPassword'), msg=$('adminLoginMessage');
+  if(!emailEl||!passwordEl||!msg){alert('Admin Login form could not be loaded. Please refresh the page.');return}
+  const email=emailEl.value.trim(),password=passwordEl.value;
   if(!email||!password){msg.textContent='Please enter Admin ID and Password.';return}
   if(email.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){msg.textContent='Invalid admin ID or password.';return}
   msg.textContent='Checking admin access...';
@@ -1119,7 +1123,9 @@ async function adminLogin(){
   closeModal('adminLoginModal');
   $('authScreen').style.display='none';
   document.querySelector('.app').style.display='none';
-  $('adminPage').classList.add('show');
+  const adminPage=$('adminPage');
+  if(!adminPage){msg.textContent='Admin panel could not be loaded.';return}
+  adminPage.classList.add('show');
   await loadAdminData();
   await loadAdminNotices();
 }
