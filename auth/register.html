@@ -1,1 +1,42 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create Account | Anowar Creation</title><link rel="stylesheet" href="auth.css"></head><body><main class="auth-wrap"><div class="brand"><h1>Anowar Creation</h1><p>Create your customer account</p></div><section class="card"><a class="back" href="login.html">← Back to Login</a><h2>Create Account</h2><p style="color:var(--muted)">Email is your User ID. After registration, a 6-digit OTP will be sent to your email for verification. Phone number is saved only as profile information.</p><label>Full Name</label><input id="name" placeholder="Your full name"><label>Email / User ID</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com"><label>Mobile Number</label><input id="phone" type="tel" autocomplete="tel" placeholder="+91XXXXXXXXXX"><label>Password</label><input id="password" type="password" autocomplete="new-password" placeholder="Minimum 6 characters"><label>Confirm Password</label><input id="confirm" type="password" autocomplete="new-password" placeholder="Re-enter password"><button class="btn" onclick="register()">Create Account →</button><div class="links"><a href="login.html">Already have an account? Login</a></div><div id="message" class="msg hidden"></div></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../config/supabase.js"></script><script>window.supabaseClient=supabaseClient;</script><script src="../js/auth.js"></script></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Create Account | Anowar Creation</title><link rel="stylesheet" href="auth.css"></head>
+<body>
+<main class="auth-wrap">
+  <section class="auth-visual">
+    <div class="auth-logo-row"><div class="ac-mark">AC</div><div><div class="auth-brand-name">ANOWAR <span>CREATION</span></div><div class="auth-brand-sub">DIGITAL SERVICE PORTAL</div></div></div>
+    <div class="visual-content">
+      <div class="visual-kicker">FAST • SECURE • STUDENT FRIENDLY</div>
+      <h1 class="visual-title">WELCOME TO<br><strong>ANOWAR</strong> <span class="grad">CREATION</span></h1>
+      <p class="visual-copy">Your trusted platform for document services, online applications, digital support and more.</p>
+      <div class="visual-list">
+        <div class="visual-item"><i>✓</i> Fast &amp; Secure</div>
+        <div class="visual-item"><i>⚙</i> Easy Process</div>
+        <div class="visual-item"><i>♧</i> Dedicated Support</div>
+        <div class="visual-item"><i>★</i> Trusted &amp; Reliable</div>
+      </div>
+    </div>
+    <div class="hero-device-auth" aria-hidden="true"><div class="screen"><b>ANOWAR</b><small>CREATION</small></div><div class="base"></div></div>
+    <div class="visual-tag">“Your Needs<br>Our Priority”</div>
+  </section>
+  <section class="auth-panel">
+    <section class="auth-card">
+      <a class="back" href="login.html">← Back to Login</a>
+      
+<h2 class="card-title">Create Your Account</h2>
+<p class="card-sub">Your email will be your User ID. A 6-digit OTP will be sent to your email for verification.</p>
+<label>Full Name</label><input id="name" placeholder="Your full name">
+<label>Email / User ID</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+<label>Mobile Number</label><input id="phone" type="tel" autocomplete="tel" placeholder="+91XXXXXXXXXX">
+<label>Password</label><input id="password" type="password" autocomplete="new-password" placeholder="Minimum 6 characters">
+<label>Confirm Password</label><input id="confirm" type="password" autocomplete="new-password" placeholder="Re-enter password">
+<button class="btn" onclick="register()">Create Account →</button>
+<div class="links"><a href="login.html">Already have an account? Login</a></div><div id="message" class="msg hidden"></div>
+
+    </section>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config/supabase.js"></script><script>window.supabaseClient=supabaseClient;</script>
+<script src="../js/auth.js"></script>
+</body></html>
