@@ -702,6 +702,15 @@ body{overflow-x:hidden}
 .modal .box{background:#071329!important;border:1px solid rgba(50,122,255,.35)!important;color:#fff!important}.modal input,.modal textarea,.modal select{background:#061124!important;color:#fff!important;border-color:#1a345d!important}.modal .choice{background:#091a33!important;color:#dbe8ff!important;border-color:#23456f!important}
 @media(max-width:1050px){.ac-auth-nav{display:none}.ac-auth-shell{grid-template-columns:1fr}.ac-auth-hero{display:none}.ac-auth-panel{min-height:100vh}.ac-services-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}.ac-dashboard-bottom{grid-template-columns:1fr}.ac-hero-laptop{right:-30px}.ac-hero-copy p{max-width:60%}}
 @media(max-width:800px){.ac-sidebar{width:220px!important;transform:translateX(-105%);transition:transform .2s ease}.ac-sidebar.mobile-open{transform:translateX(0)}.ac-main{margin-left:0!important;padding:0 12px 30px!important}.ac-menu{display:block;background:none;border:0;color:#dce8ff;font-size:20px}.ac-mobile-logo{display:block}.ac-mobile-logo img{width:35px;height:35px}.ac-search{margin-left:auto;width:36px;background:transparent;border:0;padding:0}.ac-search input{display:none}.ac-user div:not(.ac-avatar){display:none}.ac-stats{grid-template-columns:repeat(2,1fr)!important}.ac-services-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.ac-dashboard-hero{height:125px}.ac-hero-laptop{opacity:.45;right:-80px}.ac-hero-copy p{max-width:70%}}
+@media(max-width:1050px){
+  .ac-auth-screen{background:#020611!important}
+  .ac-auth-shell{position:relative;display:block;min-height:100vh;background:radial-gradient(circle at 15% 35%,rgba(0,108,255,.20),transparent 42%),radial-gradient(circle at 85% 70%,rgba(110,35,255,.18),transparent 42%),#020611!important}
+  .ac-auth-hero{display:block;position:absolute;inset:0;border-right:0;padding:0;background:linear-gradient(135deg,#030713 0%,#020815 52%,#04051a 100%);}
+  .ac-auth-hero:after{display:block}
+  .ac-hero-copy-auth,.ac-auth-nav,.ac-auth-quote,.ac-laptop{display:none!important}
+  .ac-auth-panel{position:relative;z-index:3;min-height:100vh;padding:28px 18px;background:linear-gradient(180deg,rgba(2,6,17,.28),rgba(2,6,17,.78) 45%,rgba(2,6,17,.92));}
+  .ac-auth-card{box-shadow:0 0 0 1px rgba(135,45,255,.20),0 0 45px rgba(0,88,255,.30),0 20px 70px rgba(0,0,0,.55)}
+}
 @media(max-width:520px){.ac-auth-card{padding:24px 18px}.ac-auth-panel{padding:18px 12px}.ac-stats{gap:7px!important}.ac-stat{padding:0 9px!important}.ac-stat b{font-size:13px}.ac-services-grid{grid-template-columns:1fr 1fr!important}.ac-service{min-height:115px!important}.ac-dashboard-hero{padding:18px;height:130px}.ac-hero-copy h2{font-size:21px}.ac-hero-copy p{font-size:9px}.ac-section-head h2{font-size:14px}}
 </style>
 
@@ -826,8 +835,8 @@ body{overflow-x:hidden}
     <article class="card ac-service purple"><div class="service-icon">▧</div><h3>PAN Card Services</h3><p>New PAN, correction &amp; linking</p><button onclick="openPan()">Apply Now <span>→</span></button></article>
     <article class="card ac-service teal"><div class="service-icon">▣</div><h3>Voter Card Services</h3><p>New voter, correction &amp; PDF</p><button onclick="openVoter()">Apply Now <span>→</span></button></article>
     <article class="card ac-service orange"><div class="service-icon">▤</div><h3>Scholarship</h3><p>SVMCM, NSP-WB &amp; Aikyashree</p><button onclick="openScholarship()">Apply Now <span>→</span></button></article>
-    <article class="card ac-service pink"><div class="service-icon">✎</div><h3>DL PDF</h3><p>Driving licence PDF assistance</p><button onclick="openAppointment('DL PDF','Provide the details required for the DL PDF service.')">Apply Now <span>→</span></button></article>
-    <article class="card ac-service cyan"><div class="service-icon">▱</div><h3>RC PDF</h3><p>Registration certificate PDF</p><button onclick="openAppointment('RC PDF','Provide the details required for the RC PDF service.')">Apply Now <span>→</span></button></article>
+    <article class="card ac-service pink"><div class="service-icon">✎</div><h3>DL PDF</h3><p>Driving licence PDF assistance<br><small>NO OTP required</small></p><button onclick="openAppointment('DL PDF','Provide the details required for the DL PDF service.')">Apply Now <span>→</span></button></article>
+    <article class="card ac-service cyan"><div class="service-icon">▱</div><h3>RC PDF</h3><p>Registration certificate PDF<br><small>NO OTP required</small></p><button onclick="openAppointment('RC PDF','Provide the details required for the RC PDF service.')">Apply Now <span>→</span></button></article>
     <article class="card ac-service yellow"><div class="service-icon">₹</div><h3>Service Rates</h3><p>Check current service pricing</p><button onclick="showRates()">View Rates <span>→</span></button></article>
     <article class="card ac-service red"><div class="service-icon">♧</div><h3>Support</h3><p>Technical help &amp; service support</p><button onclick="openSupport()">Open Support <span>→</span></button></article>
     <article class="card ac-service slate"><div class="service-icon">⌘</div><h3>PDF Tools</h3><p>PDF tools are under maintenance</p><button onclick="openPdfTools()">View Status <span>→</span></button></article>
@@ -890,7 +899,26 @@ function showForgotPassword(){const email=$('loginEmail').value.trim();$('loginF
 async function sendPasswordReset(){const email=$('forgotEmail').value.trim(),msg=$('forgotMessage');if(!email){msg.textContent='Please enter your registered email.';return}msg.textContent='Sending temporary password...';try{const {data,error}=await supabaseClient.functions.invoke('customer-forgot-password',{body:{email}});if(error){console.error('Forgot password function error:',error);msg.textContent='Could not send the email right now. Please contact Anowar Creation support.';return}if(data?.success){msg.textContent='';alert('We had sent you a temporary password on your email. Please check your inbox or spam folder and change the password after login.');authMode('login');$('loginEmail').value=email}else{msg.textContent=data?.message||'If an account exists for this email, a temporary password will be sent.'}}catch(e){console.error(e);msg.textContent='Could not send the email right now. Please try again later.'}}
 function showPasswordRecovery(){ $('loginForm').classList.add('hidden');$('registerForm').classList.add('hidden');$('forgotForm').classList.add('hidden');$('recoveryForm').classList.remove('hidden');$('loginTab').classList.remove('active');$('registerTab').classList.remove('active');$('recoveryMessage').textContent=''}
 async function updateRecoveredPassword(){const password=$('newPassword').value,confirm=$('newPasswordConfirm').value,msg=$('recoveryMessage');if(!password||!confirm){msg.textContent='Please fill both password fields.';return}if(password.length<6){msg.textContent='Password must be at least 6 characters.';return}if(password!==confirm){msg.textContent='Passwords do not match.';return}msg.textContent='Updating password...';const {error}=await supabaseClient.auth.updateUser({password});if(error){msg.textContent=error.message;return}msg.textContent='Password updated successfully. Logging you in...';setTimeout(()=>loadUser(),500)}
-async function registerUser(){const name=$('regName').value.trim(),phone=$('regPhone').value.trim(),email=$('regEmail').value.trim(),password=$('regPassword').value,confirm=$('regConfirm').value,msg=$('registerMessage');if(!name||!phone||!email||!password){msg.textContent='Please fill all fields.';return}if(password.length<6){msg.textContent='Password must be at least 6 characters.';return}if(password!==confirm){msg.textContent='Passwords do not match.';return}msg.textContent='Creating account...';const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{name,phone}}});if(error){msg.textContent=error.message;return}if(data.session){msg.textContent='Account created. Logging you in...';await loadUser()}else{msg.textContent='Account created. Please use Login now.';authMode('login');$('loginEmail').value=email}}
+async function registerUser(){
+  const name=$('regName').value.trim(),phone=$('regPhone').value.trim(),email=$('regEmail').value.trim().toLowerCase(),password=$('regPassword').value,confirm=$('regConfirm').value,msg=$('registerMessage');
+  if(!name||!phone||!email||!password||!confirm){msg.textContent='Please fill all fields.';return}
+  if(password.length<6){msg.textContent='Password must be at least 6 characters.';return}
+  if(password!==confirm){msg.textContent='Passwords do not match.';return}
+  msg.textContent='Creating account...';
+  try{
+    const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{name,phone,mobile_number:phone}}});
+    if(error){console.error('Signup error:',error);msg.textContent=error.message||'Account creation failed.';return}
+    if(data.user && data.session){
+      const {error:profileError}=await supabaseClient.from('profiles').upsert({auth_id:data.user.id,user_id:email,name,email,mobile_number:phone,phone_verified:false},{onConflict:'auth_id'});
+      if(profileError){console.error('Profile error:',profileError);msg.textContent='Account created, but profile could not be saved: '+profileError.message;return}
+      msg.textContent='Account created successfully. Logging you in...';
+      await loadUser();
+    }else{
+      msg.textContent='Account created. Please verify your email if requested, then login.';
+      authMode('login');$('loginEmail').value=email;
+    }
+  }catch(e){console.error(e);msg.textContent=e?.message||'Account creation failed. Please try again.'}
+}
 
 function openChangePassword(){if(!currentUser){alert('Please log in first.');return} $('oldCustomerPassword').value='';$('newCustomerPassword').value='';$('confirmCustomerPassword').value='';$('changePasswordMessage').textContent='';$('changePasswordModal').classList.add('show')}
 async function changeCustomerPassword(event){event.preventDefault();const oldPassword=$('oldCustomerPassword').value,newPassword=$('newCustomerPassword').value,confirm=$('confirmCustomerPassword').value,msg=$('changePasswordMessage');if(!currentUser?.email){msg.textContent='Please log in again and try.';return}if(newPassword.length<8){msg.textContent='New password must be at least 8 characters.';return}if(newPassword!==confirm){msg.textContent='New passwords do not match.';return}if(oldPassword===newPassword){msg.textContent='New password must be different from old password.';return}msg.textContent='Verifying old password...';const {error:verifyError}=await supabaseClient.auth.signInWithPassword({email:currentUser.email,password:oldPassword});if(verifyError){msg.textContent='Old password is incorrect.';return}msg.textContent='Updating password...';const {error}=await supabaseClient.auth.updateUser({password:newPassword});if(error){msg.textContent=error.message;return}$('oldCustomerPassword').value='';$('newCustomerPassword').value='';$('confirmCustomerPassword').value='';msg.textContent='Password changed successfully.';alert('Your password has been changed successfully.');closeModal('changePasswordModal')}
@@ -921,7 +949,7 @@ function renderDashboardNotice(data){
   if(!data){box.innerHTML='<div class="ac-empty">No active notice.</div>';return}
   box.innerHTML=`<div class="ac-notice-title">${escapeHtml(data.title||'Important Notice')}</div><div class="ac-notice-date">${data.updated_at?new Date(data.updated_at).toLocaleDateString('en-IN'):''}</div><div>${sanitizeNoticeHtml(data.content||'')}</div>`;
 }
-async function loadUser(){const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;currentUser=user;const {data:profile}=await supabaseClient.from('profiles').select('*').eq('id',user.id).maybeSingle();currentProfile=profile||{name:user.user_metadata?.name||'Customer',phone:user.user_metadata?.phone||'',email:user.email||''};$('profileName').textContent=currentProfile.name||'Customer';$('profileAvatar').textContent=(currentProfile.name||'C').slice(0,2).toUpperCase();if($('heroProfileName'))$('heroProfileName').textContent=currentProfile.name||'Customer';$('authScreen').style.display='none';document.querySelector('.app').style.display='flex';$('adminPage').classList.remove('show');await loadCloudOrders();loadPublicNotice()}
+async function loadUser(){const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;currentUser=user;const {data:profile}=await supabaseClient.from('profiles').select('*').eq('auth_id',user.id).maybeSingle();currentProfile=profile||{name:user.user_metadata?.name||'Customer',phone:user.user_metadata?.phone||'',email:user.email||''};$('profileName').textContent=currentProfile.name||'Customer';$('profileAvatar').textContent=(currentProfile.name||'C').slice(0,2).toUpperCase();if($('heroProfileName'))$('heroProfileName').textContent=currentProfile.name||'Customer';$('authScreen').style.display='none';document.querySelector('.app').style.display='flex';$('adminPage').classList.remove('show');await loadCloudOrders();loadPublicNotice()}
 async function logoutUser(){await supabaseClient.auth.signOut();currentUser=null;currentProfile=null;document.querySelector('.app').style.display='none';$('authScreen').style.display='flex';authMode('login')}
 let recoveryMode=false;
 function isRecoveryUrl(){const hash=window.location.hash||'';const search=window.location.search||'';return hash.includes('type=recovery')||search.includes('type=recovery')||search.includes('code=')}
@@ -1085,9 +1113,8 @@ async function adminLogin(){
   adminLoginInProgress=true;
   const {error}=await supabaseClient.auth.signInWithPassword({email,password});
   if(error){adminLoginInProgress=false;msg.textContent='Invalid admin ID or password.';return}
-  const {data:allowed,error:ae}=await supabaseClient.rpc('is_admin');
-  if(ae||!allowed){await supabaseClient.auth.signOut();adminLoginInProgress=false;msg.textContent='This account is not an admin account.';return}
   currentUser=(await supabaseClient.auth.getUser()).data.user;
+  if(!currentUser){adminLoginInProgress=false;msg.textContent='Admin session could not be created.';return}
   adminLoginInProgress=false;
   closeModal('adminLoginModal');
   $('authScreen').style.display='none';
@@ -1115,7 +1142,7 @@ async function loadAdminData(){
   $('adminLastUpdated').textContent='Loading...';
   const [ordersRes,profilesRes]=await Promise.all([
     supabaseClient.from('orders').select('*').order('created_at',{ascending:false}),
-    supabaseClient.from('profiles').select('*').order('created_at',{ascending:false})
+    supabaseClient.from('profiles').select('*').order('account_created',{ascending:false})
   ]);
   const orders=ordersRes.data||[],profiles=profilesRes.data||[];
   adminOrdersCache=orders;adminCustomersCache=profiles;
@@ -1222,7 +1249,7 @@ function renderAdminCustomers(rows){
     <td><b>${escapeHtml(p.name||'Customer')}</b></td>
     <td>${escapeHtml(p.phone||'')}</td>
     <td>${escapeHtml(p.email||'')}</td>
-    <td>${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):''}</td>
+    <td>${(p.account_created||p.created_at)?new Date(p.account_created||p.created_at).toLocaleString('en-IN'):''}</td>
     <td><span class="admin-badge">Customer</span></td>
     <td><button class="admin-mini-btn" onclick="viewCustomerProfile('${String(p.id||'').replace(/'/g,'')}')">View Profile</button> <button class="admin-mini-btn" onclick="adminResetCustomerPassword('${String(p.id||'').replace(/'/g,'')}','${escapeHtml(p.email||'').replace(/'/g,'')}')">Temporary Password</button></td>
   </tr>`}).join(''):'<tr><td colspan="6" class="admin-empty">No customers found</td></tr>';
@@ -1241,7 +1268,7 @@ function viewCustomerProfile(id){
   const successful=orders.filter(o=>normalizeApplicationStatus(o.status)==='Successfully Completed').length;
   const rejected=orders.filter(o=>['Rejected','Declined'].includes(normalizeApplicationStatus(o.status))).length;
   const pending=orders.length-successful-rejected;
-  $('customerProfileDetails').innerHTML=`<div class="profile-detail-row"><span style="color:#91a2bd">Customer Name</span><span class="detail-value">${escapeHtml(p.name||'Customer')}</span><button class="pencil-btn" aria-label="Edit customer name" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Phone Number</span><span class="detail-value">${escapeHtml(p.phone||'Not provided')}</span><button class="pencil-btn" aria-label="Edit customer phone" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Email</span><span class="detail-value">${escapeHtml(p.email||'Not provided')}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Registered</span><span class="detail-value">${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):'—'}</span></div><div class="customer-profile-grid"><div class="customer-profile-stat"><span>Total Orders / Appointments</span><b>${orders.length}</b></div><div class="customer-profile-stat"><span>Successfully Completed</span><b style="color:#6ee7b7">${successful}</b></div><div class="customer-profile-stat"><span>Rejected / Declined</span><b style="color:#fca5a5">${rejected}</b></div><div class="customer-profile-stat"><span>Pending / In Process</span><b style="color:#fcd34d">${pending}</b></div></div>`;
+  $('customerProfileDetails').innerHTML=`<div class="profile-detail-row"><span style="color:#91a2bd">Customer Name</span><span class="detail-value">${escapeHtml(p.name||'Customer')}</span><button class="pencil-btn" aria-label="Edit customer name" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Phone Number</span><span class="detail-value">${escapeHtml(p.phone||'Not provided')}</span><button class="pencil-btn" aria-label="Edit customer phone" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Email</span><span class="detail-value">${escapeHtml(p.email||'Not provided')}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Registered</span><span class="detail-value">${(p.account_created||p.created_at)?new Date(p.account_created||p.created_at).toLocaleString('en-IN'):'—'}</span></div><div class="customer-profile-grid"><div class="customer-profile-stat"><span>Total Orders / Appointments</span><b>${orders.length}</b></div><div class="customer-profile-stat"><span>Successfully Completed</span><b style="color:#6ee7b7">${successful}</b></div><div class="customer-profile-stat"><span>Rejected / Declined</span><b style="color:#fca5a5">${rejected}</b></div><div class="customer-profile-stat"><span>Pending / In Process</span><b style="color:#fcd34d">${pending}</b></div></div>`;
   $('customerProfileOrderMeta').textContent=orders.length+' record(s)';
   $('customerProfileOrders').innerHTML=orders.length?orders.slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).map(o=>{const reason=getStatusReason(o.status);return `<div class="profile-order-row"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${escapeHtml(o.service||'Service')}</b><span class="admin-status-pill ${statusClass(o.status)}">${escapeHtml(cleanOrderStatus(o.status))}</span></div><div class="order-detail">Order ID: ${escapeHtml(o.order_id||'—')} · Amount: ₹${Number(o.amount||0).toFixed(2)} · ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div>${reason?`<div class="rejection-reason">Reason: ${escapeHtml(reason)}</div>`:''}<div class="order-detail">Payment: ${escapeHtml(o.payment_method||'N/A')}${o.requirement?' · Details: '+escapeHtml(o.requirement):''}</div></div>`}).join(''):'<p class="note">No orders or appointments found for this customer.</p>';
   switchAdminSection('adminCustomerProfile');
