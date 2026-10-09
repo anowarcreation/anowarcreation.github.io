@@ -602,6 +602,18 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
 @media(max-width:700px){.auth-screen{padding:14px!important;justify-content:center!important}.auth-card{width:min(430px,96vw)!important;padding:24px 18px!important}.auth-brand{font-size:29px!important}.custom-logo-main{width:88px!important;height:88px!important}.direct-admin-login{top:8px!important;right:8px!important;font-size:11px!important;padding:8px 10px!important}.auth-card .form input{padding:12px!important}}
 .auth-admin-tab{display:block;text-align:center;margin:-4px 0 16px;padding:10px;border:1px solid rgba(102,205,255,.4);border-radius:10px;color:#dbe9ff;background:rgba(15,35,65,.7);font-weight:800}.auth-admin-tab:hover{background:rgba(24,113,255,.22)}
 </style>
+<style id="ac-static-futuristic-theme">
+/* Static futuristic neon theme: intentionally no animations or transitions */
+:root{--ac-cyan:#00d9ff;--ac-blue:#1777ff;--ac-violet:#8b35ff;--ac-bg:#030817;--ac-panel:#08152b;--ac-line:#214d83}
+html,body{background:radial-gradient(ellipse at top left,#0b1d45 0%,#030817 58%,#05071b 100%)!important;color:#edf7ff!important}
+*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.sidebar,.topbar,.app-header{background:#050d20!important;border-color:#17466e!important}
+.card,.service-card,.panel,.modal .box,.auth-card,.dashboard-card,.stat-card,.notice-card,.order-card{background:linear-gradient(145deg,rgba(7,23,48,.98),rgba(8,10,32,.98))!important;border:1px solid #174c7b!important;box-shadow:0 0 0 1px rgba(0,217,255,.06)!important;color:#eef7ff!important}
+button.primary,.primary,.btn-primary{background:linear-gradient(100deg,#087bff,#6c2bff)!important;color:#fff!important;border:1px solid #29d9ff!important;border-radius:12px!important}
+button,.service-card a{cursor:pointer}
+input,select,textarea{border-color:#244a78!important}
+@media(max-width:700px){.app,.dashboard,.main-content{width:100%!important;max-width:100%!important}.sidebar{max-width:84vw}.service-grid,.services-grid,.cards{grid-template-columns:repeat(1,minmax(0,1fr))!important}.service-card{width:100%!important}.main-content{padding:12px!important}.brand h1,.hero h1{font-size:clamp(25px,7vw,38px)!important}}
+</style>
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -711,6 +723,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
       <article class="card"><div class="icon">🪪</div><h3>PAN Card Services</h3><p>New PAN, correction, PAN–Aadhaar linking, PAN status and finder assistance in one place.</p><button onclick="openPan()">View PAN Services</button></article>
       <article class="card"><div class="icon">🗳️</div><h3>Voter Card Services</h3><p>New voter application, correction, mobile linking, voter PDF and status check in one place.</p><button onclick="openVoter()">View Voter Services</button></article>
       <article class="card"><div class="icon">🎓</div><h3>Scholarship</h3><p>SVMCM or NSP-WB / Aikyashree, with New or Renewal.</p><button onclick="openScholarship()">Start</button></article>
+      <article class="card"><div class="icon">🎨</div><h3>Front Page Maker</h3><p>Create an assignment or project front page with your details and selected theme.</p><button onclick="openServiceDetails('Front Page Maker')">Create Front Page</button></article>
       <article class="card"><div class="icon">🚗</div><h3>DL PDF</h3><p>Request driving licence PDF assistance.<br><b>NO OTP required.</b></p><button onclick="openServiceDetails('DL PDF')">Start</button></article>
       <article class="card"><div class="icon">🚘</div><h3>RC PDF</h3><p>Request registration certificate PDF assistance.<br><b>NO OTP required.</b></p><button onclick="openServiceDetails('RC PDF')">Start</button></article>
       <article class="card disabled"><div class="icon">📑</div><h3>PDF Tools</h3><p>PDF tools are temporarily unavailable while the tools are being repaired and tested.</p><button type="button" disabled>Under Maintenance</button></article>
@@ -1418,6 +1431,7 @@ const fields={
 'Voter Correction':[['Name of Applicant','text','applicant_name','Enter applicant name'],['Mobile Number','tel','mobile','Enter mobile number'],['EPIC/Voter ID Number','text','epic','Enter EPIC number'],['Aadhaar Number','text','aadhaar','Enter Aadhaar number'],['Correction Required','textarea','correction','Describe correction']],
 'Voter Mobile Link':[['Name of Applicant','text','applicant_name','Enter applicant name'],['Mobile Number','tel','mobile','Enter mobile number'],['EPIC/Voter ID Number','text','epic','Enter EPIC number'],['Aadhaar Number','text','aadhaar','Enter Aadhaar number']],
 'Voter Status Check':[['Name of Applicant','text','applicant_name','Enter applicant name'],['Mobile Number','tel','mobile','Enter mobile number'],['EPIC/Voter ID Number','text','epic','Enter EPIC number']],
+'Front Page Maker':[['Student Name','text','applicant_name','Enter full name'],['Mobile Number','tel','mobile','Enter mobile number'],['Department','text','department','Enter department'],['Program/Course','text','program','Enter course/program'],['Student ID','text','student_id','Enter student ID'],['Registration Number','text','registration_no','Enter registration number'],['Year','text','year','Enter year'],['Semester','text','semester','Enter semester'],['Subject','text','subject','Enter subject'],['Theme Preference','text','theme','Theme name or style preference'],['Additional Instructions','textarea','details','Any extra instructions']],
 'DL PDF':[['Name of Applicant','text','applicant_name','Enter applicant name'],['Mobile Number','tel','mobile','Enter mobile number'],['Driving Licence Number','text','dl_number','Enter DL number'],['Date of Birth','date','dob',''],['Aadhaar Number','text','aadhaar','Enter Aadhaar number'],['Full Address','textarea','address','Enter full address']],
 'RC PDF':[['Name of Applicant','text','applicant_name','Enter applicant name'],['Mobile Number','tel','mobile','Enter mobile number'],['Vehicle Registration Number','text','vehicle_no','Enter vehicle/registration number'],['Owner Name','text','owner_name','Enter owner name'],['Aadhaar Number','text','aadhaar','Enter Aadhaar number'],['Chassis/Engine Number','text','chassis_engine','Optional'],['Full Address','textarea','address','Enter full address']],
 'SVMCM Scholarship':[['Student Name','text','applicant_name','Enter student name'],['Mobile Number','tel','mobile','Enter mobile number'],['Date of Birth','date','dob',''],['Aadhaar Number','text','aadhaar','Enter Aadhaar number'],['Student ID/Registration No.','text','student_id','Enter ID/registration'],['Course/Department','text','course','Enter course/department']],
