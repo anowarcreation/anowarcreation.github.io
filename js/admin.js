@@ -18,6 +18,21 @@ const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[ch]));
+function formatRequirement(raw, compact=true) {
+  const value=String(raw??'').trim(); if(!value) return '<span class="req-empty">No details</span>';
+  const marker=/\bAFP_HTML\s*:/i.exec(value); const human=(marker?value.slice(0,marker.index):value).replace(/[\s|;]+$/,'').trim();
+  const saved=marker?value.slice(marker.index+marker[0].length).trim():'';
+  const fields=human.split(/\s*\|\s*|\r?\n/).map(x=>x.trim()).filter(Boolean).map(part=>{const p=part.indexOf(':');return p>0?{label:part.slice(0,p).trim(),value:part.slice(p+1).trim()}:{label:'Details',value:part};}).filter(f=>f.value);
+  if(fields.length===1&&fields[0].label==='Details'&&!saved) return `<div class="req-wrap"><p class="req-note">${esc(fields[0].value)}</p></div>`;
+  const shown=compact?fields.slice(0,3):fields;
+  const chips=shown.map(f=>`<span class="req-chip"><b>${esc(f.label)}</b><span>${esc(f.value)}</span></span>`).join('');
+  const full=fields.map(f=>`<div class="req-full-row"><b>${esc(f.label)}</b><span>${esc(f.value)}</span></div>`).join('');
+  const source=saved?`<details class="req-source"><summary>Saved front-page preview data (${saved.length.toLocaleString('en-IN')} characters)</summary><pre>${esc(saved.slice(0,20000))}${saved.length>20000?'\n… source shortened for display; the original order data remains unchanged.':''}</pre></details>`:'';
+  const details=(fields.length>(compact?3:fields.length)||saved)?`<details class="req-details"><summary>View full details</summary><div class="req-full-grid">${full||'<p>Preview data is stored with this order.</p>'}</div>${source}</details>`:'';
+  return `<div class="req-wrap"><div class="req-grid">${chips}</div>${fields.length>shown.length?`<span class="req-count">+${fields.length-shown.length} more fields</span>`:''}${details}</div>`;
+}
+function requirementPlain(raw) { const value=String(raw??'').trim(); const marker=/\bAFP_HTML\s*:/i.exec(value); const human=(marker?value.slice(0,marker.index):value).replace(/[\s|;]+$/,'').trim(); return human.split(/\s*\|\s*|\r?\n/).map(x=>x.trim()).filter(Boolean).join('\n')+(marker?'\nFront-page preview data saved with this order ('+value.slice(marker.index+marker[0].length).trim().length+' characters).':''); }
+
 
 function normalizedStatus(value) {
   const status = String(value || '').toLowerCase();
@@ -185,7 +200,7 @@ function renderApplications() {
       <td>${esc(order.order_id || '')}</td>
       <td>${esc(order.customer_name || '')}</td>
       <td>${esc(order.service || '')}</td>
-      <td>${esc(order.requirement || '')}</td>
+      <td>${formatRequirement(order.requirement || '', true)}</td>
       <td><span class="pill ${statusClass(order.status)}">${esc(normalizedStatus(order.status))}</span>${reason ? `<small class="admin-status-reason">Reason: ${esc(reason)}</small>` : ''}</td>
       <td>${statusSelect(id, order.status)}</td>
     </tr>`;
@@ -208,7 +223,7 @@ function renderFront() {
   body.innerHTML = frontOrders.map(order => {
     const id = safeOrderId(order.order_id);
     return `<tr><td>${esc(order.order_id || '')}</td><td>${esc(order.customer_name || '')}</td><td>${esc(order.service || '')}</td>
-      <td>${esc(order.requirement || '')}</td><td>${statusSelect(id, order.status)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button></td></tr>`;
+      <td>${formatRequirement(order.requirement || '', true)}</td><td>${statusSelect(id, order.status)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button></td></tr>`;
   }).join('') || '<tr><td colspan="6">No Front Page Maker orders.</td></tr>';
 }
 
@@ -248,7 +263,7 @@ async function updateStatus(orderId, requestedStatus) {
 function viewOrder(orderId) {
   const order = orders.find(item => String(item.order_id) === String(orderId));
   if (!order) return;
-  alert(`Order: ${order.order_id}\nCustomer: ${order.customer_name || '—'}\nService: ${order.service || '—'}\nMobile: ${order.phone || '—'}\nDetails: ${order.requirement || 'None'}\nStatus: ${order.status || 'Application Submitted'}\nAmount: ₹${(Number(order.amount) || 0).toFixed(2)}`);
+  alert(`Order: ${order.order_id}\nCustomer: ${order.customer_name || '—'}\nService: ${order.service || '—'}\nMobile: ${order.phone || '—'}\nDetails: ${requirementPlain(order.requirement || 'None')}\nStatus: ${order.status || 'Application Submitted'}\nAmount: ₹${(Number(order.amount) || 0).toFixed(2)}`);
 }
 
 function viewCustomer(authId) {
@@ -269,7 +284,7 @@ function viewCustomer(authId) {
       String(order.email || '').toLowerCase() === String(profile.email || '').toLowerCase();
   });
   $('customerHistoryBody').innerHTML = customerOrders.length ? customerOrders.map(order => `<tr>
-    <td>${esc(order.order_id || '')}</td><td>${esc(order.service || '')}</td><td>${esc(order.requirement || '')}</td>
+    <td>${esc(order.order_id || '')}</td><td>${esc(order.service || '')}</td><td>${formatRequirement(order.requirement || '', true)}</td>
     <td>₹${(Number(order.amount) || 0).toFixed(2)}</td><td>${esc(normalizedStatus(order.status))}</td>
     <td>${order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : ''}</td>
   </tr>`).join('') : '<tr><td colspan="6">No orders are linked to this profile yet.</td></tr>';
