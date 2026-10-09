@@ -1042,7 +1042,7 @@ async function loadAdminData(){
   $('adminLastUpdated').textContent='Loading...';
   const [ordersRes,profilesRes]=await Promise.all([
     supabaseClient.from('orders').select('*').order('created_at',{ascending:false}),
-    supabaseClient.from('profiles').select('*').order('created_at',{ascending:false})
+    supabaseClient.from('profiles').select('*').order('account_created',{ascending:false})
   ]);
   const orders=ordersRes.data||[],profiles=profilesRes.data||[];
   adminOrdersCache=orders;adminCustomersCache=profiles;
@@ -1145,14 +1145,19 @@ function renderAdminAppointments(rows){
 
 function renderAdminCustomers(rows){
   const body=$('adminCustomersBody');
-  body.innerHTML=rows.length?rows.map(p=>{const search=[p.name,p.phone,p.email].filter(Boolean).join(' ').toLowerCase();return `<tr data-search="${escapeHtml(search)}">
-    <td><b>${escapeHtml(p.name||'Customer')}</b></td>
-    <td>${escapeHtml(p.phone||'')}</td>
-    <td>${escapeHtml(p.email||'')}</td>
-    <td>${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):''}</td>
-    <td><span class="admin-badge">Customer</span></td>
-    <td><button class="admin-mini-btn" onclick="viewCustomerProfile('${String(p.id||'').replace(/'/g,'')}')">View Profile</button> <button class="admin-mini-btn" onclick="adminResetCustomerPassword('${String(p.id||'').replace(/'/g,'')}','${escapeHtml(p.email||'').replace(/'/g,'')}')">Temporary Password</button></td>
-  </tr>`}).join(''):'<tr><td colspan="6" class="admin-empty">No customers found</td></tr>';
+  if(!body)return;
+  body.innerHTML=rows.length?rows.map(p=>{
+    const search=[p.name,p.mobile_number,p.email].filter(Boolean).join(' ').toLowerCase();
+    const id=String(p.auth_id||'');
+    return `<tr data-search="${escapeHtml(search)}">
+      <td><b>${escapeHtml(p.name||'Customer')}</b></td>
+      <td>${escapeHtml(p.mobile_number||'Not provided')}</td>
+      <td>${escapeHtml(p.email||'')}</td>
+      <td>${p.account_created?new Date(p.account_created).toLocaleString('en-IN'):''}</td>
+      <td><span class="admin-badge">Customer</span></td>
+      <td><button class="admin-mini-btn" onclick="viewCustomerProfile('${id.replace(/'/g,'')}')">View Profile</button> <button class="admin-mini-btn" onclick="adminResetCustomerPassword('${id.replace(/'/g,'')}','${escapeHtml(p.email||'').replace(/'/g,'')}')">Temporary Password</button></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" class="admin-empty">No customer profiles found. Refresh after profile sync.</td></tr>';
 }
 
 let activeCustomerProfileId=null;
@@ -1161,50 +1166,40 @@ function statusClass(status){const s=normalizeApplicationStatus(status);if(s==='
 function cleanOrderStatus(status){return normalizeApplicationStatus(status)}
 function getStatusReason(status){return (String(status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||((String(status||'').match(/Reason:\s*(.*)$/i)||[])[1]||'')}
 function viewCustomerProfile(id){
-  const p=adminCustomersCache.find(x=>String(x.id)===String(id));
+  const p=adminCustomersCache.find(x=>String(x.auth_id)===String(id));
   if(!p)return alert('Customer profile not found. Please refresh.');
   activeCustomerProfileId=String(id);
-  const orders=adminOrdersCache.filter(o=>String(o.user_id||'')===String(id));
-  const successful=orders.filter(o=>normalizeApplicationStatus(o.status)==='Successfully Completed').length;
-  const rejected=orders.filter(o=>['Rejected','Declined'].includes(normalizeApplicationStatus(o.status))).length;
-  const pending=orders.length-successful-rejected;
-  $('customerProfileDetails').innerHTML=`<div class="profile-detail-row"><span style="color:#91a2bd">Customer Name</span><span class="detail-value">${escapeHtml(p.name||'Customer')}</span><button class="pencil-btn" aria-label="Edit customer name" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Phone Number</span><span class="detail-value">${escapeHtml(p.phone||'Not provided')}</span><button class="pencil-btn" aria-label="Edit customer phone" onclick="openCustomerProfileEdit('${String(p.id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Email</span><span class="detail-value">${escapeHtml(p.email||'Not provided')}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Registered</span><span class="detail-value">${p.created_at?new Date(p.created_at).toLocaleString('en-IN'):'—'}</span></div><div class="customer-profile-grid"><div class="customer-profile-stat"><span>Total Orders / Appointments</span><b>${orders.length}</b></div><div class="customer-profile-stat"><span>Successfully Completed</span><b style="color:#6ee7b7">${successful}</b></div><div class="customer-profile-stat"><span>Rejected / Declined</span><b style="color:#fca5a5">${rejected}</b></div><div class="customer-profile-stat"><span>Pending / In Process</span><b style="color:#fcd34d">${pending}</b></div></div>`;
-  $('customerProfileOrderMeta').textContent=orders.length+' record(s)';
-  $('customerProfileOrders').innerHTML=orders.length?orders.slice().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).map(o=>{const reason=getStatusReason(o.status);return `<div class="profile-order-row"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${escapeHtml(o.service||'Service')}</b><span class="admin-status-pill ${statusClass(o.status)}">${escapeHtml(cleanOrderStatus(o.status))}</span></div><div class="order-detail">Order ID: ${escapeHtml(o.order_id||'—')} · Amount: ₹${Number(o.amount||0).toFixed(2)} · ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div>${reason?`<div class="rejection-reason">Reason: ${escapeHtml(reason)}</div>`:''}<div class="order-detail">Payment: ${escapeHtml(o.payment_method||'N/A')}${o.requirement?' · Details: '+escapeHtml(o.requirement):''}</div></div>`}).join(''):'<p class="note">No orders or appointments found for this customer.</p>';
-  switchAdminSection('adminCustomerProfile');
+  const customerOrders=adminOrdersCache.filter(o=>String(o.user_id||o.auth_id||o.customer_id||'')===String(id)||String(o.email||'').toLowerCase()===String(p.email||'').toLowerCase());
+  const successful=customerOrders.filter(o=>normalizeApplicationStatus(o.status)==='Successfully Completed').length;
+  const rejected=customerOrders.filter(o=>['Rejected','Declined'].includes(normalizeApplicationStatus(o.status))).length;
+  const pending=customerOrders.length-successful-rejected;
+  $('customerProfileDetails').innerHTML=`<div class="profile-detail-row"><span style="color:#91a2bd">Customer Name</span><span class="detail-value">${escapeHtml(p.name||'Customer')}</span><button class="pencil-btn" aria-label="Edit customer name" onclick="openCustomerProfileEdit('${String(p.auth_id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Phone Number</span><span class="detail-value">${escapeHtml(p.mobile_number||'Not provided')}</span><button class="pencil-btn" aria-label="Edit customer phone" onclick="openCustomerProfileEdit('${String(p.auth_id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Email</span><span class="detail-value">${escapeHtml(p.email||'Not provided')}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Registered</span><span class="detail-value">${p.account_created?new Date(p.account_created).toLocaleString('en-IN'):'Not available'}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Orders</span><span class="detail-value">${customerOrders.length}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Completed</span><span class="detail-value">${successful}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Pending / Other</span><span class="detail-value">${pending}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Rejected</span><span class="detail-value">${rejected}</span></div>`;
+  $('customerHistoryBody').innerHTML=customerOrders.length?customerOrders.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.service||'')}</td><td>${escapeHtml(o.requirement||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(normalizeApplicationStatus(o.status))}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="6">No orders linked to this profile yet.</td></tr>';
+  $('customerDetailModal').hidden=false;
 }
+
 function openCustomerProfileEdit(id){
-  const p=adminCustomersCache.find(x=>String(x.id)===String(id));
+  const p=adminCustomersCache.find(x=>String(x.auth_id)===String(id));
   if(!p)return alert('Customer profile not found. Please refresh.');
-  $('editCustomerProfileId').value=String(id);$('editCustomerName').value=p.name||'';$('editCustomerPhone').value=p.phone||'';$('editCustomerProfileMessage').textContent='';$('editCustomerProfileModal').classList.add('show');
+  $('editCustomerProfileId').value=String(p.auth_id);$('editCustomerName').value=p.name||'';$('editCustomerPhone').value=p.mobile_number||'';$('editCustomerProfileMessage').textContent='';$('editCustomerProfileModal').classList.add('show');
 }
 async function submitCustomerProfileEdit(event){
-  event.preventDefault();const id=$('editCustomerProfileId').value;const name=$('editCustomerName').value.trim();const phone=$('editCustomerPhone').value.trim();
-  if(!name||!phone){$('editCustomerProfileMessage').textContent='Name and phone number are required.';return;}
+  event.preventDefault();const id=$('editCustomerProfileId').value;const name=$('editCustomerName').value.trim();const mobile=$('editCustomerPhone').value.trim();
+  if(!name){$('editCustomerProfileMessage').textContent='Customer name is required.';return;}
   const button=event.submitter;if(button){button.disabled=true;button.textContent='Saving...';}
-  const {error}=await supabaseClient.from('profiles').update({name,phone}).eq('id',id);
+  const {error}=await supabaseClient.from('profiles').update({name,mobile_number:mobile}).eq('auth_id',id);
   if(button){button.disabled=false;button.textContent='Save Changes';}
   if(error){$('editCustomerProfileMessage').textContent='Could not update: '+error.message;return;}
   closeModal('editCustomerProfileModal');await loadAdminData();viewCustomerProfile(id);
 }
-
-async function updateAppointmentStatus(orderId,status){
-  await updateApplicationStatus(orderId,status,true);
-}
-
-function editCustomerProfile(id){
-  const p=(adminCustomersCache||[]).find(x=>String(x.id)===String(id));
-  if(!p)return alert('Customer profile not found. Please refresh.');
-  const name=prompt('Customer name:',p.name||'');if(name===null)return;
-  const phone=prompt('Customer mobile number:',p.phone||'');if(phone===null)return;
-  saveCustomerProfile(id,name.trim(),phone.trim());
-}
-async function saveCustomerProfile(id,name,phone){
+async function editCustomerProfile(id){openCustomerProfileEdit(id)}
+async function saveCustomerProfile(id,name,mobile){
   if(!name)return alert('Customer name is required.');
-  const {error}=await supabaseClient.from('profiles').update({name,phone}).eq('id',id);
+  const {error}=await supabaseClient.from('profiles').update({name,mobile_number:mobile}).eq('auth_id',id);
   if(error){alert('Could not update profile: '+error.message);return}
   alert('Customer profile updated.');await loadAdminData();
 }
+
 function makeTemporaryPassword(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';const bytes=new Uint8Array(14);crypto.getRandomValues(bytes);return Array.from(bytes,b=>chars[b%chars.length]).join('')+'a7!';}
 async function adminResetCustomerPassword(userId,email){
   if(!userId)return alert('Customer ID is missing.');
