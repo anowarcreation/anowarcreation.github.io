@@ -612,6 +612,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
 @media(max-width:700px){.auth-screen{padding:14px!important;justify-content:center!important}.auth-card{width:min(430px,96vw)!important;padding:24px 18px!important}.auth-brand{font-size:29px!important}.custom-logo-main{width:88px!important;height:88px!important}.direct-admin-login{top:8px!important;right:8px!important;font-size:11px!important;padding:8px 10px!important}.auth-card .form input{padding:12px!important}}
 .auth-admin-tab{display:block;text-align:center;margin:-4px 0 16px;padding:10px;border:1px solid rgba(102,205,255,.4);border-radius:10px;color:#dbe9ff;background:rgba(15,35,65,.7);font-weight:800}.auth-admin-tab:hover{background:rgba(24,113,255,.22)}
 </style>
+  <link rel="stylesheet" href="css/site-refresh.css">
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -818,6 +819,33 @@ async function signInWithGoogle(){
   });
   if(error&&msg)msg.textContent=error.message||'Google sign-in is not available right now.';
 }
+function formatOrderRequirement(value, compact=true){
+  const raw=String(value??'').trim();
+  if(!raw)return '<span class="req-empty">No additional details</span>';
+  const marker=/\bAFP_HTML\s*:/i.exec(raw);
+  const human=(marker?raw.slice(0,marker.index):raw).replace(/[\s|;]+$/,'').trim();
+  const savedHtml=marker?raw.slice(marker.index+marker[0].length).trim():'';
+  const parts=human.split(/\s*\|\s*|\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const fields=parts.map(part=>{const p=part.indexOf(':');return p>0?{label:part.slice(0,p).trim(),value:part.slice(p+1).trim()}:{label:'Details',value:part};}).filter(x=>x.value);
+  if(!fields.length && savedHtml){return `<div class="req-wrap"><div class="req-note">Assignment cover details are saved with this order.</div>${requirementMoreDetails(fields,savedHtml,raw)}</div>`;}
+  if(fields.length===1 && fields[0].label==='Details' && !savedHtml){return `<div class="req-wrap"><p class="req-note">${escapeHtml(fields[0].value)}</p></div>`;}
+  const shown=compact?fields.slice(0,3):fields;
+  const chips=shown.map(f=>`<span class="req-chip"><b>${escapeHtml(f.label)}</b><span>${escapeHtml(f.value)}</span></span>`).join('');
+  const more=(fields.length>shown.length)?`<span class="req-count">+${fields.length-shown.length} more fields</span>`:'';
+  const details=(fields.length>shown.length||savedHtml)?requirementMoreDetails(fields,savedHtml,raw):'';
+  return `<div class="req-wrap"><div class="req-grid">${chips}</div>${more}${details}</div>`;
+}
+function requirementMoreDetails(fields,savedHtml,raw){
+  const full=fields.map(f=>`<div class="req-full-row"><b>${escapeHtml(f.label)}</b><span>${escapeHtml(f.value)}</span></div>`).join('');
+  const source=savedHtml?`<details class="req-source"><summary>Saved front-page preview data (${savedHtml.length.toLocaleString('en-IN')} characters)</summary><pre>${escapeHtml(savedHtml.slice(0,20000))}${savedHtml.length>20000?'\n… preview source is shortened for display; the original order data remains unchanged.':''}</pre></details>`:'';
+  return `<details class="req-details"><summary>View full details</summary><div class="req-full-grid">${full||'<p>Preview data is stored with this order.</p>'}</div>${source}</details>`;
+}
+function requirementPlainText(value){
+  const raw=String(value??'').trim();const marker=/\bAFP_HTML\s*:/i.exec(raw);const human=(marker?raw.slice(0,marker.index):raw).replace(/[\s|;]+$/,'').trim();
+  const out=human.split(/\s*\|\s*|\r?\n/).map(x=>x.trim()).filter(Boolean).join('\n');
+  return out+(marker?'\nFront-page preview data: saved with this order ('+raw.slice(marker.index+marker[0].length).trim().length+' characters).':'');
+}
+
 function renderDashboardRecentOrders(){
   const box=$('dashboardRecentOrders'); if(!box)return;
   const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]').slice(0,4);
@@ -976,7 +1004,21 @@ function generateId(prefix){const d=new Date(),stamp=String(d.getFullYear()).sli
 async function createAppointment(service,name,phone,requirement){const o=await createOrder(service,0,'N/A',name,phone,requirement,'Appointment Created');if(o)showResult('🎉','Appointment Created','Thank You, Our Team Will Connect You Soon.','Your Appointment No.',o.id,o.service)}
 async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders();return obj}
 async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error)return;const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders()}
-function renderOrders(){const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');if(!orders.length){box.innerHTML='<div style="text-align:center;color:#8391a7;padding:25px">No orders or appointments yet.</div>';return}box.innerHTML=orders.map(o=>{const reason=(String(o.status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||'';const clean=normalizeApplicationStatus(o.status);return '<div class="order-item"><div class="order-top"><b>'+escapeHtml(o.service)+'</b><span class="admin-status-pill '+statusClass(o.status)+'">'+escapeHtml(clean)+'</span></div><div class="order-meta"><b>'+escapeHtml(o.id)+'</b> · '+escapeHtml(o.payment==='N/A'?'Appointment':o.payment)+(o.amount?' · ₹'+o.amount:'')+'<br>'+escapeHtml(o.date)+(o.requirement?' · '+escapeHtml(o.requirement):'')+'</div>'+(reason?'<div class="rejection-reason">Reason: '+escapeHtml(reason)+'</div>':'')+'</div>'}).join('')}
+function renderOrders(){
+  const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');
+  if(!box)return;
+  if(!orders.length){box.innerHTML='<div class="orders-empty">No orders or appointments yet.</div>';return}
+  box.innerHTML=orders.map(o=>{
+    const reason=(String(o.status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||'';
+    const clean=normalizeApplicationStatus(o.status);
+    return `<article class="order-item">
+      <div class="order-top"><div class="order-heading"><span class="order-service-icon">📦</span><div><b>${escapeHtml(o.service||'Service')}</b><div class="order-id">${escapeHtml(o.id||'')}</div></div></div><span class="admin-status-pill ${statusClass(o.status)}">${escapeHtml(clean)}</span></div>
+      <div class="order-meta"><span>${escapeHtml(o.payment==='N/A'?'Appointment':o.payment||'Appointment')}</span>${o.amount?`<span>₹${Number(o.amount).toFixed(2)}</span>`:''}<span>${escapeHtml(o.date||'')}</span></div>
+      ${o.requirement?`<div class="order-requirement-label">Submitted details</div>${formatOrderRequirement(o.requirement,true)}`:''}
+      ${reason?`<div class="rejection-reason">Reason: ${escapeHtml(reason)}</div>`:''}
+    </article>`;
+  }).join('');
+}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function showOrders(){showPanel('orders');renderOrders()}
 function showResult(icon,title,text,label,num,service){$('resultIcon').textContent=icon;$('resultTitle').textContent=title;$('resultText').textContent=text;$('resultNumberLabel').textContent=label;$('resultNumber').textContent=num;$('resultService').textContent=service;$('resultModal').classList.add('show')}
@@ -1115,7 +1157,7 @@ function renderAdminApplications(){
  const q=($('applicationSearch')?.value||'').toLowerCase().trim(),st=$('applicationStatusFilter')?.value||'',from=$('applicationFromDate')?.value||'',to=$('applicationToDate')?.value||'';
  const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.phone,o.service].join(' ').toLowerCase();const d=o.created_at?new Date(o.created_at).toLocaleDateString('en-CA'):'';return (!q||text.includes(q))&&(!st||normalizeApplicationStatus(o.status)===st)&&(!from||d>=from)&&(!to||d<=to)}).sort((a,b)=>{const sa=normalizeApplicationStatus(a.status),sb=normalizeApplicationStatus(b.status);const done=['Successfully Completed','Rejected','Declined'];if(done.includes(sa)!==done.includes(sb))return done.includes(sa)?1:-1;return new Date(b.created_at||0)-new Date(a.created_at||0)});
  if(!rows.length){body.innerHTML='<tr><td colspan="9" class="admin-empty">No matching applications found.</td></tr>';return}
- body.innerHTML=rows.map(o=>{const status=normalizeApplicationStatus(o.status);return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td><select class="admin-status-select" aria-label="Application status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td>${o.file_path?'<span class="admin-muted">PDF available in All Orders</span>':escapeHtml(o.requirement||'—')}</td></tr>`}).join('');
+ body.innerHTML=rows.map(o=>{const status=normalizeApplicationStatus(o.status);return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td><select class="admin-status-select" aria-label="Application status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td>${o.file_path?'<span class="admin-muted">PDF available in All Orders</span>':formatOrderRequirement(o.requirement||'—',true)}</td></tr>`}).join('');
 }
 function resetApplicationFilters(){['applicationSearch','applicationStatusFilter','applicationFromDate','applicationToDate'].forEach(id=>{if($(id))$(id).value=''});renderAdminApplications()}
 async function updateApplicationStatus(orderId,status,isAppointment=false){
@@ -1159,7 +1201,7 @@ async function renderAdminOrders(rows){
     <td>${escapeHtml(o.service||'')}</td>
     <td>₹${Number(o.amount||0).toFixed(2)}</td>
     <td>${escapeHtml(o.payment_method||'')}</td>
-    <td>${escapeHtml(o.requirement||'')}</td>
+    <td>${formatOrderRequirement(o.requirement||'',true)}</td>
     <td>${fileHtml}</td>
     <td><select class="admin-status-select" aria-label="Order status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===normalizeApplicationStatus(o.status)?'selected':''}>${x}</option>`).join('')}</select><div class="admin-muted" style="margin-top:6px;max-width:220px;white-space:normal">${escapeHtml((String(o.status||'').match(/(?:Reason|reason):\s*(.*)$/)||[])[1]||'')}</div></td>
     <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
@@ -1175,7 +1217,7 @@ function renderAdminAppointments(rows){
     <td>${escapeHtml(o.customer_name||'')}</td>
     <td>${escapeHtml(o.phone||'')}</td>
     <td>${escapeHtml(o.service||'')}</td>
-    <td>${escapeHtml(o.requirement||'')}</td>
+    <td>${formatOrderRequirement(o.requirement||'',true)}</td>
     <td><select class="admin-status-select" aria-label="Appointment status" onchange="updateAppointmentStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===normalizeApplicationStatus(o.status)?'selected':''}>${x}</option>`).join('')}</select></td>
     <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
   </tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No appointments yet.</td></tr>';
@@ -1213,7 +1255,7 @@ function viewCustomerProfile(id){
   const pending=customerOrders.length-successful-rejected;
   $('customerProfileDetails').innerHTML=`<div class="profile-detail-row"><span style="color:#91a2bd">Customer Name</span><span class="detail-value">${escapeHtml(p.name||'Customer')}</span><button class="pencil-btn" aria-label="Edit customer name" onclick="openCustomerProfileEdit('${String(p.auth_id||p.id||p.user_id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Phone Number</span><span class="detail-value">${escapeHtml(p.mobile_number||'Not provided')}</span><button class="pencil-btn" aria-label="Edit customer phone" onclick="openCustomerProfileEdit('${String(p.auth_id||p.id||p.user_id).replace(/'/g,'')}')">✏️</button></div><div class="profile-detail-row"><span style="color:#91a2bd">Email</span><span class="detail-value">${escapeHtml(p.email||'Not provided')}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Registered</span><span class="detail-value">${p.account_created?new Date(p.account_created).toLocaleString('en-IN'):'Not available'}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Orders</span><span class="detail-value">${customerOrders.length}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Completed</span><span class="detail-value">${successful}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Pending / Other</span><span class="detail-value">${pending}</span></div><div class="profile-detail-row"><span style="color:#91a2bd">Rejected</span><span class="detail-value">${rejected}</span></div>`;
   const history=$('customerProfileOrders');
-  if(history)history.innerHTML='<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order ID</th><th>Service</th><th>Details</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>'+(customerOrders.length?customerOrders.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.service||'')}</td><td>${escapeHtml(o.requirement||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(normalizeApplicationStatus(o.status))}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="6" class="admin-empty">No orders linked to this profile yet.</td></tr>')+'</tbody></table></div>';
+  if(history)history.innerHTML='<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order ID</th><th>Service</th><th>Details</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>'+(customerOrders.length?customerOrders.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.service||'')}</td><td>${formatOrderRequirement(o.requirement||'',true)}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(normalizeApplicationStatus(o.status))}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="6" class="admin-empty">No orders linked to this profile yet.</td></tr>')+'</tbody></table></div>';
   switchAdminSection('adminCustomerProfile');
 }
 
