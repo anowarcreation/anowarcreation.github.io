@@ -169,20 +169,26 @@
     select.innerHTML='<option value="">All services</option>'+serviceRows.map(s=>`<option value="${esc(s.service_key)}">${esc(s.name)}</option>`).join('');
     if([...select.options].some(o=>o.value===current))select.value=current;
   }
-  function renderPortalAppointments() {
+  async function renderPortalAppointments() {
     const body=$('serviceAppointmentsBody')||$('adminAppointmentsBody');if(!body)return;
     const orders=window.AdminOrders||(Array.isArray(window.adminOrdersCache)?window.adminOrdersCache:[]);
     const select=appointmentFilterElement(),filter=select?.value||'';
     const rows=orders.filter(o=>{const isPrint=String(o.service||'').toLowerCase().includes('pdf print');if(!filter)return !isPrint;return (priceForOrderName(o.service)?.service_key===filter||String(o.service||'').toLowerCase()===String(serviceRows.find(s=>s.service_key===filter)?.name||'').toLowerCase());});
-    if(!rows.length){body.innerHTML=`<tr><td colspan="${body.id==='serviceAppointmentsBody'?8:7}" class="${body.id==='serviceAppointmentsBody'?'':'admin-empty'}">No appointments found for this service.</td></tr>`;return}
-    body.innerHTML=rows.map(o=>{
+    if(!rows.length){body.innerHTML=`<tr><td colspan="8" class="${body.id==='serviceAppointmentsBody'?'':'admin-empty'}">No appointments found for this service.</td></tr>`;return}
+    body.innerHTML='<tr><td colspan="8">Loading appointment updates…</td></tr>';
+    const rendered=await Promise.all(rows.map(async o=>{
       const id=String(o.order_id||o.id||'').replace(/[^a-zA-Z0-9_-]/g,'');
       const detail=typeof window.formatRequirement==='function'?window.formatRequirement(o.requirement||'',true):esc(o.requirement||'No details');
       const status=String(o.status||'Application Submitted');
-      const selectHTML=body.id==='serviceAppointmentsBody'?`<select class="admin-status-select" onchange="updateStatus('${id}',this.value)">${['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'].map(v=>`<option ${v.toLowerCase()===status.toLowerCase()?'selected':''}>${v}</option>`).join('')}</select>`:`<select class="admin-status-select" onchange="updateAppointmentStatus('${id}',this.value)">${['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'].map(v=>`<option ${v.toLowerCase()===status.toLowerCase()?'selected':''}>${v}</option>`).join('')}</select>`;
+      const statusOptions=['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'];
+      const changeHandler=body.id==='serviceAppointmentsBody'?'updateStatus':'updateApplicationStatus';
+      const selectHTML=`<select class="admin-status-select" onchange="${changeHandler}('${id}',this.value${changeHandler==='updateApplicationStatus'?',true':''})">${statusOptions.map(v=>`<option ${v.toLowerCase()===status.toLowerCase()?'selected':''}>${v}</option>`).join('')}</select>`;
+      const tools=typeof window.adminCustomerUpdateControls==='function'?await window.adminCustomerUpdateControls(o,body.id==='serviceAppointmentsBody'?'page-appointment':'appointment'):'';
       const date=o.created_at?new Date(o.created_at).toLocaleString('en-IN'):'';
-      return `<tr><td><b>${esc(o.order_id||o.id||'')}</b></td><td>${esc(o.customer_name||o.name||'—')}</td><td>${esc(o.phone||'—')}</td><td>${esc(o.service||'—')}</td><td>${detail}</td><td>${selectHTML}</td><td>${esc(date)}</td>${body.id==='serviceAppointmentsBody'?`<td><button type="button" onclick="viewOrder('${id}')">View</button></td>`:''}</tr>`;
-    }).join('');
+      if(body.id==='serviceAppointmentsBody')return `<tr><td><b>${esc(o.order_id||o.id||'')}</b></td><td>${esc(o.customer_name||o.name||'—')}</td><td>${esc(o.phone||'—')}</td><td>${esc(o.service||'—')}</td><td>${detail}</td><td>${selectHTML}</td><td>${esc(date)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button>${tools}</td></tr>`;
+      return `<tr><td><b>${esc(o.order_id||o.id||'')}</b></td><td>${esc(o.customer_name||o.name||'—')}</td><td>${esc(o.phone||'—')}</td><td>${esc(o.service||'—')}</td><td>${detail}</td><td>${selectHTML}</td><td>${tools}</td><td>${esc(date)}</td></tr>`;
+    }));
+    body.innerHTML=rendered.join('');
   }
   function viewPortalServiceAppointments(key) {
     const select=appointmentFilterElement();if(select)select.value=key;

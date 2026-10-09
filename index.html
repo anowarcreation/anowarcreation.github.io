@@ -1003,25 +1003,34 @@ function confirmUPIPrint(){closeModal('upiModal');createPrintOrder('UPI')}
 async function createPrintOrder(payment){if(!pendingPrint)return;const f=$('pdfFile').files[0];if(!f){openInfo('PDF Required','Please upload your PDF again.');return}const orderId=generateId('AC'),safeName=f.name.replace(/[^a-zA-Z0-9._-]/g,'_'),filePath=currentUser.id+'/'+orderId+'-'+safeName;const {error:uploadError}=await supabaseClient.storage.from('pdf-orders').upload(filePath,f,{contentType:'application/pdf',upsert:false});if(uploadError){console.error(uploadError);openInfo('Could not upload PDF','Your PDF could not be uploaded. Please try again.');return}const o=await createOrder(pendingPrint.service,pendingPrint.amount,payment,currentProfile?.name||'Customer',currentProfile?.phone||'',pendingPrint.requirement,'Confirmed',filePath);if(!o){await supabaseClient.storage.from('pdf-orders').remove([filePath]);return}pendingPrint=null;$('pdfFile').value='';showResult('✓','Thank You','Your PDF print order has been confirmed.<br><strong>You will receive the item at Sister Nivedita University.</strong>','Order No.',o.id,o.service)}
 function generateId(prefix){const d=new Date(),stamp=String(d.getFullYear()).slice(-2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'),rand=Math.floor(1000+Math.random()*9000);return prefix+'-'+stamp+'-'+rand}
 async function createAppointment(service,name,phone,requirement){const o=await createOrder(service,0,'N/A',name,phone,requirement,'Appointment Created');if(o)showResult('🎉','Appointment Created','Thank You, Our Team Will Connect You Soon.','Your Appointment No.',o.id,o.service)}
-async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders();return obj}
-async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error)return;const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders()}
-function renderOrders(){
+async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,admin_note:'',result_file_path:null,user_id:currentUser.id,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders();return obj}
+async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error){console.error('Could not load customer orders',error);return}const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',file_path:o.file_path||null,admin_note:o.admin_note||'',result_file_path:o.result_file_path||null,user_id:o.user_id,date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders()}
+let customerOrdersRenderSequence=0;
+async function customerResultDownload(path){if(!path)return '';try{const {data,error}=await supabaseClient.storage.from('service-results').createSignedUrl(path,3600,{download:true});if(error||!data?.signedUrl)return '<span class=\"customer-result-pending\">Document uploaded; refresh or contact support if download is unavailable.</span>';return `<a class=\"customer-result-download\" href=\"${escapeHtml(data.signedUrl)}\" target=\"_blank\" rel=\"noopener\" download>⬇ Download your document</a>`}catch(e){console.error('Could not create customer result link',e);return '<span class=\"customer-result-pending\">Document link is temporarily unavailable.</span>'}}
+async function renderOrders(){
   const box=$('ordersList'),orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');
   if(!box)return;
-  if(!orders.length){box.innerHTML='<div class="orders-empty">No orders or appointments yet.</div>';return}
-  box.innerHTML=orders.map(o=>{
+  const sequence=++customerOrdersRenderSequence;
+  if(!orders.length){box.innerHTML='<div class=\"orders-empty\">No orders or appointments yet.</div>';return}
+  box.innerHTML='<div class=\"orders-empty\">Loading your latest order updates…</div>';
+  const cards=await Promise.all(orders.map(async o=>{
     const reason=(String(o.status||'').match(/(?:—|-|:)\s*Reason:\s*(.*)$/i)||[])[1]||'';
     const clean=normalizeApplicationStatus(o.status);
-    return `<article class="order-item">
-      <div class="order-top"><div class="order-heading"><span class="order-service-icon">📦</span><div><b>${escapeHtml(o.service||'Service')}</b><div class="order-id">${escapeHtml(o.id||'')}</div></div></div><span class="admin-status-pill ${statusClass(o.status)}">${escapeHtml(clean)}</span></div>
-      <div class="order-meta"><span>${escapeHtml(o.payment==='N/A'?'Appointment':o.payment||'Appointment')}</span>${o.amount?`<span>₹${Number(o.amount).toFixed(2)}</span>`:''}<span>${escapeHtml(o.date||'')}</span></div>
-      ${o.requirement?`<div class="order-requirement-label">Submitted details</div>${formatOrderRequirement(o.requirement,true)}`:''}
-      ${reason?`<div class="rejection-reason">Reason: ${escapeHtml(reason)}</div>`:''}
+    const download=o.result_file_path?await customerResultDownload(o.result_file_path):'';
+    return `<article class=\"order-item\">
+      <div class=\"order-top\"><div class=\"order-heading\"><span class=\"order-service-icon\">📦</span><div><b>${escapeHtml(o.service||'Service')}</b><div class=\"order-id\">${escapeHtml(o.id||'')}</div></div></div><span class=\"admin-status-pill ${statusClass(o.status)}\">${escapeHtml(clean)}</span></div>
+      <div class=\"order-meta\"><span>${escapeHtml(o.payment==='N/A'?'Appointment':o.payment||'Appointment')}</span>${o.amount?`<span>₹${Number(o.amount).toFixed(2)}</span>`:''}<span>${escapeHtml(o.date||'')}</span></div>
+      ${o.requirement?`<div class=\"order-requirement-label\">Submitted details</div>${formatOrderRequirement(o.requirement,true)}`:''}
+      ${reason?`<div class=\"rejection-reason\">Reason: ${escapeHtml(reason)}</div>`:''}
+      ${o.admin_note?`<div class=\"customer-admin-note\"><b>Update from Anowar Creation</b><p>${escapeHtml(o.admin_note).replace(/\n/g,'<br>')}</p></div>`:''}
+      ${download?`<div class=\"customer-result-document\"><b>📄 Your document is ready</b>${download}</div>`:''}
     </article>`;
-  }).join('');
+  }));
+  if(sequence!==customerOrdersRenderSequence)return;
+  box.innerHTML=cards.join('');
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
-function showOrders(){showPanel('orders');renderOrders()}
+async function showOrders(){showPanel('orders');if(currentUser)await loadCloudOrders();await renderOrders()}
 function showResult(icon,title,text,label,num,service){$('resultIcon').textContent=icon;$('resultTitle').textContent=title;$('resultText').textContent=text;$('resultNumberLabel').textContent=label;$('resultNumber').textContent=num;$('resultService').textContent=service;$('resultModal').classList.add('show')}
 window.addEventListener('click',e=>{if(e.target.classList.contains('modal'))e.target.classList.remove('show')});
 
@@ -1115,7 +1124,7 @@ function filterCustomers(){
 async function loadAdminData(){
   $('adminLastUpdated').textContent='Loading...';
   if($('adminCustomersBody'))$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Loading customer profiles…</td></tr>';
-  if($('adminOrdersBody'))$('adminOrdersBody').innerHTML='<tr><td colspan="11" class="admin-empty">Loading orders…</td></tr>';
+  if($('adminOrdersBody'))$('adminOrdersBody').innerHTML='<tr><td colspan="12" class="admin-empty">Loading orders…</td></tr>';
   const [ordersRes,profilesPrimary]=await Promise.all([
     supabaseClient.from('orders').select('*').order('created_at',{ascending:false}),
     supabaseClient.from('profiles').select('*').order('account_created',{ascending:false})
@@ -1127,8 +1136,8 @@ async function loadAdminData(){
   }
   const orders=ordersRes.data||[],profiles=(profilesRes.data||[]).map(p=>({...p,auth_id:p.auth_id||p.id||p.user_id,account_created:p.account_created||p.created_at||p.inserted_at||null}));
   adminOrdersCache=orders;adminCustomersCache=profiles;window.AdminOrders=orders;
-  if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="11" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>'}
-  else { renderAdminOrders(orders); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
+  if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="12" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>';const pb=$('adminPrintOrdersBody');if(pb)pb.innerHTML='<tr><td colspan="10" class="admin-empty">Could not load print orders. Check Admin SQL/RLS.</td></tr>'}
+  else { renderAdminOrders(orders); renderAdminPrintOrders(orders.filter(o=>String(o.service||'').toLowerCase().includes('pdf print'))); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
   if(profilesRes.error){console.error('Admin customer profile query failed:',profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customers: '+escapeHtml(profilesRes.error.message||'Database permission denied')+'. Run the supplied admin-customer-fix.sql in Supabase, then click Refresh.</td></tr>'}
   else renderAdminCustomers(profiles);
   const appointments=orders.filter(o=>String(o.status||'').toLowerCase().includes('appointment')).length;
@@ -1153,12 +1162,49 @@ async function loadAdminData(){
 
 const APPLICATION_STATUSES=['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'];
 function normalizeApplicationStatus(status){const s=String(status||'').toLowerCase();if(s.includes('reject'))return 'Rejected';if(s.includes('declin'))return 'Declined';if(s.includes('complete')||s==='done')return 'Successfully Completed';if(s.includes('process'))return 'Under Process';return 'Application Submitted'}
-function renderAdminApplications(){
+function safeAdminOrderSuffix(value){return String(value||'').replace(/[^A-Za-z0-9_-]/g,'')}
+async function adminServiceResultActions(path){
+  if(!path)return '<span class="admin-muted">No result PDF uploaded</span>';
+  try{const bucket=supabaseClient.storage.from('service-results');const view=await bucket.createSignedUrl(path,3600);if(view.error||!view.data?.signedUrl)return '<span class="admin-muted">Result PDF link unavailable</span>';const dl=await bucket.createSignedUrl(path,3600,{download:true});return `<div class="admin-pdf-actions"><a class="admin-file-link" target="_blank" rel="noopener" href="${escapeHtml(view.data.signedUrl)}">📄 View result</a><a class="admin-file-link admin-download-link" target="_blank" rel="noopener" download href="${escapeHtml(dl.data?.signedUrl||view.data.signedUrl)}">⬇ Download</a></div>`}catch(e){console.error(e);return '<span class="admin-muted">Result PDF link unavailable</span>'}
+}
+async function adminCustomerUpdateControls(order,prefix='all'){
+  const id=safeAdminOrderSuffix(order.order_id);const noteId=`admin-note-${prefix}-${id}`,fileId=`admin-result-file-${prefix}-${id}`;
+  const result=await adminServiceResultActions(order.result_file_path);
+  return `<div class="admin-customer-update"><label class="admin-note-label" for="${noteId}">Customer note</label><textarea id="${noteId}" rows="3" maxlength="3000" placeholder="e.g. Your application acknowledgement number is...">${escapeHtml(order.admin_note||'')}</textarea><button type="button" class="admin-mini-btn" onclick="saveOrderCustomerNote('${id}','${prefix}')">💾 Save note</button><div class="admin-result-current">${result}</div><input id="${fileId}" type="file" accept="application/pdf,.pdf" hidden onchange="uploadOrderServiceResult('${id}','${prefix}',this)"><button type="button" class="admin-mini-btn" onclick="document.getElementById('${fileId}').click()">📤 ${order.result_file_path?'Replace result PDF':'Upload result PDF'}</button><small class="admin-muted">PDF only, max 25 MB. Customer can download it from My Orders.</small></div>`;
+}
+async function saveOrderCustomerNote(orderId,prefix='all'){
+  const id=safeAdminOrderSuffix(orderId),field=document.getElementById(`admin-note-${prefix}-${id}`);if(!field)return;
+  const note=field.value.trim();const {data,error}=await supabaseClient.from('orders').update({admin_note:note}).eq('order_id',id).select('order_id').maybeSingle();
+  if(error){alert('Could not save customer note: '+error.message+'\\nRun the included SQL setup in Supabase first.');return}if(!data){alert('No order was updated. Please refresh the Admin Panel.');return}
+  const row=adminOrdersCache.find(o=>String(o.order_id)===id);if(row)row.admin_note=note;
+  const msg=document.getElementById('applicationAdminMessage')||document.getElementById('adminPrintFileMessage');if(msg)msg.textContent='Customer note saved for '+id+'.';await loadAdminData();
+}
+async function uploadOrderServiceResult(orderId,prefix,input){
+  const id=safeAdminOrderSuffix(orderId),file=input?.files?.[0];if(!file)return;
+  if(file.type!=='application/pdf'&&!/\\.pdf$/i.test(file.name)){alert('Please choose a PDF file.');input.value='';return}
+  if(file.size>25*1024*1024){alert('The PDF must be 25 MB or smaller.');input.value='';return}
+  const order=adminOrdersCache.find(o=>String(o.order_id)===id);if(!order){alert('Order not found. Refresh and try again.');input.value='';return}
+  if(!order.user_id){alert('This order has no customer account ID, so a private customer download cannot be linked.');input.value='';return}
+  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-100)||'result.pdf';const path=`${order.user_id}/orders/${id}-result-${Date.now()}-${safeName}`;
+  const button=input.parentElement?.querySelector('button:last-of-type');if(button){button.disabled=true;button.textContent='Uploading…'}
+  try{
+    const {error:uploadError}=await supabaseClient.storage.from('service-results').upload(path,file,{contentType:'application/pdf',upsert:false});
+    if(uploadError)throw uploadError;
+    const {error:updateError}=await supabaseClient.from('orders').update({result_file_path:path}).eq('order_id',id);
+    if(updateError){await supabaseClient.storage.from('service-results').remove([path]);throw updateError}
+    if(order.result_file_path)await supabaseClient.storage.from('service-results').remove([order.result_file_path]);
+    alert('Result PDF uploaded. The customer can download it from My Orders.');await loadAdminData();
+  }catch(e){console.error(e);alert('Could not upload the result PDF: '+(e?.message||String(e))+'\\nCheck the service-results bucket SQL and Admin permissions.');}
+  finally{if(input)input.value='';if(button){button.disabled=false;button.textContent=order.result_file_path?'📤 Replace result PDF':'📤 Upload result PDF'}}
+}
+window.adminCustomerUpdateControls=adminCustomerUpdateControls;window.saveOrderCustomerNote=saveOrderCustomerNote;window.uploadOrderServiceResult=uploadOrderServiceResult;
+
+async function renderAdminApplications(){
  const body=$('adminApplicationsBody');if(!body)return;
  const q=($('applicationSearch')?.value||'').toLowerCase().trim(),st=$('applicationStatusFilter')?.value||'',from=$('applicationFromDate')?.value||'',to=$('applicationToDate')?.value||'';
  const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.phone,o.service].join(' ').toLowerCase();const d=o.created_at?new Date(o.created_at).toLocaleDateString('en-CA'):'';return (!q||text.includes(q))&&(!st||normalizeApplicationStatus(o.status)===st)&&(!from||d>=from)&&(!to||d<=to)}).sort((a,b)=>{const sa=normalizeApplicationStatus(a.status),sb=normalizeApplicationStatus(b.status);const done=['Successfully Completed','Rejected','Declined'];if(done.includes(sa)!==done.includes(sb))return done.includes(sa)?1:-1;return new Date(b.created_at||0)-new Date(a.created_at||0)});
- if(!rows.length){body.innerHTML='<tr><td colspan="9" class="admin-empty">No matching applications found.</td></tr>';return}
- body.innerHTML=rows.map(o=>{const status=normalizeApplicationStatus(o.status);return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td><select class="admin-status-select" aria-label="Application status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td>${o.file_path?'<span class="admin-muted">PDF available in All Orders</span>':formatOrderRequirement(o.requirement||'—',true)}</td></tr>`}).join('');
+ if(!rows.length){body.innerHTML='<tr><td colspan="10" class="admin-empty">No matching applications found.</td></tr>';return}
+ body.innerHTML=await Promise.all(rows.map(async o=>{const status=normalizeApplicationStatus(o.status),tools=await adminCustomerUpdateControls(o,'application');return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td><select class="admin-status-select" aria-label="Application status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td>${o.file_path?'<span class="admin-muted">PDF available in All Orders</span>':formatOrderRequirement(o.requirement||'—',true)}</td><td>${tools}</td></tr>`})).join('');
 }
 function resetApplicationFilters(){['applicationSearch','applicationStatusFilter','applicationFromDate','applicationToDate'].forEach(id=>{if($(id))$(id).value=''});renderAdminApplications()}
 async function updateApplicationStatus(orderId,status,isAppointment=false){
@@ -1183,17 +1229,59 @@ async function updateApplicationStatus(orderId,status,isAppointment=false){
 }
 function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
 
+const adminPdfLinkCache=new Map();
+async function getAdminPdfLinks(filePath){
+  const path=String(filePath||'').trim();if(!path)return {error:'No PDF file path was saved for this order.'};
+  const cached=adminPdfLinkCache.get(path);if(cached&&cached.expires>Date.now())return cached.value;
+  const bucket=supabaseClient.storage.from('pdf-orders');
+  const viewResult=await bucket.createSignedUrl(path,3600);
+  if(viewResult.error||!viewResult.data?.signedUrl)return {error:viewResult.error?.message||'Could not create a PDF viewing link.'};
+  let downloadUrl=viewResult.data.signedUrl;
+  const downloadResult=await bucket.createSignedUrl(path,3600,{download:true});
+  if(!downloadResult.error&&downloadResult.data?.signedUrl)downloadUrl=downloadResult.data.signedUrl;
+  const value={viewUrl:viewResult.data.signedUrl,downloadUrl};
+  adminPdfLinkCache.set(path,{expires:Date.now()+50*60*1000,value});
+  return value;
+}
+async function adminPdfActions(filePath){
+  if(!filePath)return '<span class="admin-muted">No file attached</span>';
+  const links=await getAdminPdfLinks(filePath);
+  if(links.error)return `<span class="admin-muted" title="${escapeHtml(links.error)}">PDF unavailable · check Storage access</span>`;
+  return `<div class="admin-pdf-actions"><a href="${escapeHtml(links.viewUrl)}" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a><a href="${escapeHtml(links.downloadUrl)}" target="_blank" rel="noopener" download class="admin-file-link admin-download-link">⬇ Download</a></div>`;
+}
+function printRequirementSummary(raw){
+  const text=String(raw||'');
+  const pages=(text.match(/Pages\s*:\s*(\d+)/i)||[])[1];
+  const kind=(text.match(/(?:^|\|)\s*(Colour|Color|Black\s*&\s*White|B\s*&?\s*W)(?=\s*(?:\||$))/i)||[])[1];
+  const file=(text.match(/File\s*:\s*([^|\r\n]+)/i)||[])[1];
+  const parts=[];if(pages)parts.push(`${escapeHtml(pages)} page(s)`);if(kind)parts.push(escapeHtml(kind));if(file)parts.push(`<span class="admin-muted">${escapeHtml(file.trim())}</span>`);
+  return parts.length?parts.join('<br>'):formatOrderRequirement(text||'—',true);
+}
+async function renderAdminPrintOrders(rows){
+  const body=$('adminPrintOrdersBody');if(!body)return;
+  const query=($('adminPrintSearch')?.value||'').toLowerCase().trim();
+  const all=(rows||[]).filter(o=>String(o.service||'').toLowerCase().includes('pdf print'));
+  const matching=all.filter(o=>[o.order_id,o.customer_name,o.phone,o.file_path,o.requirement].join(' ').toLowerCase().includes(query));
+  const msg=$('adminPrintFileMessage');if(msg)msg.textContent=all.length?`${all.length} PDF Print order(s) found.`:'No PDF Print orders found yet.';
+  if(!matching.length){body.innerHTML=`<tr><td colspan="10" class="admin-empty">${query?'No matching PDF Print orders.':'No PDF Print orders found. New orders will appear here after upload and submission.'}</td></tr>`;return;}
+  body.innerHTML='<tr><td colspan="10" class="admin-empty">Loading uploaded PDF files…</td></tr>';
+  const rendered=await Promise.all(matching.map(async o=>{
+    const action=await adminPdfActions(o.file_path);
+    const customerTools=await adminCustomerUpdateControls(o,'print');
+    const status=normalizeApplicationStatus(o.status);
+    const orderId=String(o.order_id||'').replace(/[^A-Za-z0-9_-]/g,'');
+    const date=o.created_at?new Date(o.created_at).toLocaleString('en-IN'):'';
+    return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'Customer')}</td><td>${escapeHtml(o.phone||'—')}</td><td>${printRequirementSummary(o.requirement)}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${action}</td><td><select class="admin-status-select" aria-label="Print order status" onchange="updateApplicationStatus('${orderId}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select><div class="admin-muted" style="margin-top:5px">${escapeHtml((String(o.status||'').match(/(?:Reason|reason):\s*(.*)$/)||[])[1]||'')}</div></td><td>${customerTools}</td><td>${escapeHtml(date)}</td></tr>`;
+  }));
+  body.innerHTML=rendered.join('');
+}
 async function renderAdminOrders(rows){
   const body=$('adminOrdersBody');
-  if(!rows.length){body.innerHTML='<tr><td colspan="11" class="admin-empty">No orders or appointments yet.</td></tr>';return}
-  body.innerHTML='<tr><td colspan="11" class="admin-empty">Loading order files...</td></tr>';
+  if(!rows.length){body.innerHTML='<tr><td colspan="12" class="admin-empty">No orders or appointments yet.</td></tr>';return}
+  body.innerHTML='<tr><td colspan="12" class="admin-empty">Loading order files...</td></tr>';
   const rendered=await Promise.all(rows.map(async o=>{
-    let fileHtml='';
-    if(o.file_path){
-      const {data,error}=await supabaseClient.storage.from('pdf-orders').createSignedUrl(o.file_path,3600);
-      if(!error && data?.signedUrl) fileHtml='<a href="'+data.signedUrl+'" target="_blank" rel="noopener" class="admin-file-link">📄 View PDF</a>';
-      else fileHtml='<span class="admin-muted">File unavailable</span>';
-    } else fileHtml='<span class="admin-muted">—</span>';
+    const fileHtml=await adminPdfActions(o.file_path);
+    const customerTools=await adminCustomerUpdateControls(o,'all');
     return `<tr>
     <td><span class="admin-badge">${String(o.service||'').toLowerCase().includes('pdf print')?'Order':'Appointment'}</span></td>
     <td><b>${escapeHtml(o.order_id||'')}</b></td>
@@ -1205,23 +1293,31 @@ async function renderAdminOrders(rows){
     <td>${formatOrderRequirement(o.requirement||'',true)}</td>
     <td>${fileHtml}</td>
     <td><select class="admin-status-select" aria-label="Order status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===normalizeApplicationStatus(o.status)?'selected':''}>${x}</option>`).join('')}</select><div class="admin-muted" style="margin-top:6px;max-width:220px;white-space:normal">${escapeHtml((String(o.status||'').match(/(?:Reason|reason):\s*(.*)$/)||[])[1]||'')}</div></td>
+    <td>${customerTools}</td>
     <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
   </tr>`;
   }));
   body.innerHTML=rendered.join('');
 }
 
-function renderAdminAppointments(rows){
-  const body=$('adminAppointmentsBody');
-  body.innerHTML=rows.length?rows.map(o=>`<tr>
-    <td><b>${escapeHtml(o.order_id||'')}</b></td>
-    <td>${escapeHtml(o.customer_name||'')}</td>
-    <td>${escapeHtml(o.phone||'')}</td>
-    <td>${escapeHtml(o.service||'')}</td>
-    <td>${formatOrderRequirement(o.requirement||'',true)}</td>
-    <td><select class="admin-status-select" aria-label="Appointment status" onchange="updateAppointmentStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===normalizeApplicationStatus(o.status)?'selected':''}>${x}</option>`).join('')}</select></td>
-    <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
-  </tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No appointments yet.</td></tr>';
+async function renderAdminAppointments(rows){
+  const body=$('adminAppointmentsBody');if(!body)return;
+  if(!rows.length){body.innerHTML='<tr><td colspan="8" class="admin-empty">No appointments yet.</td></tr>';return}
+  const html=await Promise.all(rows.map(async o=>{
+    const tools=await adminCustomerUpdateControls(o,'appointment');
+    const orderId=String(o.order_id||'').replace(/[^A-Za-z0-9_-]/g,'');
+    return `<tr>
+      <td><b>${escapeHtml(o.order_id||'')}</b></td>
+      <td>${escapeHtml(o.customer_name||'')}</td>
+      <td>${escapeHtml(o.phone||'')}</td>
+      <td>${escapeHtml(o.service||'')}</td>
+      <td>${formatOrderRequirement(o.requirement||'',true)}</td>
+      <td><select class="admin-status-select" aria-label="Appointment status" onchange="updateApplicationStatus('${orderId}',this.value,true)">${APPLICATION_STATUSES.map(x=>`<option ${x===normalizeApplicationStatus(o.status)?'selected':''}>${x}</option>`).join('')}</select></td>
+      <td>${tools}</td>
+      <td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td>
+    </tr>`;
+  }));
+  body.innerHTML=html.join('');
 }
 
 function renderAdminCustomers(rows){
@@ -1331,6 +1427,7 @@ async function adminLogout(){
         <button class="active" onclick="switchAdminSection('adminOverview',this)">📊 Overview</button>
         <button onclick="switchAdminSection('adminCustomers',this);loadAdminData().catch(e=>{console.error('Customer list load failed',e);const b=document.getElementById('adminCustomersBody');if(b)b.innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customer data. Please check connection and refresh.</td></tr>';});">👥 All Customers</button>
         <button onclick="switchAdminSection('adminOrders',this)">📦 All Orders</button>
+        <button onclick="switchAdminSection('adminPrintOrders',this);renderAdminPrintOrders(adminOrdersCache.filter(o=>String(o.service||'').toLowerCase().includes('pdf print')))" >🖨️ PDF Print Files</button>
         <button onclick="switchAdminSection('adminApplications',this);loadAdminData()">📝 Applications</button>
         <button onclick="switchAdminSection('adminPayments',this);loadAdminData()">💳 Payments</button>
         <button onclick="switchAdminSection('adminAppointments',this)">📅 Appointments</button>
@@ -1393,7 +1490,7 @@ async function adminLogout(){
         <div class="admin-card">
           <div class="section-head"><h2>📝 Application Management</h2><span>Update application status and review submitted details</span></div>
           <div class="admin-filter-row"><input id="applicationSearch" placeholder="Search ID, name, mobile or service" oninput="renderAdminApplications()"><select id="applicationStatusFilter" onchange="renderAdminApplications()"><option value="">All statuses</option><option>Application Submitted</option><option>Under Process</option><option>Successfully Completed</option><option>Rejected</option><option>Declined</option></select><label>From <input type="date" id="applicationFromDate" onchange="renderAdminApplications()"></label><label>To <input type="date" id="applicationToDate" onchange="renderAdminApplications()"></label><button class="admin-btn" onclick="resetApplicationFilters()">Reset</button></div>
-          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Application ID</th><th>Customer</th><th>Mobile</th><th>Service</th><th>Amount</th><th>Payment</th><th>Application Status</th><th>Apply Date</th><th>Details / File</th></tr></thead><tbody id="adminApplicationsBody"></tbody></table></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Application ID</th><th>Customer</th><th>Mobile</th><th>Service</th><th>Amount</th><th>Payment</th><th>Application Status</th><th>Apply Date</th><th>Details / File</th><th>Customer Note / Result PDF</th></tr></thead><tbody id="adminApplicationsBody"></tbody></table></div>
           <p class="note" id="applicationAdminMessage">Status updates are saved to the existing orders table.</p>
         </div>
       </section>
@@ -1429,7 +1526,17 @@ async function adminLogout(){
       <section id="adminOrders" class="admin-section">
         <div class="admin-card">
           <div class="section-head"><h2>📦 All Orders</h2><span>Every customer order</span></div>
-          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Amount</th><th>Payment</th><th>Requirement</th><th>File</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminOrdersBody"></tbody></table></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Amount</th><th>Payment</th><th>Requirement</th><th>File</th><th>Status</th><th>Customer Note / Result PDF</th><th>Date</th></tr></thead><tbody id="adminOrdersBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="adminPrintOrders" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>🖨️ PDF Print Files</h2><span>Uploaded PDFs from customers</span></div>
+          <p class="note">Open the PDF to review the original document or download it for printing. If an older order has no file attached, its original PDF may not have been saved to Storage.</p>
+          <div class="admin-filter-row"><input id="adminPrintSearch" placeholder="Search order ID, customer, phone or file name" oninput="renderAdminPrintOrders(adminOrdersCache.filter(o=>String(o.service||'').toLowerCase().includes('pdf print')))"/><button class="admin-btn" type="button" onclick="loadAdminData()">↻ Refresh Files</button></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Print Details</th><th>Amount</th><th>Payment</th><th>Uploaded PDF</th><th>Status</th><th>Customer Note / Result PDF</th><th>Date</th></tr></thead><tbody id="adminPrintOrdersBody"></tbody></table></div>
+          <p class="note" id="adminPrintFileMessage" aria-live="polite"></p>
         </div>
       </section>
 
@@ -1437,7 +1544,7 @@ async function adminLogout(){
         <div class="admin-card">
           <div class="section-head"><h2>📅 Appointments</h2><span>Appointment requests by service</span></div>
           <div class="admin-filter-row"><label for="adminAppointmentServiceFilter">Service</label><select id="adminAppointmentServiceFilter" onchange="renderPortalAppointments()"><option value="">All services</option></select></div>
-          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Appointment No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Requirement</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminAppointmentsBody"></tbody></table></div>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Appointment No.</th><th>Customer</th><th>Phone</th><th>Service</th><th>Requirement</th><th>Status</th><th>Customer Note / Result PDF</th><th>Date</th></tr></thead><tbody id="adminAppointmentsBody"></tbody></table></div>
         </div>
       </section>
     </main>
@@ -1531,27 +1638,56 @@ const oldOpen=window.openAppointment;window.openAppointment=function(service,des
 <style id="ac-frontpage-maker-styles">
 #acFrontMaker{display:none;position:fixed;inset:0;z-index:99999;background:rgba(2,8,22,.96);color:#eaf4ff;overflow:auto;padding:18px;font-family:Arial,sans-serif}
 #acFrontMaker.open{display:block}#acFrontMaker .ac-fpm-shell{max-width:1200px;margin:0 auto}#acFrontMaker .ac-fpm-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}#acFrontMaker h2,#acFrontMaker h3{margin:0 0 8px}#acFrontMaker .ac-fpm-grid{display:grid;grid-template-columns:minmax(280px,390px) minmax(320px,1fr);gap:18px;align-items:start}#acFrontMaker .ac-fpm-panel{background:#07152b;border:1px solid #24517a;border-radius:16px;padding:16px;box-shadow:0 0 0 1px rgba(30,180,255,.08)}#acFrontMaker label{display:block;font-size:13px;color:#b9d4f5;margin:10px 0 5px}#acFrontMaker input,#acFrontMaker select{width:100%;box-sizing:border-box;border:1px solid #2b527e;border-radius:9px;padding:10px;background:#0b1b34;color:#fff;font:inherit}#acFrontMaker button{border:1px solid #2e9efc;background:linear-gradient(100deg,#087cff,#7b2cff);color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}#acFrontMaker .ac-fpm-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#acFrontMaker .ac-fpm-themes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}#acFrontMaker .ac-fpm-theme{padding:5px!important;background:#08152a!important;border:1px solid #23476d!important;text-align:center}#acFrontMaker .ac-fpm-theme.selected{border:2px solid #12d8ff!important;box-shadow:0 0 12px #0ab9ff55}#acFrontMaker .ac-fpm-theme img{display:block;width:100%;aspect-ratio:2/3;object-fit:fill;border-radius:5px}#acFrontMaker .ac-fpm-theme span{display:block;font-size:11px;margin-top:5px;white-space:normal}#acFrontMaker .ac-fpm-preview-wrap{background:#101e32;padding:12px;border-radius:12px;overflow:auto}#acFrontMaker .ac-fpm-paper{position:relative;width:min(100%,595px);aspect-ratio:210/297;margin:auto;background:#fff;overflow:hidden;color:#06265d;box-shadow:0 5px 24px #0008;font-family:Georgia,'Times New Roman',serif}#acFrontMaker .ac-fpm-paper-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}#acFrontMaker .ac-fpm-paper-content{position:absolute;inset:7% 8%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:0;color:#102e5c}#acFrontMaker .ac-fpm-college{font-weight:bold;font-size:clamp(12px,2.4vw,22px);line-height:1.2;max-width:100%;overflow-wrap:anywhere;margin:3% 0 8%;text-shadow:0 1px 0 #fff}#acFrontMaker .ac-fpm-subtitle{font-size:clamp(12px,2.1vw,20px);font-weight:bold;border:1px solid currentColor;padding:7px 10px;max-width:90%;overflow-wrap:anywhere;margin-bottom:8%;background:#ffffffa8}#acFrontMaker .ac-fpm-details{width:100%;text-align:left;border:1.5px solid currentColor;border-radius:12px;padding:5% 5%;box-sizing:border-box;background:#ffffffb8;font-size:clamp(9px,1.55vw,14px);line-height:1.85;overflow-wrap:anywhere}#acFrontMaker .ac-fpm-row{display:flex;gap:5px;align-items:baseline;flex-wrap:wrap}#acFrontMaker .ac-fpm-row b{overflow-wrap:anywhere}#acFrontMaker .ac-fpm-signatures{display:flex;justify-content:space-between;gap:20px;width:100%;margin-top:auto;padding-top:8%;font-size:clamp(9px,1.3vw,12px)}#acFrontMaker .ac-fpm-signatures span{border-top:1px solid currentColor;min-width:28%;padding-top:6px}
+/* Word template reproduced from the user's uploaded front-page DOCX. */
+#acFrontMaker .ac-fpm-word-template{position:absolute;inset:0;background:#fff;color:#092b70;font-family:Georgia,'Times New Roman',serif;container-type:inline-size;overflow:hidden;text-align:center}
+#acFrontMaker .ac-fpm-word-template[style*="display:none"]{display:none!important}
+#acFrontMaker .ac-word-border{position:absolute;inset:3.3% 4% 4.4%;border:2.4px solid #24577b;pointer-events:none}
+#acFrontMaker .ac-word-border-inner{position:absolute;inset:3.9% 4.7% 5%;border:1.2px solid #24577b;pointer-events:none}
+#acFrontMaker .ac-word-arch{position:absolute;top:1.7%;left:3.5%;width:93%;height:21%;overflow:visible}
+#acFrontMaker .ac-word-arch text{font-family:Georgia,'Times New Roman',serif;font-weight:bold;letter-spacing:.1px;font-size:34px;paint-order:stroke fill}
+#acFrontMaker .ac-word-arch-shadow{fill:#5b6e7d;stroke:#182e49;stroke-width:1.4px;filter:drop-shadow(1.3px 2px 1px #0005)}
+#acFrontMaker .ac-word-arch-text{fill:#2c5c82;stroke:#102a43;stroke-width:.7px}
+#acFrontMaker .ac-word-subject{position:absolute;top:24.2%;left:21%;width:58%;min-height:8.4%;display:flex;justify-content:center;align-items:center;padding:1.5% 2%;box-sizing:border-box;border:1.4px solid #18395b;border-radius:4% 0 4% 0;box-shadow:2px 3px 4px #0002;background:#fff;font-size:3.05cqw;line-height:1.14;color:#387bad;overflow-wrap:anywhere}
+#acFrontMaker .ac-word-detail-box{position:absolute;top:33.8%;left:8%;width:84%;height:31%;box-sizing:border-box;border:3px solid #082b70;border-radius:3.4%;padding:3.3% 4.7% 2.5% 8.7%;background:#ffffff;box-shadow:1px 2px 3px #0002;text-align:left;display:flex;align-items:flex-start}
+#acFrontMaker .ac-word-scroll-left{position:absolute;left:-1.4%;top:-.3%;bottom:-8%;width:5.5%;border:2.5px solid #082b70;border-radius:18px;background:#fff;box-shadow:1px 2px 3px #0002}
+#acFrontMaker .ac-word-scroll-left:before{content:"";position:absolute;left:12%;top:3%;width:76%;aspect-ratio:1;border:2.5px solid #082b70;border-radius:50%;background:#fff}
+#acFrontMaker .ac-word-scroll-right{position:absolute;right:-.3%;top:-7%;width:7.8%;height:15%;border:2.5px solid #082b70;border-radius:50%;background:#fff}
+#acFrontMaker .ac-word-scroll-right:before{content:"";position:absolute;inset:18%;border:2px solid #082b70;border-radius:50%}
+#acFrontMaker .ac-word-rows{display:flex;flex-direction:column;justify-content:center;gap:.55%;width:100%;max-height:100%;font-size:3.0cqw;line-height:1.32;overflow-wrap:anywhere}
+#acFrontMaker .ac-word-row{display:flex;align-items:baseline;gap:1.1%;min-width:0;text-align:left}
+#acFrontMaker .ac-word-row span{flex:0 0 auto;max-width:47%;white-space:normal}
+#acFrontMaker .ac-word-row b{font-weight:700;min-width:0;overflow-wrap:anywhere;word-break:normal}
+#acFrontMaker .ac-fpm-word-template.compact .ac-word-rows{font-size:2.55cqw;line-height:1.25;gap:.15%}
+#acFrontMaker .ac-word-signatures{position:absolute;left:8%;right:8%;bottom:5.5%;display:flex;align-items:flex-end;justify-content:space-between;gap:12%;font-size:2.35cqw;font-weight:bold;color:#082b70}
+#acFrontMaker .ac-word-signatures span{display:block;min-width:33%;padding-top:1.4%;border-top:1.5px solid #082b70;text-align:center}
+#acFrontMaker .ac-fpm-word-thumb{height:auto;aspect-ratio:2/3;width:100%;position:relative;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;background:#fff;border:1px solid #bfd3e4;border-radius:5px;color:#092b70;box-sizing:border-box;padding-top:9%;font-family:Georgia,'Times New Roman',serif}
+#acFrontMaker .ac-fpm-word-thumb:before{content:"";position:absolute;inset:4% 5% 5%;border:2px double #24577b}
+#acFrontMaker .ac-fpm-word-thumb:after{content:"✦ NAME  ➺  Student Name\A ✦ Enrollment No.\A ✦ Registration No.\A ✦ Department\A ✦ Program\A ✦ Year  ✦ Semester";white-space:pre;position:absolute;top:39%;left:13%;right:8%;border:2px solid #082b70;border-radius:7px;padding:8% 5%;font-size:clamp(5px,1.1vw,8px);line-height:1.8;background:#fff}
+#acFrontMaker .ac-fpm-word-thumb span{font-size:clamp(5px,1.15vw,9px);font-weight:bold;text-align:center;max-width:90%;border-bottom:1px solid #24577b}
+@media(max-width:760px){#acFrontMaker .ac-word-rows{font-size:3.0cqw}#acFrontMaker .ac-fpm-word-template.compact .ac-word-rows{font-size:2.55cqw}#acFrontMaker .ac-fpm-word-thumb:after{font-size:7px}}
+
 @media(max-width:760px){#acFrontMaker{padding:10px}#acFrontMaker .ac-fpm-grid{grid-template-columns:1fr}#acFrontMaker .ac-fpm-themes{grid-template-columns:repeat(4,minmax(0,1fr))}#acFrontMaker .ac-fpm-paper{width:100%}#acFrontMaker .ac-fpm-top{align-items:flex-start}#acFrontMaker .ac-fpm-preview-wrap{padding:6px}}
 @media print{body.ac-print-frontpage>*{display:none!important}body.ac-print-frontpage #acFrontPrintRoot{display:block!important}#acFrontPrintRoot{display:block!important;position:fixed;inset:0;width:100%;height:100%}@page{size:A4 portrait;margin:0}}
 </style>
 <div id="acFrontMaker" aria-modal="true" role="dialog" aria-label="Front Page Maker">
- <div class="ac-fpm-shell"><div class="ac-fpm-top"><div><h2>📄 Front Page Maker</h2><div style="color:#9fc7f4">Choose one of your original themes and preview your assignment cover.</div></div><button type="button" onclick="closeFrontPageMaker()">✕ Close</button></div>
+ <div class="ac-fpm-shell"><div class="ac-fpm-top"><div><h2>📄 Front Page Maker</h2><div style="color:#9fc7f4">The layout from your uploaded Word file is selected by default. Your 14 original themes remain available.</div></div><button type="button" onclick="closeFrontPageMaker()">✕ Close</button></div>
  <div class="ac-fpm-grid"><section class="ac-fpm-panel"><h3>1. Student & College Details</h3>
  <label>College / University Name *</label><input id="fpmCollege" placeholder="Enter college or university name" oninput="updateFrontPagePreview()">
  <label>Assignment Title / Subject *</label><input id="fpmSubject" placeholder="Enter subject or assignment title" oninput="updateFrontPagePreview()">
  <label>Student Name *</label><input id="fpmName" placeholder="Enter student name" oninput="updateFrontPagePreview()">
- <label>Student ID</label><input id="fpmStudentId" placeholder="Enter student ID" oninput="updateFrontPagePreview()">
+ <label>Enrollment Number</label><input id="fpmStudentId" placeholder="Enter enrollment number" oninput="updateFrontPagePreview()">
  <label>Registration Number</label><input id="fpmRegistration" placeholder="Enter registration number" oninput="updateFrontPagePreview()">
  <label>Department</label><input id="fpmDepartment" placeholder="Enter department" oninput="updateFrontPagePreview()">
  <label>Program / Course</label><input id="fpmProgram" placeholder="Enter program or course" oninput="updateFrontPagePreview()">
  <label>Year</label><select id="fpmYear" onchange="updateFrontPagePreview()"><option value="">Select year</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select>
  <label>Semester</label><select id="fpmSemester" onchange="updateFrontPagePreview()"><option value="">Select semester</option><option>1st Semester</option><option>2nd Semester</option><option>3rd Semester</option><option>4th Semester</option><option>5th Semester</option><option>6th Semester</option><option>7th Semester</option><option>8th Semester</option></select>
  <h3 style="margin-top:18px">2. Choose a Theme</h3><div id="acFrontThemeGrid" class="ac-fpm-themes"></div><div class="ac-fpm-actions"><button type="button" onclick="updateFrontPagePreview()">Update Preview</button><button type="button" onclick="downloadFrontPagePDF()">Download / Print PDF</button></div><p style="color:#9fc7f4;font-size:12px;margin-bottom:0">No logo or logo-upload option is included. The theme image files are used unchanged.</p></section>
- <section class="ac-fpm-panel"><h3>3. Preview</h3><div class="ac-fpm-preview-wrap"><div id="acFrontPreview" class="ac-fpm-paper"><img id="fpmBg" class="ac-fpm-paper-bg" alt="Selected theme"><div class="ac-fpm-paper-content"><div id="fpmCollegePreview" class="ac-fpm-college">College / University Name</div><div id="fpmSubjectPreview" class="ac-fpm-subtitle">Assignment Title / Subject</div><div class="ac-fpm-details"><div class="ac-fpm-row">✦ NAME → <b id="fpmNamePreview">Student Name</b></div><div class="ac-fpm-row">✦ STUDENT ID → <b id="fpmStudentIdPreview">—</b></div><div class="ac-fpm-row">✦ Registration → <b id="fpmRegistrationPreview">—</b></div><div class="ac-fpm-row">✦ DEPARTMENT → <b id="fpmDepartmentPreview">—</b></div><div class="ac-fpm-row">✦ PROGRAM → <b id="fpmProgramPreview">—</b></div><div class="ac-fpm-row">✦ YEAR → <b id="fpmYearPreview">—</b></div><div class="ac-fpm-row">✦ SEMESTER → <b id="fpmSemesterPreview">—</b></div></div><div class="ac-fpm-signatures"><span>Date</span><span>Teacher’s Signature</span></div></div></div></div></section></div></div></div>
+ <section class="ac-fpm-panel"><h3>3. Preview</h3><div class="ac-fpm-preview-wrap"><div id="acFrontPreview" class="ac-fpm-paper"><img id="fpmBg" class="ac-fpm-paper-bg" alt="Selected theme"><div id="acFrontStandardContent" class="ac-fpm-paper-content"><div id="fpmCollegePreview" class="ac-fpm-college">College / University Name</div><div id="fpmSubjectPreview" class="ac-fpm-subtitle">Assignment Title / Subject</div><div class="ac-fpm-details"><div class="ac-fpm-row">✦ NAME → <b id="fpmNamePreview">Student Name</b></div><div class="ac-fpm-row">✦ ENROLLMENT NO. → <b id="fpmStudentIdPreview">—</b></div><div class="ac-fpm-row">✦ Registration → <b id="fpmRegistrationPreview">—</b></div><div class="ac-fpm-row">✦ DEPARTMENT → <b id="fpmDepartmentPreview">—</b></div><div class="ac-fpm-row">✦ PROGRAM → <b id="fpmProgramPreview">—</b></div><div class="ac-fpm-row">✦ YEAR → <b id="fpmYearPreview">—</b></div><div class="ac-fpm-row">✦ SEMESTER → <b id="fpmSemesterPreview">—</b></div></div><div class="ac-fpm-signatures"><span>Date</span><span>Teacher’s Signature</span></div></div><div id="acFrontWordTemplate" class="ac-fpm-word-template" style="display:none"><div class="ac-word-border"></div><div class="ac-word-border-inner"></div><svg class="ac-word-arch" viewBox="0 0 600 210" preserveAspectRatio="none" aria-label="College name"><defs><path id="fpmWordCollegeArcPath" d="M 45 176 C 125 -4, 475 -4, 555 176"/></defs><text class="ac-word-arch-shadow"><textPath id="fpmWordCollegeArcShadow" href="#fpmWordCollegeArcPath" startOffset="50%" text-anchor="middle">College / University Name</textPath></text><text class="ac-word-arch-text"><textPath id="fpmWordCollegeArc" href="#fpmWordCollegeArcPath" startOffset="50%" text-anchor="middle">College / University Name</textPath></text></svg><div class="ac-word-subject" id="fpmWordSubject">Assignment Title / Subject</div><div class="ac-word-detail-box"><div class="ac-word-scroll-left"></div><div class="ac-word-scroll-right"></div><div class="ac-word-rows"><div class="ac-word-row"><span>✦ NAME➺</span><b id="fpmWordName">Student Name</b></div><div class="ac-word-row"><span>✦ Enrollment No.➺</span><b id="fpmWordEnrollment">—</b></div><div class="ac-word-row"><span>✦ Registration No.➺</span><b id="fpmWordRegistration">—</b></div><div class="ac-word-row"><span>✦ DEPARTMENT➺</span><b id="fpmWordDepartment">—</b></div><div class="ac-word-row"><span>✦ PROGRAM➺</span><b id="fpmWordProgram">—</b></div><div class="ac-word-row"><span>✦ YEAR➺</span><b id="fpmWordYear">—</b></div><div class="ac-word-row"><span>✦ SEMESTER➺</span><b id="fpmWordSemester">—</b></div></div></div><div class="ac-word-signatures"><span>Date</span><span>Teacher’s Signature</span></div></div></div></div></section></div></div></div>
 <div id="acFrontPrintRoot" style="display:none"></div>
 <script id="ac-frontpage-maker-script">
 (function(){
  const themes=[
+ {name:'My Word Front Page Template',type:'word'},
  {name:'Luxury Blue and Gold Ribbon Frame',file:'Luxury Blue and Gold Ribbon Frame.png'},
  {name:'Elegant Blue Botanical Letterhead Frame',file:'Elegant Blue Botanical Letterhead Frame.png'},
  {name:'Blue Wave Stationery Frame',file:'Blue Wave Stationery Frame.png'},
@@ -1570,12 +1706,58 @@ const oldOpen=window.openAppointment;window.openAppointment=function(service,des
  let selected=0;
  const $=id=>document.getElementById(id);
  const themeUrl=t=>'assets/front-page-themes/'+encodeURIComponent(t.file).replace(/%20/g,'%20');
- function buildThemes(){const grid=$('acFrontThemeGrid');if(!grid||grid.dataset.ready)return;grid.dataset.ready='1';themes.forEach((t,i)=>{const b=document.createElement('button');b.type='button';b.className='ac-fpm-theme'+(i===0?' selected':'');b.innerHTML='<img loading="lazy" alt=""><span></span>';b.querySelector('img').src=themeUrl(t);b.querySelector('span').textContent=(i+1)+'. '+t.name;b.onclick=()=>{selected=i;grid.querySelectorAll('.ac-fpm-theme').forEach((x,j)=>x.classList.toggle('selected',j===i));updateFrontPagePreview()};grid.appendChild(b)});}
+ function buildThemes(){
+  const grid=$('acFrontThemeGrid');if(!grid||grid.dataset.ready)return;grid.dataset.ready='1';
+  themes.forEach((t,i)=>{
+   const b=document.createElement('button');b.type='button';b.className='ac-fpm-theme'+(i===selected?' selected':'');
+   if(t.type==='word'){
+    b.innerHTML='<div class="ac-fpm-word-thumb" aria-hidden="true"><span>SISTER NIVEDITA UNIVERSITY</span></div><span></span>';
+   }else{
+    b.innerHTML='<img loading="lazy" alt=""><span></span>';b.querySelector('img').src=themeUrl(t);
+   }
+   b.lastElementChild.textContent=(i+1)+'. '+t.name;
+   b.onclick=()=>{selected=i;grid.querySelectorAll('.ac-fpm-theme').forEach((x,j)=>x.classList.toggle('selected',j===i));updateFrontPagePreview()};grid.appendChild(b);
+  });
+ }
  function val(id,fallback){const v=$(id)?.value?.trim();return v||fallback}
+ function escapeHtml(v){return String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ function wordData(){return {college:val('fpmCollege','College / University Name'),subject:val('fpmSubject','Assignment Title / Subject'),name:val('fpmName','Student Name'),enrollment:val('fpmStudentId','—'),registration:val('fpmRegistration','—'),department:val('fpmDepartment','—'),program:val('fpmProgram','—'),year:val('fpmYear','—'),semester:val('fpmSemester','—')}}
+ function fitArcText(el,text){if(!el)return;el.textContent=text;const size=Math.max(16,Math.min(34,555/Math.max(1,text.length*.59)));el.setAttribute('font-size',String(size))}
+ function syncWordPreview(){
+  const d=wordData();
+  $('fpmWordSubject').textContent=d.subject;$('fpmWordName').textContent=d.name;$('fpmWordEnrollment').textContent=d.enrollment;$('fpmWordRegistration').textContent=d.registration;$('fpmWordDepartment').textContent=d.department;$('fpmWordProgram').textContent=d.program;$('fpmWordYear').textContent=d.year;$('fpmWordSemester').textContent=d.semester;
+  fitArcText($('fpmWordCollegeArc'),d.college);fitArcText($('fpmWordCollegeArcShadow'),d.college);
+  const total=[d.name,d.enrollment,d.registration,d.department,d.program,d.year,d.semester].join(' ').length;
+  $('acFrontWordTemplate').classList.toggle('compact',total>150||d.department.length>36||d.program.length>42||d.name.length>32);
+ }
  window.openFrontPageMaker=function(){buildThemes();$('acFrontMaker').classList.add('open');document.body.style.overflow='hidden';updateFrontPagePreview()};
  window.closeFrontPageMaker=function(){$('acFrontMaker').classList.remove('open');document.body.style.overflow=''};
- window.updateFrontPagePreview=function(){const t=themes[selected]||themes[0];$('fpmBg').src=themeUrl(t);$('fpmCollegePreview').textContent=val('fpmCollege','College / University Name');$('fpmSubjectPreview').textContent=val('fpmSubject','Assignment Title / Subject');$('fpmNamePreview').textContent=val('fpmName','Student Name');$('fpmStudentIdPreview').textContent=val('fpmStudentId','—');$('fpmRegistrationPreview').textContent=val('fpmRegistration','—');$('fpmDepartmentPreview').textContent=val('fpmDepartment','—');$('fpmProgramPreview').textContent=val('fpmProgram','—');$('fpmYearPreview').textContent=val('fpmYear','—');$('fpmSemesterPreview').textContent=val('fpmSemester','—');};
- window.downloadFrontPagePDF=function(){if(!val('fpmCollege','')||!val('fpmSubject','')||!val('fpmName','')){alert('Please enter College/University Name, Assignment Title and Student Name.');return}const t=themes[selected];const root=$('acFrontPrintRoot');const esc=v=>String(v||'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const rows=[['NAME',val('fpmName','—')],['STUDENT ID',val('fpmStudentId','—')],['REGISTRATION',val('fpmRegistration','—')],['DEPARTMENT',val('fpmDepartment','—')],['PROGRAM',val('fpmProgram','—')],['YEAR',val('fpmYear','—')],['SEMESTER',val('fpmSemester','—')]];const img=themeUrl(t);const content=`<!doctype html><html><head><meta charset="utf-8"><title>Assignment Front Page</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;width:210mm;height:297mm;font-family:Georgia,'Times New Roman',serif;color:#102e5c}.paper{position:relative;width:210mm;height:297mm;overflow:hidden}.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}.content{position:absolute;inset:21mm 17mm 16mm;display:flex;flex-direction:column;align-items:center;text-align:center}.college{font-weight:bold;font-size:19pt;line-height:1.2;max-width:100%;overflow-wrap:anywhere;margin:5mm 0 13mm}.subject{font-size:17pt;font-weight:bold;border:1px solid currentColor;padding:3mm 5mm;max-width:90%;overflow-wrap:anywhere;margin-bottom:13mm;background:#ffffffc9}.details{width:100%;text-align:left;border:1.4pt solid currentColor;border-radius:5mm;padding:9mm 8mm;background:#ffffffc9;font-size:12pt;line-height:2;overflow-wrap:anywhere}.row{display:flex;gap:5px;flex-wrap:wrap}.row b{overflow-wrap:anywhere}.sign{display:flex;justify-content:space-between;width:100%;margin-top:auto;padding-top:15mm;font-size:11pt}.sign span{border-top:1px solid currentColor;min-width:35%;padding-top:3mm}</style></head><body><div class="paper"><img class="bg" src="${img}"><div class="content"><div class="college">${esc(val('fpmCollege',''))}</div><div class="subject">${esc(val('fpmSubject',''))}</div><div class="details">${rows.map(r=>`<div class="row">✦ ${esc(r[0])} → <b>${esc(r[1])}</b></div>`).join('')}</div><div class="sign"><span>Date</span><span>Teacher’s Signature</span></div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>`;const w=window.open('','_blank');if(!w){alert('Allow pop-ups to print or save as PDF.');return}w.document.open();w.document.write(content);w.document.close()};
+ window.updateFrontPagePreview=function(){
+  const t=themes[selected]||themes[0];const word=t.type==='word';
+  $('fpmBg').style.display=word?'none':'block';$('acFrontStandardContent').style.display=word?'none':'flex';$('acFrontWordTemplate').style.display=word?'block':'none';
+  if(!word)$('fpmBg').src=themeUrl(t);
+  $('fpmCollegePreview').textContent=val('fpmCollege','College / University Name');$('fpmSubjectPreview').textContent=val('fpmSubject','Assignment Title / Subject');$('fpmNamePreview').textContent=val('fpmName','Student Name');$('fpmStudentIdPreview').textContent=val('fpmStudentId','—');$('fpmRegistrationPreview').textContent=val('fpmRegistration','—');$('fpmDepartmentPreview').textContent=val('fpmDepartment','—');$('fpmProgramPreview').textContent=val('fpmProgram','—');$('fpmYearPreview').textContent=val('fpmYear','—');$('fpmSemesterPreview').textContent=val('fpmSemester','—');
+  syncWordPreview();
+ };
+ function wordMarkup(d,prefix){
+  const compact=([d.name,d.enrollment,d.registration,d.department,d.program,d.year,d.semester].join(' ').length>150||d.department.length>36||d.program.length>42||d.name.length>32)?' compact':'';
+  const rows=[['✦ NAME➺',d.name],['✦ Enrollment No.➺',d.enrollment],['✦ Registration No.➺',d.registration],['✦ DEPARTMENT➺',d.department],['✦ PROGRAM➺',d.program],['✦ YEAR➺',d.year],['✦ SEMESTER➺',d.semester]];
+  const fs=Math.max(16,Math.min(34,555/Math.max(1,d.college.length*.59)));
+  return `<div class="word-template${compact}"><div class="word-border"></div><div class="word-border-inner"></div><svg class="word-arch" viewBox="0 0 600 210" preserveAspectRatio="none"><defs><path id="${prefix}ArcPath" d="M 45 176 C 125 -4, 475 -4, 555 176"/></defs><text class="word-arch-shadow" font-size="${fs}"><textPath href="#${prefix}ArcPath" startOffset="50%" text-anchor="middle">${escapeHtml(d.college)}</textPath></text><text class="word-arch-text" font-size="${fs}"><textPath href="#${prefix}ArcPath" startOffset="50%" text-anchor="middle">${escapeHtml(d.college)}</textPath></text></svg><div class="word-subject">${escapeHtml(d.subject)}</div><div class="word-detail-box"><div class="word-scroll-left"></div><div class="word-scroll-right"></div><div class="word-rows">${rows.map(r=>`<div class="word-row"><span>${escapeHtml(r[0])}</span><b>${escapeHtml(r[1])}</b></div>`).join('')}</div></div><div class="word-signatures"><span>Date</span><span>Teacher’s Signature</span></div></div>`;
+ }
+ const wordPrintCss=`*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Georgia,'Times New Roman',serif;color:#092b70;-webkit-print-color-adjust:exact;print-color-adjust:exact}.word-template{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;container-type:inline-size;text-align:center;color:#092b70}.word-border{position:absolute;inset:3.3% 4% 4.4%;border:1mm solid #24577b}.word-border-inner{position:absolute;inset:3.9% 4.7% 5%;border:.45mm solid #24577b}.word-arch{position:absolute;top:1.7%;left:3.5%;width:93%;height:21%;overflow:visible}.word-arch text{font-family:Georgia,'Times New Roman',serif;font-weight:bold;letter-spacing:.1px;paint-order:stroke fill}.word-arch-shadow{fill:#5b6e7d;stroke:#182e49;stroke-width:1.4px;filter:drop-shadow(1.3px 2px 1px #0005)}.word-arch-text{fill:#2c5c82;stroke:#102a43;stroke-width:.7px}.word-subject{position:absolute;top:24.2%;left:21%;width:58%;min-height:8.4%;display:flex;justify-content:center;align-items:center;padding:1.5% 2%;border:.5mm solid #18395b;border-radius:4mm 0 4mm 0;box-shadow:2px 3px 4px #0002;background:#fff;font-size:3.05cqw;line-height:1.14;color:#387bad;overflow-wrap:anywhere}.word-detail-box{position:absolute;top:33.8%;left:8%;width:84%;height:31%;border:.9mm solid #082b70;border-radius:3.4%;padding:3.3% 4.7% 2.5% 8.7%;background:#fff;box-shadow:1px 2px 3px #0002;text-align:left;display:flex;align-items:flex-start}.word-scroll-left{position:absolute;left:-1.4%;top:-.3%;bottom:-8%;width:5.5%;border:.7mm solid #082b70;border-radius:18px;background:#fff;box-shadow:1px 2px 3px #0002}.word-scroll-left:before{content:"";position:absolute;left:12%;top:3%;width:76%;aspect-ratio:1;border:.7mm solid #082b70;border-radius:50%;background:#fff}.word-scroll-right{position:absolute;right:-.3%;top:-7%;width:7.8%;height:15%;border:.7mm solid #082b70;border-radius:50%;background:#fff}.word-scroll-right:before{content:"";position:absolute;inset:18%;border:.55mm solid #082b70;border-radius:50%}.word-rows{display:flex;flex-direction:column;justify-content:center;gap:.55%;width:100%;max-height:100%;font-size:3.0cqw;line-height:1.32;overflow-wrap:anywhere}.word-row{display:flex;align-items:baseline;gap:1.1%;min-width:0;text-align:left}.word-row span{flex:0 0 auto;max-width:47%;white-space:normal}.word-row b{font-weight:700;min-width:0;overflow-wrap:anywhere}.word-template.compact .word-rows{font-size:2.55cqw;line-height:1.25;gap:.15%}.word-signatures{position:absolute;left:8%;right:8%;bottom:5.5%;display:flex;align-items:flex-end;justify-content:space-between;gap:12%;font-size:2.35cqw;font-weight:bold;color:#082b70}.word-signatures span{display:block;min-width:33%;padding-top:1.4%;border-top:.5mm solid #082b70;text-align:center}@page{size:A4 portrait;margin:0} @media print{html,body{width:210mm;height:297mm;margin:0}.word-template{break-inside:avoid;page-break-inside:avoid}}`;
+ window.downloadFrontPagePDF=function(){
+  if(!val('fpmCollege','')||!val('fpmSubject','')||!val('fpmName','')){alert('Please enter College/University Name, Assignment Title and Student Name.');return}
+  const t=themes[selected];const esc=escapeHtml;const d=wordData();
+  let content='';
+  if(t.type==='word'){
+   content=`<!doctype html><html><head><meta charset="utf-8"><title>Assignment Front Page</title><style>${wordPrintCss}</style></head><body>${wordMarkup(d,'printWord')}<script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`;
+  }else{
+   const rows=[['NAME',d.name],['ENROLLMENT NO.',d.enrollment],['REGISTRATION',d.registration],['DEPARTMENT',d.department],['PROGRAM',d.program],['YEAR',d.year],['SEMESTER',d.semester]];const img=themeUrl(t);
+   content=`<!doctype html><html><head><meta charset="utf-8"><title>Assignment Front Page</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;width:210mm;height:297mm;font-family:Georgia,'Times New Roman',serif;color:#102e5c}.paper{position:relative;width:210mm;height:297mm;overflow:hidden}.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}.content{position:absolute;inset:21mm 17mm 16mm;display:flex;flex-direction:column;align-items:center;text-align:center}.college{font-weight:bold;font-size:19pt;line-height:1.2;max-width:100%;overflow-wrap:anywhere;margin:5mm 0 13mm}.subject{font-size:17pt;font-weight:bold;border:1px solid currentColor;padding:3mm 5mm;max-width:90%;overflow-wrap:anywhere;margin-bottom:13mm;background:#ffffffc9}.details{width:100%;text-align:left;border:1.4pt solid currentColor;border-radius:5mm;padding:9mm 8mm;background:#ffffffc9;font-size:12pt;line-height:2;overflow-wrap:anywhere}.row{display:flex;gap:5px;flex-wrap:wrap}.row b{overflow-wrap:anywhere}.sign{display:flex;justify-content:space-between;width:100%;margin-top:auto;padding-top:15mm;font-size:11pt}.sign span{border-top:1px solid currentColor;min-width:35%;padding-top:3mm}</style></head><body><div class="paper"><img class="bg" src="${img}"><div class="content"><div class="college">${esc(d.college)}</div><div class="subject">${esc(d.subject)}</div><div class="details">${rows.map(r=>`<div class="row">✦ ${esc(r[0])} → <b>${esc(r[1])}</b></div>`).join('')}</div><div class="sign"><span>Date</span><span>Teacher’s Signature</span></div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>`;
+  }
+  const w=window.open('','_blank');if(!w){alert('Allow pop-ups to print or save as PDF.');return}w.document.open();w.document.write(content);w.document.close();
+ };
 })();
 </script>
 <style id="ac-static-theme-and-admin-fix">

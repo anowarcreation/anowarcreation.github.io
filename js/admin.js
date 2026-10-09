@@ -58,6 +58,108 @@ function safeOrderId(value) {
   return String(value ?? '').replace(/[^A-Za-z0-9_-]/g, '');
 }
 
+const pdfFileLinkCache = new Map();
+async function getPdfFileLinks(filePath) {
+  const path = String(filePath || '').trim();
+  if (!path) return { error: 'No PDF file path was saved with this order.' };
+  const cached = pdfFileLinkCache.get(path);
+  if (cached && cached.expires > Date.now()) return cached.value;
+  const bucket = supabaseClient.storage.from('pdf-orders');
+  const view = await bucket.createSignedUrl(path, 3600);
+  if (view.error || !view.data?.signedUrl) return { error: view.error?.message || 'Could not create PDF viewing link.' };
+  let downloadUrl = view.data.signedUrl;
+  const download = await bucket.createSignedUrl(path, 3600, { download: true });
+  if (!download.error && download.data?.signedUrl) downloadUrl = download.data.signedUrl;
+  const value = { viewUrl: view.data.signedUrl, downloadUrl };
+  pdfFileLinkCache.set(path, { expires: Date.now() + 50 * 60 * 1000, value });
+  return value;
+}
+async function pdfFileActions(filePath) {
+  if (!filePath) return '<span class="file-muted">No file attached</span>';
+  const links = await getPdfFileLinks(filePath);
+  if (links.error) return `<span class="file-muted" title="${esc(links.error)}">PDF unavailable · check Storage permissions</span>`;
+  return `<div class="pdf-file-actions"><a href="${esc(links.viewUrl)}" target="_blank" rel="noopener">📄 View PDF</a><a href="${esc(links.downloadUrl)}" target="_blank" rel="noopener" download>⬇ Download</a></div>`;
+}
+async function adminResultActions(filePath) {
+  if (!filePath) return '<span class="file-muted">No result PDF uploaded</span>';
+  try {
+    const bucket = supabaseClient.storage.from('service-results');
+    const view = await bucket.createSignedUrl(filePath, 3600);
+    if (view.error || !view.data?.signedUrl) return '<span class="file-muted">Result PDF unavailable</span>';
+    const dl = await bucket.createSignedUrl(filePath, 3600, { download: true });
+    return `<div class="pdf-file-actions"><a href="${esc(view.data.signedUrl)}" target="_blank" rel="noopener">📄 View result</a><a href="${esc(dl.data?.signedUrl || view.data.signedUrl)}" target="_blank" rel="noopener" download>⬇ Download</a></div>`;
+  } catch (error) { console.error(error); return '<span class="file-muted">Result PDF unavailable</span>'; }
+}
+async function adminCustomerUpdateControls(order, prefix = 'orders') {
+  const id = safeOrderId(order.order_id), noteId = `admin-note-${prefix}-${id}`, fileId = `admin-result-file-${prefix}-${id}`;
+  const result = await adminResultActions(order.result_file_path);
+  return `<div class="admin-customer-update"><label class="admin-note-label" for="${noteId}">Customer note</label><textarea id="${noteId}" rows="3" maxlength="3000" placeholder="e.g. Your application acknowledgement number is...">${esc(order.admin_note || '')}</textarea><button type="button" class="admin-mini-btn" onclick="saveOrderCustomerNote('${id}','${prefix}')">💾 Save note</button><div class="admin-result-current">${result}</div><input id="${fileId}" type="file" accept="application/pdf,.pdf" hidden onchange="uploadOrderServiceResult('${id}','${prefix}',this)"><button type="button" class="admin-mini-btn" onclick="document.getElementById('${fileId}').click()">📤 ${order.result_file_path ? 'Replace result PDF' : 'Upload result PDF'}</button><small class="file-muted">PDF only, max 25 MB. Customer can download from My Orders.</small></div>`;
+}
+async function saveOrderCustomerNote(orderId, prefix = 'orders') {
+  const id = safeOrderId(orderId), field = document.getElementById(`admin-note-${prefix}-${id}`);
+  if (!field) return;
+  const { data, error } = await supabaseClient.from('orders').update({ admin_note: field.value.trim() }).eq('order_id', id).select('order_id').maybeSingle();
+  if (error) { alert('Could not save customer note: ' + error.message + '\nRun the included service notes SQL in Supabase first.'); return; }
+  if (!data) { alert('No order was updated. Please refresh the Admin Panel.'); return; }
+  await load();
+}
+async function uploadOrderServiceResult(orderId, prefix, input) {
+  const id = safeOrderId(orderId), file = input?.files?.[0]; if (!file) return;
+  if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) { alert('Please choose a PDF file.'); input.value = ''; return; }
+  if (file.size > 25 * 1024 * 1024) { alert('The PDF must be 25 MB or smaller.'); input.value = ''; return; }
+  const order = orders.find(item => String(item.order_id) === id);
+  if (!order) { alert('Order not found. Refresh and try again.'); input.value = ''; return; }
+  if (!order.user_id) { alert('This order has no customer account ID, so the result cannot be linked to a private download.'); input.value = ''; return; }
+  const fileName = file.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(-100) || 'result.pdf';
+  const path = `${order.user_id}/orders/${id}-result-${Date.now()}-${fileName}`;
+  try {
+    const uploaded = await supabaseClient.storage.from('service-results').upload(path, file, { contentType: 'application/pdf', upsert: false });
+    if (uploaded.error) throw uploaded.error;
+    const updated = await supabaseClient.from('orders').update({ result_file_path: path }).eq('order_id', id);
+    if (updated.error) { await supabaseClient.storage.from('service-results').remove([path]); throw updated.error; }
+    if (order.result_file_path) await supabaseClient.storage.from('service-results').remove([order.result_file_path]);
+    alert('Result PDF uploaded. The customer can download it from My Orders.'); await load();
+  } catch (error) { console.error(error); alert('Could not upload the result PDF: ' + (error?.message || String(error)) + '\nCheck service-results Storage permissions.'); }
+  finally { input.value = ''; }
+}
+window.adminCustomerUpdateControls = adminCustomerUpdateControls;
+window.saveOrderCustomerNote = saveOrderCustomerNote;
+window.uploadOrderServiceResult = uploadOrderServiceResult;
+
+function printDetails(raw) {
+  const text = String(raw || '');
+  const pages = (text.match(/Pages\s*:\s*(\d+)/i) || [])[1];
+  const kind = (text.match(/(?:^|\|)\s*(Colour|Color|Black\s*&\s*White|B\s*&?\s*W)(?=\s*(?:\||$))/i) || [])[1];
+  const file = (text.match(/File\s*:\s*([^|\r\n]+)/i) || [])[1];
+  const parts = [];
+  if (pages) parts.push(`${esc(pages)} page(s)`);
+  if (kind) parts.push(esc(kind));
+  if (file) parts.push(`<span class="file-muted">${esc(file.trim())}</span>`);
+  return parts.length ? parts.join('<br>') : formatRequirement(text || 'No print details', true);
+}
+async function renderPrintOrders() {
+  const body = $('printOrdersBody');
+  if (!body) return;
+  const query = ($('printOrderSearch')?.value || '').toLowerCase().trim();
+  const printOrders = orders.filter(order => String(order.service || '').toLowerCase().includes('pdf print'));
+  const matching = printOrders.filter(order => [order.order_id, order.customer_name, order.phone, order.requirement, order.file_path].join(' ').toLowerCase().includes(query));
+  const message = $('printOrdersMessage');
+  if (message) message.textContent = `${printOrders.length} PDF Print order(s) found.`;
+  if (!matching.length) {
+    body.innerHTML = `<tr><td colspan="9">${query ? 'No matching PDF Print orders.' : 'No PDF Print orders found yet.'}</td></tr>`;
+    return;
+  }
+  body.innerHTML = '<tr><td colspan="9">Preparing secure PDF links…</td></tr>';
+  const html = await Promise.all(matching.map(async order => {
+    const id = safeOrderId(order.order_id);
+    const status = statusSelect(id, order.status);
+    const file = await pdfFileActions(order.file_path);
+    const tools = await adminCustomerUpdateControls(order, 'page-print');
+    return `<tr><td><b>${esc(order.order_id || '')}</b></td><td>${esc(order.customer_name || 'Customer')}</td><td>${esc(order.phone || '—')}</td><td>${printDetails(order.requirement)}</td><td>₹${(Number(order.amount) || 0).toFixed(2)}</td><td>${esc(order.payment_method || 'N/A')}</td><td>${file}</td><td>${status}${tools}</td><td>${order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : ''}</td></tr>`;
+  }));
+  body.innerHTML = html.join('');
+}
+
 function statusSelect(orderId, currentStatus) {
   const id = safeOrderId(orderId);
   const current = normalizedStatus(currentStatus);
@@ -120,6 +222,7 @@ async function load() {
   setText('r3', orders.length);
 
   renderOrders();
+  renderPrintOrders();
   renderCustomers();
   renderApplications();
   renderPayments();
@@ -142,9 +245,10 @@ function nav(id, button) {
   if (['serviceManage','pricing'].includes(id) && window.loadPortalManagement) window.loadPortalManagement();
   if (id === 'notice' && window.loadPortalNoticeAdmin) window.loadPortalNoticeAdmin();
   if (id === 'appointments' && window.renderPortalAppointments) window.renderPortalAppointments();
+  if (id === 'print') window.renderPrintOrders?.();
 }
 
-function renderOrders() {
+async function renderOrders() {
   const body = $('ordersBody');
   if (!body) return;
   if (ordersLoadError) {
@@ -154,9 +258,10 @@ function renderOrders() {
   const query = ($('orderSearch')?.value || '').toLowerCase().trim();
   const matching = orders.filter(order => [order.order_id, order.customer_name, order.phone, order.service, order.requirement]
     .join(' ').toLowerCase().includes(query));
-  body.innerHTML = matching.length ? matching.map(order => {
+  body.innerHTML = matching.length ? (await Promise.all(matching.map(async order => {
     const id = safeOrderId(order.order_id);
     const status = normalizedStatus(order.status);
+    const tools = await adminCustomerUpdateControls(order, 'page-orders');
     return `<tr>
       <td><b>${esc(order.order_id)}</b></td>
       <td>${esc(order.customer_name || '—')}</td>
@@ -165,9 +270,9 @@ function renderOrders() {
       <td>₹${(Number(order.amount) || 0).toFixed(2)}</td>
       <td>${statusSelect(id, order.status)}<small class="admin-status-reason">${esc((String(order.status || '').match(/(?:Reason|reason):\s*(.*)$/) || [])[1] || '')}</small></td>
       <td>${order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : ''}</td>
-      <td><button type="button" onclick="viewOrder('${id}')">View</button></td>
+      <td><button type="button" onclick="viewOrder('${id}')">View</button>${tools}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="8">No orders found.</td></tr>';
+  }))).join('') : '<tr><td colspan="8">No orders found.</td></tr>';
 }
 
 function renderCustomers() {
@@ -191,7 +296,7 @@ function renderCustomers() {
   }).join('') : '<tr><td colspan="5">No customer profiles found. If Auth users exist but this list is empty, run the included admin-customer-fix.sql in Supabase SQL Editor and refresh.</td></tr>';
 }
 
-function renderApplications() {
+async function renderApplications() {
   const body = $('applicationsBody');
   if (!body) return;
   if (ordersLoadError) {
@@ -199,8 +304,9 @@ function renderApplications() {
     return;
   }
   const applications = orders.filter(order => !String(order.service || '').toLowerCase().includes('pdf print'));
-  body.innerHTML = applications.length ? applications.map(order => {
+  body.innerHTML = applications.length ? (await Promise.all(applications.map(async order => {
     const id = safeOrderId(order.order_id);
+    const tools = await adminCustomerUpdateControls(order, 'page-applications');
     const reason = (String(order.status || '').match(/(?:Reason|reason):\s*(.*)$/) || [])[1] || '';
     return `<tr>
       <td>${esc(order.order_id || '')}</td>
@@ -208,9 +314,9 @@ function renderApplications() {
       <td>${esc(order.service || '')}</td>
       <td>${formatRequirement(order.requirement || '', true)}</td>
       <td><span class="pill ${statusClass(order.status)}">${esc(normalizedStatus(order.status))}</span>${reason ? `<small class="admin-status-reason">Reason: ${esc(reason)}</small>` : ''}</td>
-      <td>${statusSelect(id, order.status)}</td>
+      <td>${statusSelect(id, order.status)}${tools}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="6">No applications.</td></tr>';
+  }))).join('') : '<tr><td colspan="6">No applications.</td></tr>';
 }
 
 function renderPayments() {
@@ -222,15 +328,15 @@ function renderPayments() {
   </tr>`).join('') || '<tr><td colspan="6">No payments.</td></tr>';
 }
 
-function renderFront() {
+async function renderFront() {
   const body = $('frontBody');
   if (!body) return;
   const frontOrders = orders.filter(order => /front|assignment|project report/i.test(String(order.service || '')));
-  body.innerHTML = frontOrders.map(order => {
-    const id = safeOrderId(order.order_id);
+  body.innerHTML = frontOrders.length ? (await Promise.all(frontOrders.map(async order => {
+    const id = safeOrderId(order.order_id), tools = await adminCustomerUpdateControls(order, 'page-front');
     return `<tr><td>${esc(order.order_id || '')}</td><td>${esc(order.customer_name || '')}</td><td>${esc(order.service || '')}</td>
-      <td>${formatRequirement(order.requirement || '', true)}</td><td>${statusSelect(id, order.status)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button></td></tr>`;
-  }).join('') || '<tr><td colspan="6">No Front Page Maker orders.</td></tr>';
+      <td>${formatRequirement(order.requirement || '', true)}</td><td>${statusSelect(id, order.status)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button>${tools}</td></tr>`;
+  }))).join('') : '<tr><td colspan="6">No Front Page Maker orders.</td></tr>';
 }
 
 async function updateStatus(orderId, requestedStatus) {

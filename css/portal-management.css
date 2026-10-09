@@ -59,3 +59,22 @@
 #adminPage .admin-section{display:none!important}
 #adminPage .admin-section.active{display:block!important}
 #adminPage .admin-filter-row select{min-width:220px}
+
+
+/* Service appointment notes and customer-ready PDF results */
+.admin-customer-update{min-width:220px;max-width:290px;display:flex;flex-direction:column;gap:7px;white-space:normal}
+.admin-note-label{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted,#9fb4d2);text-transform:uppercase}
+.admin-customer-update textarea{width:100%;min-height:66px;resize:vertical;padding:9px 10px;border:1px solid rgba(90,155,220,.35);border-radius:10px;background:rgba(4,17,38,.8);color:inherit;font:inherit;font-size:12px;line-height:1.45;box-sizing:border-box}
+.admin-customer-update textarea:focus{outline:2px solid rgba(33,160,255,.35);border-color:#35b9ff}
+.admin-customer-update .admin-mini-btn{align-self:flex-start;max-width:100%;white-space:normal}
+.admin-result-current{font-size:12px;line-height:1.4}
+.admin-customer-update .admin-pdf-actions{display:flex;flex-wrap:wrap;gap:6px}
+.admin-customer-update .admin-file-link{display:inline-block}
+.customer-admin-note{margin-top:12px;padding:12px 14px;border-radius:12px;border:1px solid rgba(45,175,255,.28);background:linear-gradient(120deg,rgba(13,65,126,.38),rgba(18,29,67,.4));color:#e7f3ff;overflow-wrap:anywhere}
+.customer-admin-note b{display:block;color:#55d8ff;font-size:12px;margin-bottom:5px}
+.customer-admin-note p{margin:0;line-height:1.55;white-space:normal}
+.customer-result-document{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;padding:12px 14px;border-radius:12px;background:rgba(0,170,120,.12);border:1px solid rgba(0,220,160,.32)}
+.customer-result-document>b{color:#86f6d0}
+.customer-result-download{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:9px;background:linear-gradient(120deg,#00a986,#1685ee);color:#fff!important;font-weight:800;text-decoration:none!important}
+.customer-result-pending{font-size:12px;color:#f8cc8d}
+@media(max-width:700px){.admin-customer-update{min-width:195px}.customer-result-document{align-items:flex-start;flex-direction:column}}
