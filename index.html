@@ -1025,10 +1025,31 @@ async function adminLogin(){
 }
 
 function switchAdminSection(id,btn){
-  document.querySelectorAll('.admin-section').forEach(x=>x.classList.remove('active'));
-  $(id).classList.add('active');
+  // Explicitly toggle both class and inline display so section visibility is
+  // reliable even if another stylesheet overrides .admin-section.active.
+  const sections = document.querySelectorAll('.admin-section');
+  sections.forEach(section => {
+    const selected = section.id === id;
+    section.classList.toggle('active', selected);
+    section.style.display = selected ? 'block' : 'none';
+    section.setAttribute('aria-hidden', selected ? 'false' : 'true');
+  });
+  const target = document.getElementById(id);
+  if (!target) {
+    console.error('Admin section was not found:', id);
+    const content = document.querySelector('.admin-content');
+    if (content) content.insertAdjacentHTML('beforeend', '<div class="admin-card" role="alert">Could not open this Admin section. Please refresh the page.</div>');
+    return;
+  }
   document.querySelectorAll('.admin-nav button').forEach(x=>x.classList.remove('active'));
   if(btn)btn.classList.add('active');
+  // On Customers, always show the panel immediately, before the data request finishes.
+  if(id === 'adminCustomers'){
+    target.style.display = 'block';
+    target.classList.add('active');
+    const body = document.getElementById('adminCustomersBody');
+    if(body && !body.innerHTML.trim()) body.innerHTML = '<tr><td colspan="6" class="admin-empty">Loading customer profiles…</td></tr>';
+  }
 }
 
 let adminOrdersCache=[];
@@ -1255,7 +1276,7 @@ async function adminLogout(){
       <div class="admin-brand">Anowar <span>Creation</span><small>ADMIN CONTROL PANEL</small></div>
       <div class="admin-nav">
         <button class="active" onclick="switchAdminSection('adminOverview',this)">📊 Overview</button>
-        <button onclick="switchAdminSection('adminCustomers',this);loadAdminData();">👥 All Customers</button>
+        <button onclick="switchAdminSection('adminCustomers',this);loadAdminData().catch(e=>{console.error('Customer list load failed',e);const b=document.getElementById('adminCustomersBody');if(b)b.innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customer data. Please check connection and refresh.</td></tr>';});">👥 All Customers</button>
         <button onclick="switchAdminSection('adminOrders',this)">📦 All Orders</button>
         <button onclick="switchAdminSection('adminApplications',this);loadAdminData()">📝 Applications</button>
         <button onclick="switchAdminSection('adminPayments',this);loadAdminData()">💳 Payments</button>
@@ -1334,7 +1355,7 @@ async function adminLogout(){
       <section id="adminCustomers" class="admin-section">
         <div class="admin-card">
           <div class="section-head"><h2>👥 All Customers</h2><span>Customer profiles</span></div>
-          <p class="note">Edit Profile changes the customer name and mobile number. Temporary Password requires the secure Supabase Edge Function to be deployed.</p><input id="customerSearch" class="admin-search" oninput="filterCustomers()" placeholder="Search name, phone or email">
+          <p class="note">Edit Profile changes the customer name and mobile number. Temporary Password requires the secure Supabase Edge Function to be deployed.</p><button class="admin-btn primary" type="button" onclick="loadAdminData().catch(e=>{console.error(e);alert('Could not refresh customer data. Check the Console.')})" style="margin:0 0 14px">↻ Refresh Customers</button><input id="customerSearch" class="admin-search" oninput="filterCustomers()" placeholder="Search name, phone or email">
           <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Registered</th><th>Type</th><th>Admin Actions</th></tr></thead><tbody id="adminCustomersBody"></tbody></table></div>
         </div>
       </section>
