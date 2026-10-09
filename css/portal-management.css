@@ -1,0 +1,61 @@
+/* Persistent Admin service catalogue + customer price/maintenance display */
+.auth-screen[style*="display: none"]{display:none!important}
+.auth-screen[style*="display:none"]{display:none!important}
+#customerNoticePopup[hidden]{display:none!important}
+#customerNoticePopup:not([hidden]){display:block!important}
+.ac-dashboard-bottom{grid-template-columns:1fr!important}
+.ac-dashboard-bottom>.ac-dashboard-panel:has(#dashboardNotice){display:none!important}
+.portal-management-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px;align-items:stretch}
+.portal-management-card{display:flex;flex-direction:column;gap:10px;min-width:0;padding:16px;border:1px solid rgba(83,130,230,.28);border-radius:15px;background:linear-gradient(145deg,#0a1a34,#061020);box-shadow:0 10px 28px #0002;color:#eef4ff}
+.portal-management-card h3{font-size:15px;line-height:1.35;margin:0;overflow-wrap:anywhere}
+.portal-management-card p{font-size:12px;line-height:1.55;color:#99abca;margin:0;overflow-wrap:anywhere;min-height:36px}
+.portal-management-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.portal-service-icon{display:grid;place-items:center;width:43px;height:43px;border-radius:12px;background:linear-gradient(135deg,#0f55ad,#562ec9);font-size:23px;box-shadow:0 0 18px #315eea2c}
+.portal-state{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.25px;white-space:nowrap}
+.portal-state.is-on{color:#65f2bf;background:#063c30;border:1px solid #106b54}
+.portal-state.is-off{color:#ffd186;background:#412c13;border:1px solid #85521e}
+.portal-card-price{font-size:12px;color:#77d6ff;font-weight:800;padding:8px 10px;background:#07162a;border:1px solid #18365d;border-radius:8px;overflow-wrap:anywhere}
+.portal-card-actions{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
+.portal-toggle,.portal-secondary-btn,.table-secondary-btn{border:1px solid #234e85;border-radius:9px;padding:9px 11px;background:#0d2850;color:#eaf4ff;font-weight:800;font-size:11px;cursor:pointer}
+.portal-toggle.is-on{background:linear-gradient(100deg,#0f9f79,#057f8c);border-color:#09ae9a;color:#fff}
+.portal-toggle.is-off{background:linear-gradient(100deg,#7b351d,#8d1f3b);border-color:#b54747;color:#fff}
+.portal-secondary-btn{background:#0b1b31;color:#9bdcff}
+.portal-price-card label,.portal-service-modal-card label,.portal-notice-form label{display:grid;gap:6px;font-size:11px;font-weight:800;color:#9db8e3}
+.portal-price-card input,.portal-price-card select,.portal-service-modal-card input,.portal-service-modal-card textarea,.portal-service-modal-card select,.portal-notice-form input,.portal-notice-form textarea{width:100%;min-width:0;box-sizing:border-box;padding:10px 11px;border:1px solid #284c7b;border-radius:9px;background:#06142a;color:#f2f7ff;outline:none}
+.portal-price-card input:focus,.portal-price-card select:focus,.portal-service-modal-card input:focus,.portal-service-modal-card textarea:focus,.portal-notice-form input:focus,.portal-notice-form textarea:focus{border-color:#34baff;box-shadow:0 0 0 2px #0baaff20}
+.portal-print-rates{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid #1d3558;padding-top:9px}
+.portal-small-hint{color:#768cad;font-size:10px;line-height:1.45;margin-top:auto}
+.portal-price-line{font-size:11px;line-height:1.4;color:#82d9ff;font-weight:800;margin-top:9px;padding:6px 8px;background:#061b35;border:1px solid #1d4678;border-radius:8px;overflow-wrap:anywhere}
+.portal-maintenance-card{border-color:#a65e28!important;box-shadow:inset 0 0 0 1px #a65e2825!important}
+.portal-maintenance-badge{margin-top:7px;border-radius:8px;padding:8px;text-align:center;background:#3c2a14;border:1px solid #7f4b1e;color:#ffd084;font-size:11px;font-weight:900}
+.portal-custom-service-card{border-color:#385be0!important;background:linear-gradient(145deg,#0c2050,#08132b)!important}
+.portal-empty-state{grid-column:1/-1;padding:17px;border:1px dashed #37557c;border-radius:12px;color:#a8bddb;line-height:1.55;background:#07152b}
+.portal-empty-state small{display:block;font-size:10px;color:#f4a6ad;margin-top:8px;overflow-wrap:anywhere}
+.portal-form-message{min-height:17px;margin:8px 0;color:#6de6bb;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.portal-form-message.is-error{color:#ff9ba8}
+.portal-filter-row,.admin-filter-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0;color:#9db8e3;font-size:12px}
+.portal-filter-row select,.admin-filter-row select{padding:9px 10px;border:1px solid #284c7b;border-radius:9px;background:#06142a;color:#eef4ff;min-width:200px}
+.portal-service-modal[hidden]{display:none!important}
+.portal-service-modal{display:none;position:fixed;inset:0;z-index:100000;background:#010512d9;place-items:center;padding:18px;backdrop-filter:blur(8px)}
+.portal-service-modal.open{display:grid!important}
+.portal-service-modal-card{position:relative;width:min(540px,96vw);max-height:92vh;overflow:auto;background:linear-gradient(145deg,#0a1b36,#070b1b);border:1px solid #2894e8;border-radius:18px;padding:24px;box-shadow:0 25px 90px #0009,0 0 25px #146bff22;color:#f3f7ff}
+.portal-service-modal-card h2{font-size:21px;margin:0 36px 7px 0}
+.portal-service-modal-card>p{font-size:12px;line-height:1.5;color:#94a9cb;margin:0 0 18px}
+.portal-service-modal-card form{display:grid;gap:12px}
+.portal-modal-close{position:absolute;right:13px;top:12px;border:0;background:transparent;color:#9fb2d0;font-size:27px;cursor:pointer}
+.portal-form-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.portal-form-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}
+.portal-notice-panel,.portal-notice-current{padding:16px}
+.portal-notice-form{display:grid;gap:12px;padding:16px}
+.portal-notice-form textarea{resize:vertical;min-height:120px;line-height:1.55}
+.portal-notice-current{border-top:1px solid #25436e;margin-top:5px;color:#e5efff}
+.portal-notice-current h3{font-size:14px;margin-bottom:10px}
+.portal-notice-current p{color:#a7bbda;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.portal-notice-current small{display:block;color:#6f85a8;margin-top:8px;font-size:10px}
+/* Notice popup remains hidden until an active Admin notice exists. */
+@media(max-width:1100px){.portal-management-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.portal-management-grid{grid-template-columns:1fr}.portal-management-card{padding:13px}.portal-form-two,.portal-print-rates{grid-template-columns:1fr}.portal-service-modal-card{padding:18px}.portal-card-actions>*{flex:1}.portal-notice-form{padding:12px}}
+
+#adminPage .admin-section{display:none!important}
+#adminPage .admin-section.active{display:block!important}
+#adminPage .admin-filter-row select{min-width:220px}

@@ -98,6 +98,7 @@ async function load() {
   ordersLoadError = ordersResult.error || null;
   profileLoadError = profilesResult.error || null;
   orders = ordersResult.data || [];
+  window.AdminOrders = orders;
   profiles = (profilesResult.data || [])
     .map(profile => ({
       ...profile,
@@ -123,6 +124,8 @@ async function load() {
   renderApplications();
   renderPayments();
   renderFront();
+  if (window.renderPortalAppointments) window.renderPortalAppointments();
+  if (window.refreshPortalManagementUI) window.refreshPortalManagementUI();
 }
 
 function nav(id, button) {
@@ -136,6 +139,9 @@ function nav(id, button) {
   if (button) button.classList.add('active');
   document.querySelector('.side')?.classList.remove('open');
   if (!$(id)) console.error('Admin section not found:', id);
+  if (['serviceManage','pricing'].includes(id) && window.loadPortalManagement) window.loadPortalManagement();
+  if (id === 'notice' && window.loadPortalNoticeAdmin) window.loadPortalNoticeAdmin();
+  if (id === 'appointments' && window.renderPortalAppointments) window.renderPortalAppointments();
 }
 
 function renderOrders() {
