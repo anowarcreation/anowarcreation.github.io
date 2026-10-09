@@ -37,16 +37,26 @@ create policy "Admins manage notices" on public.site_notices
 for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists "Users can view own orders" on public.orders;
+drop policy if exists "Users and admin can view orders" on public.orders;
 create policy "Users and admin can view orders"
 on public.orders
 for select
 using (auth.uid() = user_id or public.is_admin());
 
 drop policy if exists "Users can view own profile" on public.profiles;
+drop policy if exists "Users and admin can view profiles" on public.profiles;
 create policy "Users and admin can view profiles"
 on public.profiles
 for select
-using (auth.uid() = id or public.is_admin());
+using (auth.uid() = auth_id or public.is_admin());
+
+drop policy if exists "Admin can update all profiles" on public.profiles;
+create policy "Admin can update all profiles" on public.profiles
+for update to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "Admin can update all orders" on public.orders;
+create policy "Admin can update all orders" on public.orders
+for update to authenticated using (public.is_admin()) with check (public.is_admin());
 -->
 
 <!DOCTYPE html>
@@ -1520,9 +1530,6 @@ const oldOpen=window.openAppointment;window.openAppointment=function(service,des
  window.downloadFrontPagePDF=function(){if(!val('fpmCollege','')||!val('fpmSubject','')||!val('fpmName','')){alert('Please enter College/University Name, Assignment Title and Student Name.');return}const t=themes[selected];const root=$('acFrontPrintRoot');const esc=v=>String(v||'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const rows=[['NAME',val('fpmName','—')],['STUDENT ID',val('fpmStudentId','—')],['REGISTRATION',val('fpmRegistration','—')],['DEPARTMENT',val('fpmDepartment','—')],['PROGRAM',val('fpmProgram','—')],['YEAR',val('fpmYear','—')],['SEMESTER',val('fpmSemester','—')]];const img=themeUrl(t);const content=`<!doctype html><html><head><meta charset="utf-8"><title>Assignment Front Page</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;width:210mm;height:297mm;font-family:Georgia,'Times New Roman',serif;color:#102e5c}.paper{position:relative;width:210mm;height:297mm;overflow:hidden}.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}.content{position:absolute;inset:21mm 17mm 16mm;display:flex;flex-direction:column;align-items:center;text-align:center}.college{font-weight:bold;font-size:19pt;line-height:1.2;max-width:100%;overflow-wrap:anywhere;margin:5mm 0 13mm}.subject{font-size:17pt;font-weight:bold;border:1px solid currentColor;padding:3mm 5mm;max-width:90%;overflow-wrap:anywhere;margin-bottom:13mm;background:#ffffffc9}.details{width:100%;text-align:left;border:1.4pt solid currentColor;border-radius:5mm;padding:9mm 8mm;background:#ffffffc9;font-size:12pt;line-height:2;overflow-wrap:anywhere}.row{display:flex;gap:5px;flex-wrap:wrap}.row b{overflow-wrap:anywhere}.sign{display:flex;justify-content:space-between;width:100%;margin-top:auto;padding-top:15mm;font-size:11pt}.sign span{border-top:1px solid currentColor;min-width:35%;padding-top:3mm}</style></head><body><div class="paper"><img class="bg" src="${img}"><div class="content"><div class="college">${esc(val('fpmCollege',''))}</div><div class="subject">${esc(val('fpmSubject',''))}</div><div class="details">${rows.map(r=>`<div class="row">✦ ${esc(r[0])} → <b>${esc(r[1])}</b></div>`).join('')}</div><div class="sign"><span>Date</span><span>Teacher’s Signature</span></div></div></div><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>`;const w=window.open('','_blank');if(!w){alert('Allow pop-ups to print or save as PDF.');return}w.document.open();w.document.write(content);w.document.close()};
 })();
 </script>
-</body>
-</html>
-
 <style id="ac-static-theme-and-admin-fix">
 /* Static futuristic look: keep the colours, turn off all moving backgrounds and hover motion. */
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
@@ -1530,3 +1537,6 @@ const oldOpen=window.openAppointment;window.openAppointment=function(service,des
 body:before,body:after,.space-stage:before,.space-stage:after{animation:none!important}
 .card:hover{transform:none!important}
 </style>
+</body>
+</html>
+
