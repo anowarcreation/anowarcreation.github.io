@@ -1,16 +1,344 @@
-const ADMIN_EMAIL='anowarali2707@outlook.com';let orders=[],profiles=[];const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function st(s){let x=String(s||'').toLowerCase();if(x.includes('reject')||x.includes('declin')||x.includes('cancel'))return['Rejected','rejected'];if(x.includes('complete'))return['Completed','completed'];if(x.includes('process'))return['Processing','processing'];return['Pending','pending']}
-async function init(){try{const{data:{user},error}=await supabaseClient.auth.getUser();if(error||!user||user.email?.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){location.href='../auth/admin-login.html';return}await load()}catch(e){alert('Could not verify admin session: '+e.message);location.href='../auth/admin-login.html'}}
-async function load(){const[o,p]=await Promise.all([supabaseClient.from('orders').select('*').order('created_at',{ascending:false}),supabaseClient.from('profiles').select('auth_id,user_id,name,email,mobile_number,phone_verified,account_created').order('account_created',{ascending:false})]);if(o.error)console.warn('Orders could not be loaded:',o.error.message);if(p.error){console.error('Profiles could not be loaded:',p.error.message);alert('Customer profiles could not be loaded. Check Supabase profiles SELECT policy: '+p.error.message)}orders=o.data||[];profiles=p.data||[];setText('totalOrders',orders.length);setText('customers',profiles.length);setText('pending',orders.filter(x=>st(x.status)[1]==='pending').length);setText('processing',orders.filter(x=>st(x.status)[1]==='processing').length);setText('revenue','₹'+orders.reduce((a,x)=>a+Number(x.amount||0),0).toFixed(0));setText('r1',orders.filter(x=>st(x.status)[1]==='completed').length);setText('r2',orders.filter(x=>st(x.status)[1]==='rejected').length);setText('r3',orders.length);renderOrders();renderCustomers();renderApplications();renderPayments();renderFront()}
-function setText(id,v){if($(id))$(id).textContent=v}function nav(id,b){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');document.querySelector('.side')?.classList.remove('open')}
-function renderOrders(){const search=$('orderSearch');let q=(search?.value||'').toLowerCase();let a=orders.filter(o=>[o.order_id,o.customer_name,o.phone,o.service,o.requirement].join(' ').toLowerCase().includes(q));if(!$('ordersBody'))return;$('ordersBody').innerHTML=a.length?a.map(o=>{let[s,c]=st(o.status);return`<tr><td><b>${esc(o.order_id)}</b></td><td>${esc(o.customer_name)}</td><td>${esc(o.phone)}</td><td>${esc(o.service)}</td><td>₹${Number(o.amount||0)}</td><td><span class="pill ${c}">${s}</span></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td><button onclick="viewOrder('${esc(o.order_id)}')">View</button></td></tr>`}).join(''):'<tr><td colspan="8">No orders found.</td></tr>'}
-function renderCustomers(){let q=($('customerSearch')?.value||'').toLowerCase();let a=profiles.filter(p=>[p.name,p.email,p.mobile_number].join(' ').toLowerCase().includes(q));if(!$('customersBody'))return;$('customersBody').innerHTML=a.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.mobile_number)}</td><td>${esc(p.email)}</td><td>${p.account_created?new Date(p.account_created).toLocaleDateString('en-IN'):''}</td><td><button onclick="viewCustomer('${esc(p.auth_id)}')">View profile</button></td></tr>`).join('')||'<tr><td colspan="5">No customers found. If profiles exist, check the Supabase profiles table and admin SELECT policy.</td></tr>'}
-function renderApplications(){if(!$('applicationsBody'))return;let a=orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'));$('applicationsBody').innerHTML=a.map(o=>{let[s,c]=st(o.status);return`<tr><td>${esc(o.order_id)}</td><td>${esc(o.customer_name)}</td><td>${esc(o.service)}</td><td>${esc(o.requirement||'')}</td><td><span class="pill ${c}">${s}</span></td><td><select onchange="updateStatus('${esc(o.order_id)}',this.value)"><option>Application Submitted</option><option>Under Process</option><option>Successfully Completed</option><option>Rejected</option><option>Declined</option></select></td></tr>`}).join('')||'<tr><td colspan="6">No applications.</td></tr>'}
-function renderPayments(){if(!$('paymentsBody'))return;$('paymentsBody').innerHTML=orders.map(o=>`<tr><td>${esc(o.order_id)}</td><td>${esc(o.customer_name)}</td><td>${esc(o.service)}</td><td>₹${Number(o.amount||0)}</td><td>${esc(o.payment_method||'N/A')}</td><td>${esc(o.status||'')}</td></tr>`).join('')||'<tr><td colspan="6">No payments.</td></tr>'}
-function renderFront(){if(!$('frontBody'))return;let a=orders.filter(o=>/front|assignment|project report/i.test(String(o.service||'')));$('frontBody').innerHTML=a.map(o=>{let[s,c]=st(o.status);return`<tr><td>${esc(o.order_id)}</td><td>${esc(o.customer_name)}</td><td>${esc(o.service)}</td><td>${esc(o.requirement||'')}</td><td><span class="pill ${c}">${s}</span></td><td><button onclick="viewOrder('${esc(o.order_id)}')">View</button></td></tr>`}).join('')||'<tr><td colspan="6">No Front Page Maker orders.</td></tr>'}
-async function updateStatus(id,v){if((v==='Rejected'||v==='Declined')&&!prompt('Enter reason:'))return;let{error}=await supabaseClient.from('orders').update({status:v}).eq('order_id',id);if(error)alert(error.message);await load()}
-function viewOrder(id){let o=orders.find(x=>String(x.order_id)===String(id));if(o)alert(`Order: ${o.order_id}\nCustomer: ${o.customer_name}\nService: ${o.service}\nMobile: ${o.phone}\nDetails: ${o.requirement||'None'}\nStatus: ${o.status||'Pending'}`)}
-function viewCustomer(id){const p=profiles.find(x=>String(x.auth_id)===String(id));if(!p)return;setText('editAuthId',p.auth_id);$('editAuthId').value=p.auth_id;$('editCustomerName').value=p.name||'';$('editCustomerEmail').value=p.email||'';$('editCustomerMobile').value=p.mobile_number||'';$('editCustomerCreated').value=p.account_created?new Date(p.account_created).toLocaleString('en-IN'):'';setText('customerModalTitle',p.name||'Customer Profile');setText('customerModalMessage','');const rows=orders.filter(o=>String(o.user_id||o.auth_id||o.customer_id||'')===String(id)||String(o.email||'').toLowerCase()===String(p.email||'').toLowerCase());$('customerHistoryBody').innerHTML=rows.length?rows.map(o=>{const [status]=st(o.status);return`<tr><td>${esc(o.order_id)}</td><td>${esc(o.service)}</td><td>${esc(o.requirement||'')}</td><td>₹${Number(o.amount||0)}</td><td>${esc(status)}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`}).join(''):'<tr><td colspan="6">No orders linked to this profile yet. Order records need user_id/auth_id or matching email.</td></tr>';$('customerDetailModal').hidden=false}
-function closeCustomerModal(){if($('customerDetailModal'))$('customerDetailModal').hidden=true}
-async function saveCustomerProfile(event){event.preventDefault();const id=$('editAuthId').value,msg=$('customerModalMessage');msg.textContent='Saving profile…';const updates={name:$('editCustomerName').value.trim(),email:$('editCustomerEmail').value.trim().toLowerCase(),mobile_number:$('editCustomerMobile').value.trim()};const{error}=await supabaseClient.from('profiles').update(updates).eq('auth_id',id);if(error){msg.textContent='Profile could not be saved: '+error.message+' (Admin update policy may be required in Supabase.)';return}msg.textContent='Profile updated.';await load();setTimeout(()=>viewCustomer(id),100)}
-async function issueTemporaryPassword(){const id=$('editAuthId').value,msg=$('customerModalMessage');if(!confirm('Generate a temporary password and send it to this customer by email?'))return;msg.textContent='Requesting temporary password…';try{const{data,error}=await supabaseClient.functions.invoke('admin-customer-management',{body:{action:'temporary_password',user_id:id}});if(error)throw error;msg.textContent=data?.message||'Request completed. Ask the customer to change the temporary password after login.'}catch(e){msg.textContent='Temporary password is not enabled yet. Deploy supabase/functions/admin-customer-management and set SUPABASE_SERVICE_ROLE_KEY as an Edge Function secret. Details: '+(e.message||'Function unavailable')}}
-async function logout(){await supabaseClient.auth.signOut();location.href='../auth/admin-login.html'}document.addEventListener('DOMContentLoaded',init);window.nav=nav;window.renderCustomers=renderCustomers;window.renderOrders=renderOrders;window.viewCustomer=viewCustomer;window.closeCustomerModal=closeCustomerModal;window.saveCustomerProfile=saveCustomerProfile;window.issueTemporaryPassword=issueTemporaryPassword;window.viewOrder=viewOrder;window.updateStatus=updateStatus;window.logout=logout;
+'use strict';
+
+const ADMIN_EMAIL = 'anowarali2707@outlook.com';
+const APPLICATION_STATUSES = [
+  'Application Submitted',
+  'Under Process',
+  'Successfully Completed',
+  'Rejected',
+  'Declined'
+];
+
+let orders = [];
+let profiles = [];
+let profileLoadError = null;
+let ordersLoadError = null;
+
+const $ = id => document.getElementById(id);
+const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[ch]));
+
+function normalizedStatus(value) {
+  const status = String(value || '').toLowerCase();
+  if (status.includes('reject')) return 'Rejected';
+  if (status.includes('declin')) return 'Declined';
+  if (status.includes('complete') || status === 'done') return 'Successfully Completed';
+  if (status.includes('process')) return 'Under Process';
+  return 'Application Submitted';
+}
+
+function statusClass(value) {
+  const status = normalizedStatus(value);
+  if (status === 'Rejected') return 'rejected';
+  if (status === 'Declined') return 'rejected';
+  if (status === 'Under Process') return 'processing';
+  if (status === 'Successfully Completed') return 'completed';
+  return 'pending';
+}
+
+function safeOrderId(value) {
+  // Order IDs generated by this site are alphanumeric. Strip anything unexpected
+  // before placing an ID in an inline handler attribute.
+  return String(value ?? '').replace(/[^A-Za-z0-9_-]/g, '');
+}
+
+function statusSelect(orderId, currentStatus) {
+  const id = safeOrderId(orderId);
+  const current = normalizedStatus(currentStatus);
+  return `<select class="admin-status-select" aria-label="Change status for ${esc(id)}" onchange="updateStatus('${id}', this.value)">${APPLICATION_STATUSES.map(status => `<option value="${status}" ${status === current ? 'selected' : ''}>${status}</option>`).join('')}</select>`;
+}
+
+async function init() {
+  try {
+    const { data: { user } = {}, error } = await supabaseClient.auth.getUser();
+    if (error || !user || String(user.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      location.href = '../auth/admin-login.html';
+      return;
+    }
+    await load();
+  } catch (error) {
+    console.error('Admin session verification failed:', error);
+    alert('Admin session could not be verified. Please sign in again.');
+    location.href = '../auth/admin-login.html';
+  }
+}
+
+function setText(id, value) {
+  const element = $(id);
+  if (element) element.textContent = value;
+}
+
+async function load() {
+  const [ordersResult, profilesPrimary] = await Promise.all([
+    supabaseClient.from('orders').select('*').order('created_at', { ascending: false }),
+    supabaseClient.from('profiles').select('*').order('account_created', { ascending: false })
+  ]);
+
+  let profilesResult = profilesPrimary;
+  if (profilesResult.error && /account_created|column .* does not exist/i.test(profilesResult.error.message || '')) {
+    profilesResult = await supabaseClient.from('profiles').select('*');
+  }
+
+  ordersLoadError = ordersResult.error || null;
+  profileLoadError = profilesResult.error || null;
+  orders = ordersResult.data || [];
+  profiles = (profilesResult.data || [])
+    .map(profile => ({
+      ...profile,
+      auth_id: profile.auth_id || profile.id || profile.user_id,
+      account_created: profile.account_created || profile.created_at || profile.inserted_at || null
+    }))
+    .filter(profile => String(profile.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase());
+
+  if (ordersLoadError) console.error('Could not load orders:', ordersLoadError);
+  if (profileLoadError) console.error('Could not load customer profiles:', profileLoadError);
+
+  setText('totalOrders', orders.length);
+  setText('customerCountStat', profiles.length);
+  setText('pending', orders.filter(order => statusClass(order.status) === 'pending').length);
+  setText('processing', orders.filter(order => statusClass(order.status) === 'processing').length);
+  setText('revenue', '₹' + orders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0).toFixed(2));
+  setText('r1', orders.filter(order => normalizedStatus(order.status) === 'Successfully Completed').length);
+  setText('r2', orders.filter(order => ['Rejected', 'Declined'].includes(normalizedStatus(order.status))).length);
+  setText('r3', orders.length);
+
+  renderOrders();
+  renderCustomers();
+  renderApplications();
+  renderPayments();
+  renderFront();
+}
+
+function nav(id, button) {
+  document.querySelectorAll('.section').forEach(section => {
+    const selected = section.id === id;
+    section.classList.toggle('active', selected);
+    section.style.display = selected ? 'block' : 'none';
+    section.setAttribute('aria-hidden', selected ? 'false' : 'true');
+  });
+  document.querySelectorAll('.nav button').forEach(item => item.classList.remove('active'));
+  if (button) button.classList.add('active');
+  document.querySelector('.side')?.classList.remove('open');
+  if (!$(id)) console.error('Admin section not found:', id);
+}
+
+function renderOrders() {
+  const body = $('ordersBody');
+  if (!body) return;
+  if (ordersLoadError) {
+    body.innerHTML = `<tr><td colspan="8">Could not load orders: ${esc(ordersLoadError.message || 'Database access denied')}. Check the admin orders SELECT policy.</td></tr>`;
+    return;
+  }
+  const query = ($('orderSearch')?.value || '').toLowerCase().trim();
+  const matching = orders.filter(order => [order.order_id, order.customer_name, order.phone, order.service, order.requirement]
+    .join(' ').toLowerCase().includes(query));
+  body.innerHTML = matching.length ? matching.map(order => {
+    const id = safeOrderId(order.order_id);
+    const status = normalizedStatus(order.status);
+    return `<tr>
+      <td><b>${esc(order.order_id)}</b></td>
+      <td>${esc(order.customer_name || '—')}</td>
+      <td>${esc(order.phone || '—')}</td>
+      <td>${esc(order.service || '—')}</td>
+      <td>₹${(Number(order.amount) || 0).toFixed(2)}</td>
+      <td>${statusSelect(id, order.status)}<small class="admin-status-reason">${esc((String(order.status || '').match(/(?:Reason|reason):\s*(.*)$/) || [])[1] || '')}</small></td>
+      <td>${order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : ''}</td>
+      <td><button type="button" onclick="viewOrder('${id}')">View</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8">No orders found.</td></tr>';
+}
+
+function renderCustomers() {
+  const body = $('customersBody');
+  if (!body) return;
+  if (profileLoadError) {
+    body.innerHTML = `<tr><td colspan="5">Could not load customers: ${esc(profileLoadError.message || 'Database permission denied')}. Run the included admin-customer-fix.sql in Supabase SQL Editor, then refresh this page.</td></tr>`;
+    return;
+  }
+  const query = ($('customerSearch')?.value || '').toLowerCase().trim();
+  const matching = profiles.filter(profile => [profile.name, profile.email, profile.mobile_number].join(' ').toLowerCase().includes(query));
+  body.innerHTML = matching.length ? matching.map(profile => {
+    const id = safeOrderId(profile.auth_id);
+    return `<tr>
+      <td>${esc(profile.name || 'Customer')}</td>
+      <td>${esc(profile.mobile_number || 'Not provided')}</td>
+      <td>${esc(profile.email || '—')}</td>
+      <td>${profile.account_created ? new Date(profile.account_created).toLocaleDateString('en-IN') : ''}</td>
+      <td><button type="button" onclick="viewCustomer('${id}')">View profile</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5">No customer profiles found. If Auth users exist but this list is empty, run the included admin-customer-fix.sql in Supabase SQL Editor and refresh.</td></tr>';
+}
+
+function renderApplications() {
+  const body = $('applicationsBody');
+  if (!body) return;
+  if (ordersLoadError) {
+    body.innerHTML = `<tr><td colspan="6">Could not load applications: ${esc(ordersLoadError.message || 'Database access denied')}.</td></tr>`;
+    return;
+  }
+  const applications = orders.filter(order => !String(order.service || '').toLowerCase().includes('pdf print'));
+  body.innerHTML = applications.length ? applications.map(order => {
+    const id = safeOrderId(order.order_id);
+    const reason = (String(order.status || '').match(/(?:Reason|reason):\s*(.*)$/) || [])[1] || '';
+    return `<tr>
+      <td>${esc(order.order_id || '')}</td>
+      <td>${esc(order.customer_name || '')}</td>
+      <td>${esc(order.service || '')}</td>
+      <td>${esc(order.requirement || '')}</td>
+      <td><span class="pill ${statusClass(order.status)}">${esc(normalizedStatus(order.status))}</span>${reason ? `<small class="admin-status-reason">Reason: ${esc(reason)}</small>` : ''}</td>
+      <td>${statusSelect(id, order.status)}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6">No applications.</td></tr>';
+}
+
+function renderPayments() {
+  const body = $('paymentsBody');
+  if (!body) return;
+  body.innerHTML = orders.map(order => `<tr>
+    <td>${esc(order.order_id || '')}</td><td>${esc(order.customer_name || '')}</td><td>${esc(order.service || '')}</td>
+    <td>₹${(Number(order.amount) || 0).toFixed(2)}</td><td>${esc(order.payment_method || 'N/A')}</td><td>${esc(order.status || '')}</td>
+  </tr>`).join('') || '<tr><td colspan="6">No payments.</td></tr>';
+}
+
+function renderFront() {
+  const body = $('frontBody');
+  if (!body) return;
+  const frontOrders = orders.filter(order => /front|assignment|project report/i.test(String(order.service || '')));
+  body.innerHTML = frontOrders.map(order => {
+    const id = safeOrderId(order.order_id);
+    return `<tr><td>${esc(order.order_id || '')}</td><td>${esc(order.customer_name || '')}</td><td>${esc(order.service || '')}</td>
+      <td>${esc(order.requirement || '')}</td><td>${statusSelect(id, order.status)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button></td></tr>`;
+  }).join('') || '<tr><td colspan="6">No Front Page Maker orders.</td></tr>';
+}
+
+async function updateStatus(orderId, requestedStatus) {
+  const id = safeOrderId(orderId);
+  const nextStatus = APPLICATION_STATUSES.includes(requestedStatus) ? requestedStatus : 'Application Submitted';
+  let reason = '';
+  if (nextStatus === 'Rejected' || nextStatus === 'Declined') {
+    const existing = orders.find(order => String(order.order_id) === id);
+    const match = String(existing?.status || '').match(/(?:Reason|reason):\s*(.*)$/);
+    reason = prompt(`Enter a reason for ${nextStatus} (required):`, match?.[1] || '') || '';
+    if (!reason.trim()) {
+      alert('Status was not changed. Please enter a reason for rejection/decline.');
+      await load();
+      return;
+    }
+  }
+  const savedStatus = nextStatus + (reason.trim() ? ' — Reason: ' + reason.trim() : '');
+  const { data, error } = await supabaseClient.from('orders')
+    .update({ status: savedStatus })
+    .eq('order_id', id)
+    .select('order_id')
+    .maybeSingle();
+  if (error) {
+    alert('Could not change status: ' + error.message + '\nRun the included admin-customer-fix.sql in Supabase SQL Editor if this is a permission error.');
+    await load();
+    return;
+  }
+  if (!data) {
+    alert('No order status was changed. The order may not exist, or the admin UPDATE policy is missing.');
+    await load();
+    return;
+  }
+  await load();
+}
+
+function viewOrder(orderId) {
+  const order = orders.find(item => String(item.order_id) === String(orderId));
+  if (!order) return;
+  alert(`Order: ${order.order_id}\nCustomer: ${order.customer_name || '—'}\nService: ${order.service || '—'}\nMobile: ${order.phone || '—'}\nDetails: ${order.requirement || 'None'}\nStatus: ${order.status || 'Application Submitted'}\nAmount: ₹${(Number(order.amount) || 0).toFixed(2)}`);
+}
+
+function viewCustomer(authId) {
+  const profile = profiles.find(item => String(item.auth_id) === String(authId));
+  if (!profile) return alert('Customer profile not found. Please refresh the customer list.');
+  $('editAuthId').value = profile.auth_id || '';
+  $('editCustomerName').value = profile.name || '';
+  $('editCustomerEmail').value = profile.email || '';
+  $('editCustomerMobile').value = profile.mobile_number || '';
+  $('editCustomerCreated').value = profile.account_created ? new Date(profile.account_created).toLocaleString('en-IN') : '';
+  setText('customerModalTitle', profile.name || 'Customer Profile');
+  setText('customerModalMessage', '');
+
+  const identifiers = [profile.auth_id, profile.id, profile.user_id].filter(Boolean).map(String);
+  const customerOrders = orders.filter(order => {
+    const orderIdentifiers = [order.user_id, order.auth_id, order.customer_id].filter(Boolean).map(String);
+    return orderIdentifiers.some(value => identifiers.includes(value)) ||
+      String(order.email || '').toLowerCase() === String(profile.email || '').toLowerCase();
+  });
+  $('customerHistoryBody').innerHTML = customerOrders.length ? customerOrders.map(order => `<tr>
+    <td>${esc(order.order_id || '')}</td><td>${esc(order.service || '')}</td><td>${esc(order.requirement || '')}</td>
+    <td>₹${(Number(order.amount) || 0).toFixed(2)}</td><td>${esc(normalizedStatus(order.status))}</td>
+    <td>${order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : ''}</td>
+  </tr>`).join('') : '<tr><td colspan="6">No orders are linked to this profile yet.</td></tr>';
+  $('customerDetailModal').hidden = false;
+}
+
+function closeCustomerModal() {
+  if ($('customerDetailModal')) $('customerDetailModal').hidden = true;
+}
+
+async function saveCustomerProfile(event) {
+  event.preventDefault();
+  const id = $('editAuthId').value;
+  const message = $('customerModalMessage');
+  const updates = {
+    name: $('editCustomerName').value.trim(),
+    email: $('editCustomerEmail').value.trim().toLowerCase(),
+    mobile_number: $('editCustomerMobile').value.trim()
+  };
+  if (!updates.name || !updates.email || !updates.mobile_number) {
+    message.textContent = 'Name, email and mobile number are required.';
+    return;
+  }
+  message.textContent = 'Saving profile…';
+  const { data, error } = await supabaseClient.from('profiles').update(updates)
+    .eq('auth_id', id).select('auth_id').maybeSingle();
+  if (error) {
+    message.textContent = 'Profile could not be saved: ' + error.message + '. Check the Admin UPDATE policy in Supabase.';
+    return;
+  }
+  if (!data) {
+    message.textContent = 'Profile was not updated. The Admin UPDATE policy may be missing.';
+    return;
+  }
+  await load();
+  message.textContent = 'Profile updated successfully.';
+  viewCustomer(id);
+  setText('customerModalMessage', 'Profile updated successfully.');
+}
+
+async function issueTemporaryPassword() {
+  const id = $('editAuthId').value;
+  const message = $('customerModalMessage');
+  if (!confirm('Request a temporary password for this customer?')) return;
+  message.textContent = 'Requesting temporary password…';
+  try {
+    const { data, error } = await supabaseClient.functions.invoke('admin-customer-management', {
+      body: { action: 'temporary_password', user_id: id }
+    });
+    if (error) throw error;
+    message.textContent = data?.message || 'Request completed. Ask the customer to change the temporary password after login.';
+  } catch (error) {
+    message.textContent = 'Temporary password is not configured yet. Deploy the admin-customer-management Supabase Edge Function and set SUPABASE_SERVICE_ROLE_KEY as an Edge Function secret. Details: ' + (error.message || 'Function unavailable');
+  }
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  location.href = '../auth/admin-login.html';
+}
+
+document.addEventListener('DOMContentLoaded', init);
+window.nav = nav;
+window.renderCustomers = renderCustomers;
+window.renderOrders = renderOrders;
+window.viewCustomer = viewCustomer;
+window.closeCustomerModal = closeCustomerModal;
+window.saveCustomerProfile = saveCustomerProfile;
+window.issueTemporaryPassword = issueTemporaryPassword;
+window.viewOrder = viewOrder;
+window.updateStatus = updateStatus;
+window.logout = logout;
