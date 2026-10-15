@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Instructions | Anowar Creation</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#17345f;
+  background:linear-gradient(135deg,#f5f9ff,#e5f0ff);
+}
+header{
+  background:#fff;
+  border-bottom:1px solid #dce8f7;
+  padding:17px 6%;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.logo{
+  width:48px;height:48px;border-radius:13px;
+  display:grid;place-items:center;
+  color:#fff;font-size:21px;font-weight:900;
+  background:linear-gradient(145deg,#102d59,#1769d2);
+}
+.brand{font-size:21px;font-weight:800}
+.brand span{color:#1769d2}
+.tagline{font-size:10px;letter-spacing:2px;color:#63748c;margin-top:4px}
+main{max-width:760px;margin:32px auto;padding:0 16px}
+.card{
+  background:#fff;padding:28px;border-radius:20px;
+  border:1px solid #dce8f7;
+  box-shadow:0 12px 35px #12346a12;
+}
+.badge{
+  display:inline-block;background:#eaf3ff;color:#1769d2;
+  padding:8px 12px;border-radius:30px;font-size:12px;font-weight:bold;
+}
+h1{font-size:30px;margin:18px 0 8px}
+.subtitle{color:#63748c;line-height:1.6}
+.details{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;margin:22px 0;
+}
+.detail{background:#eef5ff;border-radius:12px;padding:15px}
+.detail strong{display:block;font-size:22px;color:#12346a}
+.detail span{font-size:12px;color:#63748c}
+h2{font-size:19px;margin-top:25px}
+.rules{padding-left:22px;line-height:1.9;color:#405573}
+.notice{
+  padding:15px;background:#fff7df;border:1px solid #f0dfa4;
+  border-radius:12px;font-size:13px;line-height:1.7;
+}
+.check{display:flex;align-items:flex-start;gap:10px;margin-top:18px;line-height:1.6}
+button{
+  width:100%;padding:15px;margin-top:22px;
+  border:0;border-radius:11px;
+  background:linear-gradient(100deg,#1769d2,#087ee8);
+  color:#fff;font-size:15px;font-weight:bold;cursor:pointer;
+}
+button:disabled{background:#9bb4d4;cursor:not-allowed}
+a{color:#1769d2;text-decoration:none}
+footer{text-align:center;color:#63748c;padding:22px;font-size:12px}
+@media(max-width:550px){
+  .details{grid-template-columns:1fr}
+  .card{padding:21px}
+  h1{font-size:25px}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="logo">AC</div>
+  <div>
+    <div class="brand">Anowar <span>Creation</span></div>
+    <div class="tagline">LEARN · PRACTICE · GROW</div>
+  </div>
+</header>
+
+<main>
+<section class="card">
+  <span class="badge">EXAM GUIDELINES</span>
+  <h1>Examination Instructions</h1>
+  <p class="subtitle">
+    Please read all instructions carefully before starting
+    your Biology Mock Test.
+  </p>
+
+  <div class="details">
+    <div class="detail"><strong>30</strong><span>Total Questions</span></div>
+    <div class="detail"><strong>30 Min</strong><span>Time Limit</span></div>
+    <div class="detail"><strong>120</strong><span>Maximum Marks</span></div>
+  </div>
+
+  <h2>Marking Scheme</h2>
+  <ul class="rules">
+    <li>Correct answer: +4 marks.</li>
+    <li>Incorrect answer: −1 mark.</li>
+    <li>Unanswered question: 0 marks.</li>
+    <li>There is no partial marking.</li>
+  </ul>
+
+  <h2>Important Instructions</h2>
+  <ul class="rules">
+    <li>The examination contains 30 multiple-choice questions.</li>
+    <li>Select one option for each question.</li>
+    <li>You may navigate between questions during the test.</li>
+    <li>Check your answers before submitting the examination.</li>
+    <li>The test will be submitted automatically when the timer expires.</li>
+    <li>Your result and answer review will appear after successful submission.</li>
+    <li>A certificate will be available only if you pass the examination.</li>
+  </ul>
+
+  <div class="notice">
+    <strong>Important:</strong> Do not refresh or close the examination
+    page while taking the test. Your answers must be saved securely
+    before the live examination can be launched.
+  </div>
+
+  <label class="check">
+    <input type="checkbox" id="agree">
+    <span>I have read and understood all the examination instructions.</span>
+  </label>
+
+  <button id="start" disabled>Start Examination →</button>
+  <p id="message" class="subtitle"></p>
+  <p><a href="index.html">← Back to Examination Home</a></p>
+</section>
+</main>
+
+<footer>© Anowar Creation · Online Biology Examination</footer>
+
+<script>
+const agree = document.getElementById("agree");
+const start = document.getElementById("start");
+
+agree.addEventListener("change", () => {
+  start.disabled = !agree.checked;
+});
+
+start.addEventListener("click", () => {
+  document.getElementById("message").textContent =
+    "Instructions confirmed. The secure examination system must be connected before the actual test can start.";
+});
+</script>
+</body>
+</html>
