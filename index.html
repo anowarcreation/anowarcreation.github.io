@@ -1165,7 +1165,7 @@ async function adminLogin(){
   currentUser=(await supabaseClient.auth.getUser()).data.user;
   adminLoginInProgress=false;
   closeModal('adminLoginModal');
-  $('authScreen').style.display='none';if($('publicSite'))$('publicSite').style.display='none';
+  $('authScreen').style.display='none';$('authScreen').setAttribute('aria-hidden','true');if($('publicSite'))$('publicSite').style.display='none';
   document.querySelector('.app').style.display='none';
   $('adminPage').classList.add('show');
   await loadAdminData();
@@ -1845,10 +1845,18 @@ const oldOpen=window.openAppointment;window.openAppointment=function(service,des
 })();
 </script>
 <style id="ac-static-theme-and-admin-fix">
-/* Critical auth fix: the legacy theme forced .auth-screen to display:flex!important,
-   which overrode JavaScript after sign-in and left the login card behind the dashboard. */
-#authScreen[style*="display: none"]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
-#authScreen[style*="display: flex"]{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+/* Critical homepage hit-area fix:
+   The legacy theme forces .auth-screen to display:flex!important. The old hide
+   selector only matched "display: none" with a space, while the initial HTML
+   uses style="display:none". That could leave a transparent full-screen auth
+   layer over the homepage and intercept clicks in otherwise blank areas.
+   aria-hidden is the source of truth; match both serialized style spellings too. */
+#authScreen.auth-screen[aria-hidden="true"],
+#authScreen.auth-screen[style*="display:none"],
+#authScreen.auth-screen[style*="display: none"]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+#authScreen.auth-screen[aria-hidden="false"],
+#authScreen.auth-screen[style*="display:flex"],
+#authScreen.auth-screen[style*="display: flex"]{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
 /* Static futuristic look: keep the colours, turn off all moving backgrounds and hover motion. */
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 .space-stage,.space-nebula,.space-planet,.space-ship,.space-rocket,.space-ufo{display:none!important;visibility:hidden!important}
