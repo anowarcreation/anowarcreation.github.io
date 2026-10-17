@@ -1,0 +1,32 @@
+ANOWAR CREATION - PUBLIC WEBSITE UPDATE
+
+This update adds the public portfolio-style website pages while keeping the existing customer portal and Admin Panel in index.html.
+
+Pages added:
+- services.html          Services overview
+- online-exam.html       Overview page with a link to the separate exam site
+- tools.html             Tools overview (existing tools are opened after login)
+- about.html             About, mission, vision and values
+- contact.html           Contact information and WhatsApp message form
+
+Navigation:
+- Home -> index.html
+- Services -> services.html
+- Online Exam (main label) -> https://anowarcreation.github.io/anowarcreation-online-exam/exam/
+- The Online Exam caret menu also has an Exam Information page.
+- Tools -> tools.html
+- About -> about.html
+- Contact -> contact.html
+- Login / Register uses the existing Supabase forms in index.html.
+
+The existing services, orders, Front Page Maker theme files, admin scripts and Supabase integration have been retained. Public pages use css/public-site.css and js/public-site.js. No additional Supabase SQL is required for these visual/navigation changes.
+
+Publish the contents of this ZIP at the root of the existing GitHub Pages repository, replacing same-named files. Do not upload the ZIP itself as a single repository file.
+
+Latest Home Page refinement:
+- Added an expanded creator/portfolio introduction for Anowar Ali and a fuller explanation of the Anowar Creation platform.
+- Added sections for service/tool highlights, how the service request flow works, portal benefits, community feedback and calls to action.
+- Added the Admin Login control inline beside Login / Register on all public-page headers; removed the old fixed-position Admin Login button that could overlap the page controls.
+- The review area is a prepared layout only. It does not claim real ratings or attribute made-up quotes to customers; replace the review slots with genuine customer feedback when available.
+- Online Exam continues to open the supplied live exam link.
+Homepage update: the founder visual is replaced by the user-supplied portfolio hero card, and the former “THE PERSON BEHIND THE PORTAL” box section is replaced with an unboxed, text-only platform statement. No database changes are required for these visual edits.

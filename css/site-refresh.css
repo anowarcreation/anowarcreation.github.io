@@ -40,3 +40,8 @@ body:after{animation:none!important;opacity:.09!important}
   #adminPrintOrders .section-head { align-items:flex-start; flex-direction:column; gap:8px; }
   #adminPrintOrders .admin-pdf-actions { min-width:118px; }
 }
+
+/* Use the official Anowar Creation logo in the customer dashboard hero artwork. */
+.ac-hero-art .dashboard-hero-logo{position:relative;z-index:2;width:82px;height:82px;display:grid;place-items:center;border-radius:50%;background:#030b1a;box-shadow:0 0 24px rgba(31,162,255,.3);overflow:hidden;transform:translateY(-4px)}
+.ac-hero-art .dashboard-hero-logo img{display:block;width:100%;height:100%;object-fit:contain;border-radius:50%}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}

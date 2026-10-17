@@ -98,3 +98,5 @@ input:focus{border-color:#2b9bff;box-shadow:0 0 0 3px rgba(43,155,255,.10)}
 @media(max-width:520px){
   .auth-visual{min-height:320px}.visual-title{font-size:42px}.visual-copy{font-size:12px}.visual-list{display:none}.hero-device-auth{display:none}.auth-panel{padding:16px}.auth-card{padding:23px}
 }
+
+.ac-mark{width:48px;height:48px;border-radius:50%;overflow:hidden;flex:0 0 48px}.ac-mark:before,.ac-mark:after{display:none}.ac-mark img{display:block;width:100%;height:100%;object-fit:contain;border-radius:50%}
