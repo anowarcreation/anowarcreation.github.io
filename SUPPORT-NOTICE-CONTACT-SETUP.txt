@@ -1,0 +1,42 @@
+ANOWAR CREATION — NOTICE IMAGE, ADMIN/CUSTOMER MESSAGES & CONTACT EMAIL SETUP
+
+WHAT THIS UPDATE ADDS
+1. Admin can publish a title, formatted text, and a PNG/JPG/WEBP image in the Notice Board.
+2. The active notice opens in a centered, scrollable popup for customers. Customers can close it.
+3. A Messages option is added to the standalone Admin Portal and the embedded Admin panel. Customers start/reopen a conversation from Support; Admin replies from Messages. Conversation history is stored in Supabase.
+4. The old WhatsApp support action is replaced by the website's account-based support chat.
+5. The Contact form asks for Name, Email, Subject, and Message, then calls a Supabase Edge Function to deliver email to anowarali0499@gmail.com. If email setup isn't complete, it offers an email draft link.
+
+STEP 1 — UPLOAD THE WEBSITE
+Extract the ZIP. Upload the files INSIDE the extracted folder to the root of the existing GitHub repository, replacing same-named files, then Commit changes. Do not upload the ZIP as a single file.
+
+STEP 2 — RUN THE DATABASE / STORAGE SQL ONCE
+Open Supabase Dashboard → SQL Editor → New query. Open supabase-support-notices-contact.sql, copy all SQL, paste it, and Run. This sets up support_conversations, support_messages, contact_messages, site_notices policies, and the notice-images Storage bucket.
+Do not paste SQL into GitHub. It must run in Supabase SQL Editor.
+
+STEP 3 — DEPLOY THE CONTACT EMAIL EDGE FUNCTION
+The static GitHub Pages site cannot send email securely by itself. Deploy the included function at:
+  supabase/functions/send-contact-email/index.ts
+as an Edge Function named exactly: send-contact-email
+In Supabase Dashboard → Edge Functions, create/deploy the function with the included code. Make sure JWT verification is disabled for this public contact form endpoint (the function validates fields, includes a honeypot and rate limit, and stores submissions server-side). The included supabase/config.toml contains the CLI setting if you deploy using the Supabase CLI.
+
+STEP 4 — ADD THE EMAIL PROVIDER SECRET
+Create an API key in Resend (https://resend.com), then set the secret in Supabase Edge Function secrets:
+  RESEND_API_KEY = your private Resend API key
+Optional:
+  CONTACT_FROM_EMAIL = Anowar Creation <your-verified-sender@your-domain>
+Never put Resend API keys, Supabase service-role keys, or other secrets in HTML/JavaScript, GitHub, or a chat message. Supabase supplies SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to the Edge Function environment.
+
+SENDER NOTE
+The default sender in the function is onboarding@resend.dev for provider testing. Production sending may require verifying a sender/domain with Resend. Do not claim automatic email delivery is active until the function is deployed and the Resend secret/sender are configured.
+
+STEP 5 — TEST
+- Log in with the Admin account and open Notice Board. Add text and/or upload an image up to 2 MB, then Publish Notice.
+- Sign in as a customer and confirm the active notice appears as a centered popup.
+- Customer: open Support / Message Admin, start a conversation, and send a message.
+- Admin: open Messages, select the customer thread, and reply. Refresh to confirm history stays.
+- Submit the Contact form with a subject and message. Confirm the success message and verify delivery to anowarali0499@gmail.com. If backend/email setup is incomplete, use the offered Open email draft link.
+
+ADMIN EMAIL FOR RLS POLICIES
+anowarali2707@outlook.com
+This must match the actual Supabase admin user's email. The contact recipient is anowarali0499@gmail.com.

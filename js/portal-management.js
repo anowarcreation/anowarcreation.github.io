@@ -230,37 +230,57 @@
   };
 
   function safeNoticeHtml(html){
-    if(typeof window.sanitizeNoticeHtml==='function')return window.sanitizeNoticeHtml(html);
     const box=document.createElement('div');box.innerHTML=String(html||'');
-    box.querySelectorAll('script,style,iframe,object,embed,form,video,audio').forEach(el=>el.remove());
-    box.querySelectorAll('*').forEach(el=>{[...el.attributes].forEach(a=>{const n=a.name.toLowerCase(),v=String(a.value||'').trim().toLowerCase();if(n.startsWith('on')||n==='srcdoc'||((n==='href'||n==='src')&&(v.startsWith('javascript:')||v.startsWith('data:text'))))el.removeAttribute(a.name)})});return box.innerHTML;
+    box.querySelectorAll('script,style,iframe,object,embed,form,video,audio,svg,math').forEach(el=>el.remove());
+    const base=(typeof window.SUPABASE_URL==='string'?window.SUPABASE_URL:'https://tlsrvyqyhonnrlcdmlzo.supabase.co').toLowerCase()+'/storage/v1/object/public/notice-images/';
+    box.querySelectorAll('*').forEach(el=>{[...el.attributes].forEach(a=>{const n=a.name.toLowerCase(),v=String(a.value||'').trim();const low=v.toLowerCase();if(n.startsWith('on')||n==='srcdoc'||n==='formaction'||(n==='href'&&(low.startsWith('javascript:')||low.startsWith('data:'))))el.removeAttribute(a.name);if(n==='src'&&!(low.startsWith('data:image/png')||low.startsWith('data:image/jpeg')||low.startsWith('data:image/webp')||low.startsWith(base)))el.removeAttribute(a.name);if(n==='style'&&/url\s*\(|expression\s*\(/i.test(v))el.removeAttribute(a.name)});if(el.tagName==='IMG'){const src=(el.getAttribute('src')||'').toLowerCase();if(!(src.startsWith('data:image/png')||src.startsWith('data:image/jpeg')||src.startsWith('data:image/webp')||src.startsWith(base)))el.remove()}});return box.innerHTML;
   }
   function noticeEls(){return {title:$('portalNoticeTitle')||$('noticeTitle'),content:$('portalNoticeContent')||$('noticeEditor'),message:$('portalNoticeMessage')||$('noticeAdminMessage'),current:$('portalNoticeCurrent')||$('noticeCurrentPreview')};}
-  function noticeContent(el){if(!el)return '';if(el.id==='noticeEditor')return safeNoticeHtml(el.innerHTML);return String(el.value||'').trim().split(/\r?\n/).map(line=>line.trim()?`<p>${esc(line)}</p>`:'').join('')}
+  function noticeContent(el){if(!el)return '';if(el.isContentEditable||el.id==='noticeEditor')return safeNoticeHtml(el.innerHTML);return String(el.value||'').trim().split(/\r?\n/).map(line=>line.trim()?`<p>${esc(line)}</p>`:'').join('')}
+  async function insertPortalNoticeImage(event){
+    const input=event?.target,file=input?.files?.[0];if(!file)return;
+    const msg=noticeEls().message, editor=noticeEls().content, c=client();
+    if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>2*1024*1024){if(msg)msg.textContent='Choose a PNG, JPG or WEBP image smaller than 2 MB.';if(input)input.value='';return}
+    if(!editor?.isContentEditable){if(msg)msg.textContent='Notice editor is not ready. Refresh this page and try again.';return}
+    if(!c){if(msg)msg.textContent='Supabase connection is unavailable.';return}
+    const {data:authData}=await c.auth.getUser();const user=authData?.user;if(!user||String(user.email||'').toLowerCase()!=='anowarali2707@outlook.com'){if(msg)msg.textContent='Please sign in with the admin account before uploading an image.';return}
+    if(msg)msg.textContent='Uploading notice image…';
+    try{
+      const ext=file.type==='image/jpeg'?'jpg':file.type.split('/')[1];const safeName=String(file.name||'notice').replace(/[^a-zA-Z0-9_.-]/g,'_').slice(-80);const path=`notices/${crypto.randomUUID()}-${safeName||'notice.'+ext}`;
+      const {data,error}=await c.storage.from('notice-images').upload(path,file,{contentType:file.type,cacheControl:'3600',upsert:false});
+      if(error)throw error;
+      const pub=c.storage.from('notice-images').getPublicUrl(data.path);const url=pub?.data?.publicUrl;if(!url)throw new Error('Uploaded image URL could not be created.');
+      const img=document.createElement('img');img.src=url;img.alt='Notice image';img.loading='lazy';img.style.maxWidth='100%';img.style.height='auto';
+      editor.focus();const sel=window.getSelection();if(sel&&sel.rangeCount&&editor.contains(sel.anchorNode)){const range=sel.getRangeAt(0);range.deleteContents();range.insertNode(img);range.setStartAfter(img);range.collapse(true);sel.removeAllRanges();sel.addRange(range)}else{editor.appendChild(img)}
+      if(msg)msg.textContent='Image uploaded. It will appear in the notice after you click Publish Notice.';
+    }catch(error){console.error('Notice image upload failed',error);if(msg)msg.textContent='Image upload failed: '+(error?.message||'Check notice-images Storage setup and admin permission.')}
+    finally{if(input)input.value=''}
+  }
   async function loadPortalNoticeAdmin(showMessage=true){
     const el=noticeEls();if(!el.title||!el.content||!el.message)return;
-    const c=client();if(!c)return;
-    if(showMessage)el.message.textContent='Loading current notice…';
+    const c=client();if(!c)return;if(showMessage)el.message.textContent='Loading current notice…';
     const {data,error}=await c.from('site_notices').select('*').order('updated_at',{ascending:false}).limit(10);
-    if(error){el.message.textContent='Notice Board database/policy error: '+error.message+'. Run supabase-portal-management.sql in Supabase SQL Editor.';el.current&&(el.current.textContent='Notice setup required.');return}
+    if(error){el.message.textContent='Notice Board database/policy error: '+error.message+'. Run supabase-support-notices-contact.sql in Supabase SQL Editor.';el.current&&(el.current.textContent='Notice setup required.');return}
     currentNotice=(data||[]).find(n=>n.is_active)||null;
-    if(currentNotice){el.title.value=currentNotice.title||'';if(el.content.id==='noticeEditor')el.content.innerHTML=safeNoticeHtml(currentNotice.content||'');else el.content.value=String(currentNotice.content||'').replace(/<\/(p|div|li)>/gi,'\n').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<[^>]*>/g,'').trim();if(el.current)el.current.innerHTML=`<b>${esc(currentNotice.title||'Notice')}</b><p>${esc(String(currentNotice.content||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim())}</p><small>Updated ${currentNotice.updated_at?new Date(currentNotice.updated_at).toLocaleString('en-IN'):''}</small>`;if(showMessage)el.message.textContent='Active notice loaded. Publishing updates the customer panel.'}
-    else {if(el.current)el.current.innerHTML='<p>No active notice.</p>';if(showMessage)el.message.textContent='No active notice. Write one above and publish it.'}
+    if(currentNotice){el.title.value=currentNotice.title||'';if(el.content.isContentEditable||el.content.id==='noticeEditor')el.content.innerHTML=safeNoticeHtml(currentNotice.content||'');else el.content.value=String(currentNotice.content||'').replace(/<\/(p|div|li)>/gi,'\n').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<[^>]*>/g,'').trim();
+      if(el.current)el.current.innerHTML=`<h4>${esc(currentNotice.title||'Notice')}</h4><div class="notice-admin-preview-body">${safeNoticeHtml(currentNotice.content||'')}</div><small>Updated ${currentNotice.updated_at?new Date(currentNotice.updated_at).toLocaleString('en-IN'):''}</small>`;
+      if(showMessage)el.message.textContent='Active notice loaded. Publishing updates the customer popup.';
+    }else{if(el.title)el.title.value='';if(el.content.isContentEditable||el.content.id==='noticeEditor')el.content.innerHTML='';else el.content.value='';if(el.current)el.current.innerHTML='<p>No active notice.</p>';if(showMessage)el.message.textContent='No active notice. Write one above and publish it.'}
   }
   async function publishPortalNotice(event){
-    event?.preventDefault?.();const el=noticeEls(),title=el.title?.value?.trim(),content=noticeContent(el);
-    if(!title||!String(el.content?.innerText||el.content?.value||'').trim()){if(el.message)el.message.textContent='Enter a title and notice message.';return}
+    event?.preventDefault?.();const el=noticeEls(),title=el.title?.value?.trim(),content=noticeContent(el);const plain=String(el.content?.innerText||el.content?.value||'').trim();
+    if(!title||(!plain&&!/<img\b/i.test(content))){if(el.message)el.message.textContent='Enter a title and notice text or upload an image.';return}
+    if(content.length>500000){if(el.message)el.message.textContent='Notice content is too large. Use an image below 2 MB and shorter text.';return}
     const c=client();if(!c){if(el.message)el.message.textContent='Supabase connection is unavailable.';return}
     if(el.message)el.message.textContent='Publishing notice…';
-    const {data:userResult}=await c.auth.getUser();if(!userResult?.user||String(userResult.user.email||'').toLowerCase()!== 'anowarali2707@outlook.com'){if(el.message)el.message.textContent='Please sign in with the admin account to publish notices.';return}
+    const {data:userResult}=await c.auth.getUser();if(!userResult?.user||String(userResult.user.email||'').toLowerCase()!=='anowarali2707@outlook.com'){if(el.message)el.message.textContent='Please sign in with the admin account to publish notices.';return}
     const {error:deactivateError}=await c.from('site_notices').update({is_active:false,updated_at:new Date().toISOString()}).eq('is_active',true);
     if(deactivateError){if(el.message)el.message.textContent='Could not update active notice: '+deactivateError.message;return}
     const payload={title,content,is_active:true,updated_at:new Date().toISOString(),created_by:userResult.user.id};
     const result=currentNotice?.id?await c.from('site_notices').update(payload).eq('id',currentNotice.id).select().single():await c.from('site_notices').insert(payload).select().single();
     if(result.error){if(el.message)el.message.textContent='Could not publish notice: '+result.error.message;return}
-    currentNotice=result.data; if(el.current)el.current.innerHTML=`<b>${esc(title)}</b><p>${esc(String(el.content?.innerText||el.content?.value||'').trim())}</p><small>Published just now. It will appear as a popup in the customer panel.</small>`;
-    if(el.message)el.message.textContent='Notice published. Customer panels show it in the notice popup; already-open panels refresh automatically.';
-    await loadCustomerNotice(true);
+    currentNotice=result.data;if(el.current)el.current.innerHTML=`<h4>${esc(title)}</h4><div class="notice-admin-preview-body">${safeNoticeHtml(content)}</div><small>Published just now.</small>`;
+    if(el.message)el.message.textContent='Notice published. Customers will see it in a centered popup.';await loadCustomerNotice(true);
   }
   async function deactivatePortalNotice(){const el=noticeEls();const c=client();if(!c)return;if(!currentNotice?.id){await loadPortalNoticeAdmin();if(el.message)el.message.textContent='No active notice to remove.';return}const {error}=await c.from('site_notices').update({is_active:false,updated_at:new Date().toISOString()}).eq('id',currentNotice.id);if(error){if(el.message)el.message.textContent='Could not remove notice: '+error.message;return}currentNotice=null;if(el.title)el.title.value='';if(el.content){if(el.content.id==='noticeEditor')el.content.innerHTML='';else el.content.value=''}if(el.current)el.current.innerHTML='<p>No active notice.</p>';if(el.message)el.message.textContent='Active notice removed.';const pop=$('customerNoticePopup');if(pop)pop.hidden=true}
   async function loadCustomerNotice(forceShow=false){
@@ -288,7 +308,7 @@
   window.renderPortalAppointments=renderPortalAppointments;window.viewPortalServiceAppointments=viewPortalServiceAppointments;window.openPortalCustomService=openPortalCustomService;
   // The separate Admin panel uses this handler for status changes in the service-filtered appointments table.
   window.updateAppointmentStatus=(orderId,status)=>typeof window.updateStatus==='function'?window.updateStatus(orderId,status):Promise.resolve();
-  window.loadPortalNoticeAdmin=loadPortalNoticeAdmin;window.publishPortalNotice=publishPortalNotice;window.deactivatePortalNotice=deactivatePortalNotice;
+  window.loadPortalNoticeAdmin=loadPortalNoticeAdmin;window.publishPortalNotice=publishPortalNotice;window.deactivatePortalNotice=deactivatePortalNotice;window.insertPortalNoticeImage=insertPortalNoticeImage;
   // Make the established embedded Admin Notice Board buttons use the same shared table and behavior.
   window.loadAdminNotices=loadPortalNoticeAdmin;window.publishNotice=publishPortalNotice;window.deactivateNotice=deactivatePortalNotice;
   window.loadPublicNotice=loadCustomerNotice;window.dismissCustomerNotice=dismissPortalNotice;
