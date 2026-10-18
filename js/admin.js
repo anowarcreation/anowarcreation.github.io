@@ -173,7 +173,6 @@ async function init() {
       location.href = '../auth/admin-login.html';
       return;
     }
-    window.currentUser = user;
     await load();
   } catch (error) {
     console.error('Admin session verification failed:', error);
@@ -245,7 +244,6 @@ function nav(id, button) {
   if (!$(id)) console.error('Admin section not found:', id);
   if (['serviceManage','pricing'].includes(id) && window.loadPortalManagement) window.loadPortalManagement();
   if (id === 'notice' && window.loadPortalNoticeAdmin) window.loadPortalNoticeAdmin();
-  if (id === 'messages' && window.loadAdminSupportConversations) window.loadAdminSupportConversations();
   if (id === 'appointments' && window.renderPortalAppointments) window.renderPortalAppointments();
   if (id === 'print') window.renderPrintOrders?.();
 }
@@ -456,7 +454,6 @@ async function issueTemporaryPassword() {
 }
 
 async function logout() {
-  window.currentUser = null;
   await supabaseClient.auth.signOut();
   location.href = '../auth/admin-login.html';
 }
