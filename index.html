@@ -616,10 +616,10 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
 @media(max-width:700px){.auth-screen{padding:14px!important;justify-content:center!important}.auth-card{width:min(430px,96vw)!important;padding:24px 18px!important}.auth-brand{font-size:29px!important}.custom-logo-main{width:88px!important;height:88px!important}.auth-card .form input{padding:12px!important}}
 .auth-admin-tab{display:block;text-align:center;margin:-4px 0 16px;padding:10px;border:1px solid rgba(102,205,255,.4);border-radius:10px;color:#dbe9ff;background:rgba(15,35,65,.7);font-weight:800}.auth-admin-tab:hover{background:rgba(24,113,255,.22)}
 </style>
-  <link rel="stylesheet" href="css/site-refresh.css">
-  <link rel="stylesheet" href="css/portal-management.css">
-  <link rel="stylesheet" href="css/public-site-fixed.css">
-  <link rel="stylesheet" href="css/support-messaging.css">
+  <link rel="stylesheet" href="css/site-refresh.css?v=20261019-homepage-fix-v4">
+  <link rel="stylesheet" href="css/portal-management.css?v=20261019-homepage-fix-v4">
+  <link rel="stylesheet" href="css/public-site-fixed.css?v=20261019-homepage-fix-v4">
+  <link rel="stylesheet" href="css/support-messaging.css?v=20261019-homepage-fix-v4">
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -1094,7 +1094,117 @@ async function runPdfTool(name){const status=$('pdfWorkspaceStatus'),btn=$('pdfW
   const html=$('pdfToolHtml').value;if(!html.trim())throw Error('Enter some HTML first.');
   const w=window.open('','_blank');if(!w)throw Error('Allow pop-ups for this site, then try again.');
   w.document.open();
-  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Save as PDF</title><style>body{font-family:Arial,sans-serif;padding:24px;overflow-wrap:anywhere}</style></head><body>'+html+'</body></html>');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Save as PDF</title><style>body{font-family:Arial,sans-serif;padding:24px;overflow-wrap:anywhere}</style></head><body>'+html+'
+<!-- AC-HOMEPAGE-FINAL-RENDER-FIX-20261019: isolated Home Page layout repair -->
+<style id="ac-homepage-final-render-fix">
+/* This override is intentionally scoped to the public home page so the authenticated
+   customer/admin panels and service workflows are not changed. */
+#publicSite.public-site{
+  display:block!important;position:relative!important;inset:auto!important;float:none!important;
+  width:100%!important;max-width:none!important;height:auto!important;min-height:100vh!important;
+  max-height:none!important;overflow-x:clip!important;overflow-y:visible!important;
+  visibility:visible!important;opacity:1!important;transform:none!important;clip-path:none!important;
+  contain:none!important;content-visibility:visible!important;isolation:isolate!important;
+}
+#publicSite main.pub-home-wrap{
+  display:block!important;position:relative!important;inset:auto!important;float:none!important;
+  width:100%!important;max-width:1900px!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow:visible!important;margin:0 auto!important;
+  padding:clamp(18px,3vw,44px) clamp(14px,3.2vw,56px) 32px!important;
+  visibility:visible!important;opacity:1!important;transform:none!important;clip-path:none!important;
+  contain:none!important;content-visibility:visible!important;
+}
+#publicSite main.pub-home-wrap>section,
+#publicSite main.pub-home-wrap>section *{
+  visibility:visible!important;content-visibility:visible!important;
+}
+#publicSite main.pub-home-wrap>section{
+  position:relative!important;inset:auto!important;float:none!important;box-sizing:border-box!important;
+  opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important;
+  height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;
+  contain:none!important;pointer-events:auto!important;
+}
+#publicSite .pub-hero{
+  display:grid!important;position:relative!important;grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr)!important;
+  grid-template-rows:auto!important;grid-auto-flow:row!important;align-items:center!important;
+  gap:clamp(20px,3vw,48px)!important;width:100%!important;height:auto!important;min-height:0!important;
+  max-height:none!important;margin:0!important;overflow:visible!important;
+}
+#publicSite .pub-hero-copy{
+  display:flex!important;flex-direction:column!important;grid-area:1/1/2/2!important;position:relative!important;
+  inset:auto!important;align-self:center!important;min-width:0!important;width:100%!important;height:auto!important;
+  min-height:0!important;max-height:none!important;visibility:visible!important;opacity:1!important;
+  transform:none!important;clip-path:none!important;pointer-events:auto!important;
+}
+#publicSite .pub-portfolio-hero-art{
+  display:block!important;grid-area:1/2/2/3!important;position:relative!important;inset:auto!important;
+  align-self:center!important;justify-self:center!important;float:none!important;width:100%!important;
+  max-width:760px!important;height:auto!important;min-width:0!important;min-height:0!important;
+  max-height:none!important;aspect-ratio:1/1!important;overflow:hidden!important;visibility:visible!important;
+  opacity:1!important;transform:none!important;pointer-events:auto!important;
+}
+#publicSite .pub-portfolio-hero-art img{
+  display:block!important;position:relative!important;width:100%!important;height:100%!important;
+  min-width:0!important;max-width:100%!important;max-height:none!important;object-fit:contain!important;
+  visibility:visible!important;opacity:1!important;transform:none!important;
+}
+#publicSite .pub-trust-row{
+  display:grid!important;position:relative!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;
+  visibility:visible!important;opacity:1!important;transform:none!important;margin:20px 0 0!important;
+  overflow:visible!important;pointer-events:auto!important;
+}
+#publicSite .pub-plain-statement,
+#publicSite #platform-highlights,
+#publicSite #how-it-works,
+#publicSite #community-feedback{
+  display:block!important;position:relative!important;width:100%!important;height:auto!important;
+  min-height:0!important;max-height:none!important;visibility:visible!important;opacity:1!important;
+  transform:none!important;clip-path:none!important;content-visibility:visible!important;contain:none!important;
+  overflow:visible!important;margin:28px 0 0!important;pointer-events:auto!important;
+}
+#publicSite #why-anowar.pub-why-section{
+  display:grid!important;position:relative!important;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)!important;
+  gap:20px!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;
+  visibility:visible!important;opacity:1!important;overflow:visible!important;
+}
+#publicSite .pub-highlight-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:13px!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;visibility:visible!important;opacity:1!important}
+#publicSite .pub-process-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;visibility:visible!important;opacity:1!important}
+#publicSite .pub-review-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:13px!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;visibility:visible!important;opacity:1!important}
+#publicSite .pub-final-cta{display:flex!important;position:relative!important;flex-wrap:wrap!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;visibility:visible!important;opacity:1!important;overflow:visible!important}
+/* Login overlay must not cover blank areas of the public page while closed. */
+#authScreen.auth-screen[aria-hidden="true"],
+#authScreen.auth-screen[style*="display:none"],
+#authScreen.auth-screen[style*="display: none"]{
+  display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;
+}
+#authScreen.auth-screen[aria-hidden="true"] *{pointer-events:none!important}
+#authScreen.auth-screen[aria-hidden="false"]{
+  display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:100000!important;
+}
+@media(max-width:1100px){
+  #publicSite .pub-hero{grid-template-columns:minmax(0,1fr) minmax(0,.85fr)!important;gap:24px!important}
+  #publicSite .pub-portfolio-hero-art{max-width:600px!important}
+  #publicSite .pub-process-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:920px){
+  #publicSite main.pub-home-wrap{padding:20px 18px 26px!important}
+  #publicSite .pub-hero{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;gap:20px!important}
+  #publicSite .pub-hero-copy{grid-area:1/1/2/2!important;order:1!important}
+  #publicSite .pub-portfolio-hero-art{grid-area:2/1/3/2!important;order:2!important;width:min(100%,560px)!important;max-width:560px!important;justify-self:center!important}
+  #publicSite .pub-trust-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #publicSite .pub-highlight-grid,#publicSite .pub-process-grid,#publicSite .pub-review-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #publicSite #why-anowar.pub-why-section{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:540px){
+  #publicSite main.pub-home-wrap{padding:16px 12px 22px!important}
+  #publicSite .pub-trust-row,#publicSite .pub-highlight-grid,#publicSite .pub-process-grid,#publicSite .pub-review-grid{grid-template-columns:minmax(0,1fr)!important}
+  #publicSite .pub-plain-statement,#publicSite .pub-portfolio-section{padding-inline:12px!important}
+  #publicSite .pub-portfolio-hero-art{width:100%!important;border-radius:17px!important}
+}
+</style>
+
+</body></html>');
   w.document.close();w.focus();setTimeout(()=>w.print(),400);
   status.textContent='Print dialog opened. Choose “Save as PDF”.';return}
  if(name==='Compare PDF'){const fs=[...$('pdfToolFiles').files];if(fs.length!==2)throw Error('Choose exactly two PDF files.');const counts=[];for(const f of fs){let password='';try{const d=await PDFLib.PDFDocument.load(await f.arrayBuffer());counts.push(d.getPageCount());continue}catch(e){password=window.prompt('If '+f.name+' is password-protected, enter its password (leave blank if not protected):')||''}if(!window.pdfjsLib)await loadPdfJs();const d=await pdfjsLib.getDocument({data:await f.arrayBuffer(),password:password||undefined}).promise;counts.push(d.numPages)}status.textContent=`Comparison summary\n${fs[0].name}: ${counts[0]} pages\n${fs[1].name}: ${counts[1]} pages\nPage counts ${counts[0]===counts[1]?'match':'differ'}. This compares page counts only, not visual/text differences.`;return}
@@ -1924,10 +2034,10 @@ body.ac-view-admin #adminPage.show{display:block!important;visibility:visible!im
   </div>
 </div>
 
-<script src="js/portal-management.js"></script>
-<script src="js/public-site-fixed.js"></script>
+<script src="js/portal-management.js?v=20261019-homepage-fix-v4"></script>
+<script src="js/public-site-fixed.js?v=20261019-homepage-fix-v4"></script>
 
-<script src="js/support-messaging.js"></script>
+<script src="js/support-messaging.js?v=20261019-homepage-fix-v4"></script>
 </body>
 </html>
 
