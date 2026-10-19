@@ -2,17 +2,15 @@
   const EXAM_URL='https://anowarcreation.github.io/anowarcreation-online-exam/exam/';
   window.openAuthScreen=function(mode='login'){
     const auth=document.getElementById('authScreen');if(!auth)return;
-    if(document.getElementById('publicSite'))document.getElementById('publicSite').style.display='none';
-    const app=document.querySelector('.app');if(app&&!window.currentUser)app.style.display='none';
-    auth.style.display='flex';auth.setAttribute('aria-hidden','false');
+    if(typeof window.setPortalView==='function')window.setPortalView('auth');
+    else{if(document.getElementById('publicSite'))document.getElementById('publicSite').style.display='none';const app=document.querySelector('.app');if(app)app.style.display='none';auth.style.display='flex';auth.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
     if(typeof window.authMode==='function')window.authMode(mode==='register'?'register':'login');
-    document.body.style.overflow='hidden';
   };
   window.closeAuthScreen=function(){
-    const auth=document.getElementById('authScreen');if(auth){auth.style.display='none';auth.setAttribute('aria-hidden','true')}
-    const app=document.querySelector('.app');const pub=document.getElementById('publicSite');if(pub&&(!app||app.style.display!=='flex'))pub.style.display='block';
+    const customerMode=document.body.classList.contains('ac-view-customer');
+    if(typeof window.setPortalView==='function')window.setPortalView(customerMode?'customer':'public');
+    else{const auth=document.getElementById('authScreen');if(auth){auth.style.display='none';auth.setAttribute('aria-hidden','true')}const app=document.querySelector('.app');const pub=document.getElementById('publicSite');if(pub&&(!app||app.style.display!=='flex'))pub.style.display='block';document.body.style.overflow=''}
     const clean=new URL(window.location.href);['auth','service','tool'].forEach(key=>clean.searchParams.delete(key));if(window.history?.replaceState)history.replaceState({},'',clean.pathname+(clean.search||'')+(clean.hash||''));
-    document.body.style.overflow='';
   };
   window.handlePublicAuthLink=function(event,mode){
     // The links on the home page use the embedded, existing Supabase auth form.
