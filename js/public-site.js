@@ -36,13 +36,17 @@
     if(service&&service.startsWith('generic:')){const name=service.slice(8);window.openAppointment(name,'Submit your requirements and our team will follow up with you.');return}
     if(tool){if(typeof window.openPdfTool==='function')window.openPdfTool(tool);else window.openInfo('Tool unavailable','Please use the Tools page again later.');}
   };
-  window.submitPublicContact=function(event){
-    event.preventDefault();const form=event.currentTarget;const fd=new FormData(form);const name=String(fd.get('name')||'').trim();const email=String(fd.get('email')||'').trim();const subject=String(fd.get('subject')||'Contact request').trim();const message=String(fd.get('message')||'').trim();
-    if(!name||!email||!message){const msg=form.querySelector('[data-contact-msg]');if(msg)msg.textContent='Please complete your name, email and message.';return}
-    const text=`Hello Anowar Creation,\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\nMessage: ${message}`;
-    const msg=form.querySelector('[data-contact-msg]');if(msg)msg.textContent='Opening WhatsApp with your message. Please review it and press Send.';
-    window.open('https://wa.me/918670992707?text='+encodeURIComponent(text),'_blank','noopener');
+  window.submitPublicContact=async function(event){
+    event.preventDefault();
+    if(typeof window.submitPublicContactSecure==='function') return window.submitPublicContactSecure(event);
+    const form=event.currentTarget, fd=new FormData(form);
+    const name=String(fd.get('name')||'').trim(),email=String(fd.get('email')||'').trim(),subject=String(fd.get('subject')||'').trim(),message=String(fd.get('message')||'').trim();
+    const status=form.querySelector('[data-contact-msg]');
+    if(!name||!email||!subject||!message){if(status)status.textContent='Please complete name, email, subject and message.';return;}
+    const href='mailto:anowarali0499@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Name: '+name+'\nEmail: '+email+'\n\n'+message);
+    if(status)status.innerHTML='Automatic email is not configured on this page. <a href="'+href+'">Open email draft</a>.';
   };
+
   document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('[data-pub-year]').forEach(el=>el.textContent=new Date().getFullYear());
     try{if(localStorage.getItem('ac-public-light')==='1'){document.body.classList.add('pub-light');document.querySelectorAll('.pub-theme-toggle').forEach(b=>b.textContent='☀')}}catch(e){}

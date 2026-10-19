@@ -34,12 +34,23 @@
     if(service&&service.startsWith('generic:')){const name=service.slice(8);window.openAppointment(name,'Submit your requirements and our team will follow up with you.');return}
     if(tool){if(typeof window.openPdfTool==='function')window.openPdfTool(tool);else window.openInfo('Tool unavailable','Please use the Tools page again later.');}
   };
-  window.submitPublicContact=function(event){
-    event.preventDefault();const form=event.currentTarget;const fd=new FormData(form);const name=String(fd.get('name')||'').trim();const email=String(fd.get('email')||'').trim();const subject=String(fd.get('subject')||'Contact request').trim();const message=String(fd.get('message')||'').trim();
-    if(!name||!email||!message){const msg=form.querySelector('[data-contact-msg]');if(msg)msg.textContent='Please complete your name, email and message.';return}
-    const text=`Hello Anowar Creation,\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\nMessage: ${message}`;
-    const msg=form.querySelector('[data-contact-msg]');if(msg)msg.textContent='Opening WhatsApp with your message. Please review it and press Send.';
-    window.open('https://wa.me/918670992707?text='+encodeURIComponent(text),'_blank','noopener');
+  window.submitPublicContact=async function(event){
+    event.preventDefault();const form=event.currentTarget;const fd=new FormData(form);
+    const name=String(fd.get('name')||'').trim();const email=String(fd.get('email')||'').trim();
+    const subject=String(fd.get('subject')||'Website contact message').trim();const message=String(fd.get('message')||'').trim();
+    const honeypot=String(fd.get('website')||'').trim();const msg=form.querySelector('[data-contact-msg]');
+    if(!name||!email||!subject||!message){if(msg)msg.textContent='Please complete your name, email, subject and message.';return}
+    if(subject.length>150||message.length>2500){if(msg)msg.textContent='Subject or message is too long.';return}
+    if(honeypot){if(msg)msg.textContent='Your message has been received.';return}
+    const client=window.supabaseClient;
+    if(!client||!client.functions){if(msg)msg.innerHTML='Email sending is not configured yet. <a href="'+('mailto:anowarali0499@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Name: '+name+'\nEmail: '+email+'\n\n'+message))+'">Open email draft</a>';return}
+    const button=form.querySelector('button[type="submit"]');const oldLabel=button?.textContent;if(button){button.disabled=true;button.textContent='Sending…'}if(msg)msg.textContent='Sending your message securely…';
+    try{
+      const {data,error}=await client.functions.invoke('send-contact-email',{body:{name,email,subject,message,website:honeypot}});
+      if(error||!data?.success){const reason=data?.message||error?.message||'Email delivery is not configured yet.';if(msg)msg.innerHTML='Could not send automatically: '+String(reason).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))+'. <a href="mailto:anowarali0499@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Name: '+name+'\nEmail: '+email+'\n\n'+message)+'">Open email draft</a>';return}
+      if(msg)msg.textContent='Message sent successfully to Anowar Creation. Thank you!';form.reset();
+    }catch(error){console.error('Contact email submit failed',error);if(msg)msg.innerHTML='Email service is unavailable right now. <a href="mailto:anowarali0499@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent('Name: '+name+'\nEmail: '+email+'\n\n'+message)+'">Open email draft</a>'}
+    finally{if(button){button.disabled=false;button.textContent=oldLabel||'Send Message to Anowar Creation →'}}
   };
   document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('[data-pub-year]').forEach(el=>el.textContent=new Date().getFullYear());

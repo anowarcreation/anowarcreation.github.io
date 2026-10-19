@@ -618,7 +618,8 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
 </style>
   <link rel="stylesheet" href="css/site-refresh.css">
   <link rel="stylesheet" href="css/portal-management.css">
-  <link rel="stylesheet" href="css/public-site-fixed.css">
+  <link rel="stylesheet" href="css/public-site-fixed.css?v=20261019-viewfix4">
+  <link rel="stylesheet" href="css/support-messaging.css?v=20261019-viewfix4">
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -824,7 +825,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
   
   <div class="footer">© <span id="year"></span> Anowar Creation · Digital Service Portal</div>
 </main>
-<a class="support" href="https://wa.me/918670992707" target="_blank" rel="noopener noreferrer">💬 Support</a>
+<a class="support" href="#support" onclick="event.preventDefault();openSupport();return false;">💬 Message Admin</a>
 </div>
 
 <!-- Appointment Modal -->
@@ -858,7 +859,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
 <div class="modal" id="infoModal"><div class="box"><button class="close" onclick="closeModal('infoModal')">×</button><h2 id="infoTitle">Information</h2><div class="desc" id="infoText"></div><button class="primary" onclick="closeModal('infoModal')">OK</button></div></div>
 <div class="modal" id="changePasswordModal"><div class="box"><button class="close" onclick="closeModal('changePasswordModal')">×</button><h2>🔑 Change Password</h2><div class="desc">Enter your current password, then choose a new password.</div><form class="form" onsubmit="changeCustomerPassword(event)"><label>Old Password<input id="oldCustomerPassword" type="password" autocomplete="current-password" required></label><label>New Password<input id="newCustomerPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters"></label><label>Confirm New Password<input id="confirmCustomerPassword" type="password" autocomplete="new-password" minlength="8" required></label><div id="changePasswordMessage" class="auth-msg"></div><button class="primary" type="submit">Update Password</button></form></div></div>
 
-<aside id="customerNoticePopup" class="customer-notice-popup" aria-live="polite" aria-label="Website notice" hidden><button class="customer-notice-close" type="button" aria-label="Dismiss notice" onclick="dismissCustomerNotice()">×</button><div class="customer-notice-kicker">📢 NOTICE</div><h3 id="customerNoticeTitle"></h3><div id="customerNoticeContent" class="customer-notice-content"></div></aside>
+<aside id="customerNoticePopup" class="customer-notice-popup" aria-live="polite" aria-label="Website notice" hidden><section class="customer-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="customerNoticeTitle"><button class="customer-notice-close" type="button" aria-label="Dismiss notice" onclick="dismissCustomerNotice()">×</button><div class="customer-notice-kicker">📢 IMPORTANT NOTICE</div><h3 id="customerNoticeTitle"></h3><div id="customerNoticeContent" class="customer-notice-content"></div><div class="customer-notice-footer">Anowar Creation · Digital Service Portal</div></section></aside>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script async src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -952,6 +953,8 @@ async function loadUser(){
   const {data:{user},error:userError}=await supabaseClient.auth.getUser();
   if(userError||!user){if(userError)console.error('Session error:',userError);return}
   currentUser=user;
+  // Switch to the private dashboard before waiting for profile/network data.
+  setPortalView('customer');
   let {data:profile,error:profileError}=await supabaseClient.from('profiles').select('*').eq('auth_id',user.id).maybeSingle();
   if(profileError)console.warn('Profile lookup:',profileError.message);
   if(!profile){
@@ -973,15 +976,58 @@ async function logoutUser(){await supabaseClient.auth.signOut();currentUser=null
 let recoveryMode=false;
 function isRecoveryUrl(){const hash=window.location.hash||'';const search=window.location.search||'';return hash.includes('type=recovery')||search.includes('type=recovery')||search.includes('code=')}
 function setPortalView(view){
-  const allowed=['public','auth','customer','admin'];if(!allowed.includes(view))view='public';
-  document.body.classList.remove('ac-view-public','ac-view-auth','ac-view-customer','ac-view-admin');
-  document.body.classList.add('ac-view-'+view);
+  const allowed=['public','auth','customer','admin'];
+  if(!allowed.includes(view))view='public';
+  const body=document.body;
+  body.classList.remove('ac-view-public','ac-view-auth','ac-view-customer','ac-view-admin');
+  body.classList.add('ac-view-'+view);
+  body.dataset.acPortalView=view;
   const pub=$('publicSite'),auth=$('authScreen'),app=document.querySelector('.app'),admin=$('adminPage');
-  if(pub){if(view==='public')pub.style.removeProperty('display');else pub.style.setProperty('display','none','important');}
-  if(auth){if(view==='auth'){auth.style.setProperty('display','flex','important');auth.setAttribute('aria-hidden','false')}else{auth.style.setProperty('display','none','important');auth.setAttribute('aria-hidden','true')}}
-  if(app){if(view==='customer')app.style.removeProperty('display');else app.style.setProperty('display','none','important')}
-  if(admin){admin.classList.toggle('show',view==='admin');if(view==='admin')admin.style.removeProperty('display');else admin.style.setProperty('display','none','important')}
-  document.body.style.overflow=view==='auth'?'hidden':'';
+  const setLayer=(el,visible,display)=>{
+    if(!el)return;
+    el.hidden=!visible;
+    el.inert=!visible;
+    el.setAttribute('aria-hidden',visible?'false':'true');
+    if(visible){
+      el.style.setProperty('display',display,'important');
+      el.style.setProperty('visibility','visible','important');
+      el.style.setProperty('opacity','1','important');
+      el.style.setProperty('pointer-events','auto','important');
+    }else{
+      el.style.setProperty('display','none','important');
+      el.style.setProperty('visibility','hidden','important');
+      el.style.setProperty('opacity','0','important');
+      el.style.setProperty('pointer-events','none','important');
+    }
+  };
+  // Each top-level view is mutually exclusive, so a hidden layer cannot remain clickable.
+  setLayer(pub,view==='public','block');
+  setLayer(auth,view==='auth','flex');
+  setLayer(app,view==='customer',(window.matchMedia&&window.matchMedia('(max-width:700px)').matches)?'block':'flex');
+  if(app&&view==='customer'){
+    app.style.setProperty('position','relative','important');
+    app.style.setProperty('width','100%','important');
+    app.style.setProperty('min-height','100vh','important');
+    app.style.setProperty('z-index','1','important');
+  }
+  if(admin){
+    admin.classList.toggle('show',view==='admin');
+    setLayer(admin,view==='admin','block');
+    if(view==='admin'){
+      admin.style.setProperty('position','fixed','important');
+      admin.style.setProperty('inset','0','important');
+      admin.style.setProperty('z-index','10000','important');
+      admin.style.setProperty('overflow','auto','important');
+    }
+  }
+  if(view!=='public'){
+    const nav=$('pubNav'),navButton=document.querySelector('.pub-mobile-toggle');
+    if(nav)nav.classList.remove('open');
+    if(navButton){navButton.setAttribute('aria-expanded','false');navButton.textContent='☰';}
+    document.querySelectorAll('.pub-exam-nav.open').forEach(el=>el.classList.remove('open'));
+  }
+  body.style.overflow=view==='auth'?'hidden':'';
+  body.dispatchEvent(new CustomEvent('ac:portal-view-change',{detail:{view}}));
 }
 supabaseClient.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){recoveryMode=true;setPortalView('auth');showPasswordRecovery();return}
@@ -998,20 +1044,26 @@ function setCustomerNavActive(btn){
   links.forEach(a=>{const active=!!btn&&a===btn;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
 }
 function setCustomerPage(page,btn){
+  if(!['dashboard','services','orders'].includes(page))page='dashboard';
   const overviewVisible=page==='dashboard';
+  const app=document.querySelector('.app');
+  if(app)app.dataset.customerPage=page;
   document.querySelectorAll('.customer-overview-block').forEach(el=>el.classList.toggle('customer-overview-hidden',!overviewVisible));
   const tabs=document.querySelector('.main .tabs');if(tabs)tabs.classList.toggle('customer-tabs-hidden',page!=='dashboard');
+  const panelId=page==='orders'?'orders':'services';
+  document.querySelectorAll('.app .main .panel').forEach(el=>el.classList.toggle('active',el.id===panelId));
   if(page==='orders')showPanel('orders');else showPanel('services',document.querySelector('.tabs .tab'));
   let target=btn;
   if(!target){const selector=page==='dashboard'?'a[href="#home"]':page==='services'?'a[href="#services"]':'a[onclick*="showOrders"]';target=document.querySelector('.sidebar .nav '+selector)}
   setCustomerNavActive(target);closeMobileMenu();
+  if(page!=='dashboard')window.scrollTo({top:0,behavior:'auto'});
 }
 function showDashboard(btn){setCustomerPage('dashboard',btn)}
 function showPanel(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));const panel=$(id);if(panel)panel.classList.add('active');document.querySelectorAll('.tabs .tab').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active')}
 function activateServices(btn){setCustomerPage('services',btn)}
 function closeModal(id){$(id).classList.remove('show')}
 function openInfo(t,x){$('infoTitle').textContent=t;$('infoText').textContent=x;$('infoModal').classList.add('show')}
-function openSupport(){openInfo('💬 Support','For service support, please contact Anowar Creation. Your submitted appointments are available in My Orders.')}
+function openSupport(){if(window.openCustomerSupportChat)return window.openCustomerSupportChat();openInfo('💬 Support','Please refresh the page and open Support again.')}
 function showUnavailable(){openInfo('🏛️ Government Schemes','Temporarily Not Available. This service is currently unavailable. Please try again later.')}
 function showRates(){openInfo('💰 Service Rates','PDF Print: Black & White ₹5/page, Colour ₹10/page. Other services are appointment-based and the team will confirm the applicable service charge.')}
 function openAppointment(service,desc){currentService=service;currentAppointmentType='generic';$('appointmentTitle').textContent='📋 '+service;$('appointmentDesc').textContent=desc;$('aptName').value=currentProfile?.name||'';$('aptPhone').value=currentProfile?.phone||'';$('aptRequirement').value='';$('aptMsg').textContent='';$('appointmentModal').classList.add('show')}
@@ -1162,10 +1214,10 @@ function sanitizeNoticeHtml(html){
   template.content.querySelectorAll('*').forEach(el=>{
     [...el.attributes].forEach(a=>{
       const n=a.name.toLowerCase(),v=String(a.value||'').trim().toLowerCase();
-      if(n.startsWith('on')||n==='srcdoc'||(n==='href'&&(v.startsWith('javascript:')||v.startsWith('data:')))||(n==='src'&&!v.startsWith('data:image/')))el.removeAttribute(a.name);
+      const trustedNoticePrefix=(SUPABASE_URL+'/storage/v1/object/public/notice-images/').toLowerCase();if(n.startsWith('on')||n==='srcdoc'||(n==='href'&&(v.startsWith('javascript:')||v.startsWith('data:')))||(n==='src'&&!(v.startsWith('data:image/png')||v.startsWith('data:image/jpeg')||v.startsWith('data:image/webp')||v.startsWith(trustedNoticePrefix))))el.removeAttribute(a.name);
       if(n==='style'&&/url\s*\(|expression\s*\(/i.test(a.value))el.removeAttribute(a.name);
     });
-    if(el.tagName==='IMG'){const src=el.getAttribute('src')||'';if(!src.startsWith('data:image/png')&&!src.startsWith('data:image/jpeg')&&!src.startsWith('data:image/webp'))el.remove();}
+    if(el.tagName==='IMG'){const src=el.getAttribute('src')||'';if(!src.startsWith('data:image/png')&&!src.startsWith('data:image/jpeg')&&!src.startsWith('data:image/webp')&&!src.toLowerCase().startsWith((SUPABASE_URL+'/storage/v1/object/public/notice-images/').toLowerCase()))el.remove();}
   });
   return template.innerHTML;
 }
@@ -1924,7 +1976,35 @@ body.ac-view-admin #adminPage.show{display:block!important;visibility:visible!im
 </div>
 
 <script src="js/portal-management.js"></script>
-<script src="js/public-site-fixed.js"></script>
+<script src="js/public-site-fixed.js?v=20261019-viewfix4"></script>
+
+<script src="js/support-messaging.js?v=20261019-viewfix4"></script>
+
+<style id="ac-final-portal-view-hard-override-v3">
+/* Final exclusive view state. Use both DOM state and inline styles so legacy CSS cannot stack pages. */
+[hidden]{display:none!important}
+html body[data-ac-portal-view="public"] > #publicSite{display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;z-index:2!important}
+html body[data-ac-portal-view="public"] > #authScreen,
+html body[data-ac-portal-view="public"] > .app,
+html body[data-ac-portal-view="public"] > #adminPage{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+html body[data-ac-portal-view="auth"] > #publicSite,
+html body[data-ac-portal-view="auth"] > .app,
+html body[data-ac-portal-view="auth"] > #adminPage{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+html body[data-ac-portal-view="auth"] > #authScreen{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:fixed!important;inset:0!important;z-index:20000!important}
+html body[data-ac-portal-view="customer"] > #publicSite,
+html body[data-ac-portal-view="customer"] > #authScreen,
+html body[data-ac-portal-view="customer"] > #adminPage{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;position:absolute!important;left:-100000px!important;top:0!important;width:1px!important;height:1px!important;overflow:hidden!important}
+html body[data-ac-portal-view="customer"] > .app{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;z-index:2!important;width:100%!important;min-height:100vh!important;background:linear-gradient(180deg,#020611,#061326 60%,#030712)!important}
+html body[data-ac-portal-view="customer"] .app .main > .panel{display:none!important;visibility:hidden!important}
+html body[data-ac-portal-view="customer"] .app .main > .panel.active{display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+html body[data-ac-portal-view="customer"] .customer-overview-hidden{display:none!important;visibility:hidden!important;pointer-events:none!important}
+html body[data-ac-portal-view="admin"] > #publicSite,
+html body[data-ac-portal-view="admin"] > #authScreen,
+html body[data-ac-portal-view="admin"] > .app{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;position:absolute!important;left:-100000px!important;top:0!important;width:1px!important;height:1px!important;overflow:hidden!important}
+html body[data-ac-portal-view="admin"] > #adminPage.show{display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:fixed!important;inset:0!important;z-index:20000!important;overflow:auto!important}
+@media(max-width:700px){html body[data-ac-portal-view="customer"] > .app{display:block!important}}
+</style>
+
 </body>
 </html>
 
