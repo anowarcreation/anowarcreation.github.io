@@ -1,7 +1,7 @@
 ANOWAR CREATION — NOTICE IMAGE, ADMIN/CUSTOMER MESSAGES & CONTACT EMAIL SETUP
 
 WHAT THIS UPDATE ADDS
-1. Admin can publish a title, formatted text, and a PNG/JPG/WEBP image in the Notice Board.
+1. Admin can publish a title, formatted text, and a PNG/JPG/WEBP image in the Notice Board. Existing legacy notice message/body/image_url columns are migrated into the current popup content.
 2. The active notice opens in a centered, scrollable popup for customers. Customers can close it.
 3. A Messages option is added to the standalone Admin Portal and the embedded Admin panel. Customers start/reopen a conversation from Support; Admin replies from Messages. Conversation history is stored in Supabase.
 4. The old WhatsApp support action is replaced by the website's account-based support chat.
@@ -10,8 +10,9 @@ WHAT THIS UPDATE ADDS
 STEP 1 — UPLOAD THE WEBSITE
 Extract the ZIP. Upload the files INSIDE the extracted folder to the root of the existing GitHub repository, replacing same-named files, then Commit changes. Do not upload the ZIP as a single file.
 
-STEP 2 — RUN THE DATABASE / STORAGE SQL ONCE
-Open Supabase Dashboard → SQL Editor → New query. Open supabase-support-notices-contact.sql, copy all SQL, paste it, and Run. This sets up support_conversations, support_messages, contact_messages, site_notices policies, and the notice-images Storage bucket.
+STEP 2 — RUN THE UPDATED DATABASE / STORAGE SQL (REQUIRED FOR CHAT, NOTICE CONTENT, AND IMAGE FIX)
+Open Supabase Dashboard → SQL Editor → New query. Open supabase-support-notices-contact.sql, copy all SQL, paste it, and Run. This sets up/updates support_conversations, support_messages, contact_messages, site_notices legacy content migration/policies, notice-images Storage, explicit grants, and the send_support_message RPC used by both customer messages and Admin replies. The RPC runs as the trusted postgres owner with row security disabled inside the function, then derives the sender role from the signed-in Supabase user and conversation owner.
+IMPORTANT: if an older version of this SQL or support-conversations-permission-fix.sql was already run, run this updated full SQL again. The earlier policy-only fix does not install the RPC needed to save messages and bypass the sender-role RLS failure safely.
 Do not paste SQL into GitHub. It must run in Supabase SQL Editor.
 
 STEP 3 — DEPLOY THE CONTACT EMAIL EDGE FUNCTION
@@ -32,11 +33,20 @@ The default sender in the function is onboarding@resend.dev for provider testing
 
 STEP 5 — TEST
 - Log in with the Admin account and open Notice Board. Add text and/or upload an image up to 2 MB, then Publish Notice.
-- Sign in as a customer and confirm the active notice appears as a centered popup.
+- Open the public Home Page in a signed-out/private window and confirm the active notice appears as a centered popup before login.
 - Customer: open Support / Message Admin, start a conversation, and send a message.
-- Admin: open Messages, select the customer thread, and reply. Refresh to confirm history stays.
+- Admin: open Messages, select the customer thread, and reply. Refresh to confirm history stays. Chat messages render as left/right chat bubbles like a support messenger.
+- Conversations created when the earlier RLS error occurred may have a subject but no stored message body; those messages were never saved, so the customer must resend the message after running the updated SQL.
 - Submit the Contact form with a subject and message. Confirm the success message and verify delivery to anowarali0499@gmail.com. If backend/email setup is incomplete, use the offered Open email draft link.
 
 ADMIN EMAIL FOR RLS POLICIES
 anowarali2707@outlook.com
 This must match the actual Supabase admin user's email. The contact recipient is anowarali0499@gmail.com.
+
+
+LATEST FIX NOTES — 19 OCT 2026
+- Fixed a broken JavaScript string in the root index.html: status-tab CSS had accidentally been inserted inside the HTML-to-PDF document.write string, which made the entire main inline script fail to parse. This could prevent Home/Login/Dashboard logic, popup handlers and page controls from initializing. The document.write string is now properly closed and the status-tab stylesheet is loaded separately.
+- Added cache-busted script references in the standalone Admin page so old cached message-send code will not keep inserting directly into support_messages. Both Customer and Admin now call send_support_message.
+- Added explicit status queue buttons for Appointments and ensured status tabs render on Orders & Applications, PDF Print, Front Page Maker, PAN, Voter, Scholarship and DL/RC sections. New requests default to Application Submitted; after a successful status change, the order appears in the selected status queue.
+- Notices support legacy content stored in message/body/image_url as well as the current rich content field. Public Home popup renders the rich body and uploaded image; images must be uploaded to the project's notice-images bucket.
+- Note: old customer messages that previously failed before being inserted cannot be restored from Supabase; customers must send those messages again after the updated SQL is run.

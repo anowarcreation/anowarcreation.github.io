@@ -66,7 +66,7 @@ for update to authenticated using (public.is_admin()) with check (public.is_admi
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://unpkg.com" crossorigin>
-<link rel="dns-prefetch" href="//tlsrvyqyhonnrlcdmlzo.supabase.co">
+<link rel="dns-prefetch" href="//tlsrvyqyhonrlcdmlzo.supabase.co">
 
 <title>Anowar Creation | Digital Service Portal</title>
 <style>
@@ -617,9 +617,10 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
 .auth-admin-tab{display:block;text-align:center;margin:-4px 0 16px;padding:10px;border:1px solid rgba(102,205,255,.4);border-radius:10px;color:#dbe9ff;background:rgba(15,35,65,.7);font-weight:800}.auth-admin-tab:hover{background:rgba(24,113,255,.22)}
 </style>
   <link rel="stylesheet" href="css/site-refresh.css">
-  <link rel="stylesheet" href="css/portal-management.css">
-  <link rel="stylesheet" href="css/public-site-fixed.css?v=20261019-viewfix4">
-  <link rel="stylesheet" href="css/support-messaging.css?v=20261019-viewfix4">
+  <link rel="stylesheet" href="css/admin-status-tabs.css?v=20261019-support-notice-status6">
+  <link rel="stylesheet" href="css/portal-management.css?v=20261019-support-notice-status6">
+  <link rel="stylesheet" href="css/public-site-fixed.css?v=20261019-support-notice-status6">
+  <link rel="stylesheet" href="css/support-messaging.css?v=20261019-support-notice-status6">
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -859,13 +860,21 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
 <div class="modal" id="infoModal"><div class="box"><button class="close" onclick="closeModal('infoModal')">×</button><h2 id="infoTitle">Information</h2><div class="desc" id="infoText"></div><button class="primary" onclick="closeModal('infoModal')">OK</button></div></div>
 <div class="modal" id="changePasswordModal"><div class="box"><button class="close" onclick="closeModal('changePasswordModal')">×</button><h2>🔑 Change Password</h2><div class="desc">Enter your current password, then choose a new password.</div><form class="form" onsubmit="changeCustomerPassword(event)"><label>Old Password<input id="oldCustomerPassword" type="password" autocomplete="current-password" required></label><label>New Password<input id="newCustomerPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters"></label><label>Confirm New Password<input id="confirmCustomerPassword" type="password" autocomplete="new-password" minlength="8" required></label><div id="changePasswordMessage" class="auth-msg"></div><button class="primary" type="submit">Update Password</button></form></div></div>
 
+
+<style id="ac-notice-content-visibility-fix-v7">
+#customerNoticePopup:not([hidden]) .customer-notice-dialog{display:block!important;visibility:visible!important;opacity:1!important;overflow-y:auto!important}
+#customerNoticePopup:not([hidden]) #customerNoticeContent{display:block!important;visibility:visible!important;opacity:1!important;min-height:18px;white-space:normal!important;overflow-wrap:anywhere!important;color:#1d293e!important}
+#customerNoticePopup:not([hidden]) #customerNoticeContent p{display:block!important;margin:0 0 12px!important}
+#customerNoticePopup:not([hidden]) #customerNoticeContent img{display:block!important;visibility:visible!important;opacity:1!important;max-width:100%!important;height:auto!important;max-height:60vh!important;object-fit:contain!important;margin:10px auto!important}
+</style>
 <aside id="customerNoticePopup" class="customer-notice-popup" aria-live="polite" aria-label="Website notice" hidden><section class="customer-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="customerNoticeTitle"><button class="customer-notice-close" type="button" aria-label="Dismiss notice" onclick="dismissCustomerNotice()">×</button><div class="customer-notice-kicker">📢 IMPORTANT NOTICE</div><h3 id="customerNoticeTitle"></h3><div id="customerNoticeContent" class="customer-notice-content"></div><div class="customer-notice-footer">Anowar Creation · Digital Service Portal</div></section></aside>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script async src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script>
 const ADMIN_EMAIL = "anowarali2707@outlook.com";
-const SUPABASE_URL="https://tlsrvyqyhonnrlcdmlzo.supabase.co";
+const SUPABASE_URL="https://tlsrvyqyhonrlcdmlzo.supabase.co";
+window.SUPABASE_URL=SUPABASE_URL;
 const SUPABASE_ANON_KEY="sb_publishable_znUuYPAf3U-FQoUtp4JRcA_kGZOIvoh";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let currentUser=null,currentProfile=null,currentService="",currentAppointmentType="",panType="",voterType="",scholarshipName="",scholarshipType="",pdfPages=0,currentAmount=0,pendingPrint=null;
@@ -947,7 +956,7 @@ function renderDashboardRecentOrders(){
 function renderDashboardNotice(data){
   const box=$('dashboardNotice'); if(!box)return;
   if(!data){box.innerHTML='<div class="ac-empty">No active notice.</div>';return}
-  box.innerHTML=`<div class="ac-notice-title">${escapeHtml(data.title||'Important Notice')}</div><div class="ac-notice-date">${data.updated_at?new Date(data.updated_at).toLocaleDateString('en-IN'):''}</div><div>${sanitizeNoticeHtml(data.content||'')}</div>`;
+  box.innerHTML=`<div class="ac-notice-title">${escapeHtml(data.title||'Important Notice')}</div><div class="ac-notice-date">${data.updated_at?new Date(data.updated_at).toLocaleDateString('en-IN'):''}</div><div>${sanitizeNoticeHtml(noticeHtmlFromRow(data))}</div>`;
 }
 async function loadUser(){
   const {data:{user},error:userError}=await supabaseClient.auth.getUser();
@@ -1175,7 +1184,7 @@ function confirmUPIPrint(){closeModal('upiModal');createPrintOrder('UPI')}
 async function createPrintOrder(payment){if(!pendingPrint)return;const f=$('pdfFile').files[0];if(!f){openInfo('PDF Required','Please upload your PDF again.');return}const orderId=generateId('AC'),safeName=f.name.replace(/[^a-zA-Z0-9._-]/g,'_'),filePath=currentUser.id+'/'+orderId+'-'+safeName;const {error:uploadError}=await supabaseClient.storage.from('pdf-orders').upload(filePath,f,{contentType:'application/pdf',upsert:false});if(uploadError){console.error(uploadError);openInfo('Could not upload PDF','Your PDF could not be uploaded. Please try again.');return}const o=await createOrder(pendingPrint.service,pendingPrint.amount,payment,currentProfile?.name||'Customer',currentProfile?.phone||'',pendingPrint.requirement,'Confirmed',filePath);if(!o){await supabaseClient.storage.from('pdf-orders').remove([filePath]);return}pendingPrint=null;$('pdfFile').value='';showResult('✓','Thank You','Your PDF print order has been confirmed.<br><strong>You will receive the item at Sister Nivedita University.</strong>','Order No.',o.id,o.service)}
 function generateId(prefix){const d=new Date(),stamp=String(d.getFullYear()).slice(-2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'),rand=Math.floor(1000+Math.random()*9000);return prefix+'-'+stamp+'-'+rand}
 async function createAppointment(service,name,phone,requirement){const o=await createOrder(service,0,'N/A',name,phone,requirement,'Appointment Created');if(o)showResult('🎉','Appointment Created','Thank You, Our Team Will Connect You Soon.','Your Appointment No.',o.id,o.service)}
-async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status,file_path:filePath,admin_note:'',result_file_path:null,user_id:currentUser.id,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders();return obj}
+async function createOrder(service,amount,payment,name,phone,requirement,status,filePath=''){if(!currentUser){openInfo('Login Required','Please login to submit an appointment or order.');return null}const id=generateId('AC'),created=new Date().toISOString(),initialStatus='Application Submitted',obj={id,service,amount:Number(amount)||0,payment,name,phone,requirement,status:initialStatus,file_path:filePath,admin_note:'',result_file_path:null,user_id:currentUser.id,date:new Date(created).toLocaleString()};const {error}=await supabaseClient.from('orders').insert({user_id:currentUser.id,order_id:id,service,amount:Number(amount)||0,payment_method:payment,customer_name:name,phone,requirement,status:initialStatus,created_at:created,file_path:filePath||null});if(error){console.error(error);openInfo('Could not save','Your request could not be saved. Please try again.');return null}const orders=JSON.parse(localStorage.getItem('ac_order_list')||'[]');orders.unshift(obj);localStorage.setItem('ac_order_list',JSON.stringify(orders.slice(0,50)));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders();return obj}
 async function loadCloudOrders(){if(!currentUser)return;const {data,error}=await supabaseClient.from('orders').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(error){console.error('Could not load customer orders',error);return}const orders=(data||[]).map(o=>({id:o.order_id,service:o.service,amount:Number(o.amount)||0,payment:o.payment_method||'N/A',name:o.customer_name||'',phone:o.phone||'',requirement:o.requirement||'',status:o.status||'Confirmed',file_path:o.file_path||null,admin_note:o.admin_note||'',result_file_path:o.result_file_path||null,user_id:o.user_id,date:new Date(o.created_at).toLocaleString()}));localStorage.setItem('ac_order_list',JSON.stringify(orders));$('orderCount').textContent=orders.length;renderOrders();renderDashboardRecentOrders()}
 let customerOrdersRenderSequence=0;
 async function customerResultDownload(path){if(!path)return '';try{const {data,error}=await supabaseClient.storage.from('service-results').createSignedUrl(path,3600,{download:true});if(error||!data?.signedUrl)return '<span class=\"customer-result-pending\">Document uploaded; refresh or contact support if download is unavailable.</span>';return `<a class=\"customer-result-download\" href=\"${escapeHtml(data.signedUrl)}\" target=\"_blank\" rel=\"noopener\" download>⬇ Download your document</a>`}catch(e){console.error('Could not create customer result link',e);return '<span class=\"customer-result-pending\">Document link is temporarily unavailable.</span>'}}
@@ -1208,8 +1217,10 @@ window.addEventListener('click',e=>{if(e.target.classList.contains('modal'))e.ta
 
 // Notice Board: content is sanitized before rendering for customers.
 let currentNoticeId=null;
+function noticeHtmlFromRow(row){if(!row)return '';let content=[row.content,row.message,row.body,row.description].map(v=>String(v||'').trim()).find(Boolean)||'';const image=String(row.image_url||row.image||'').trim();const trusted=(SUPABASE_URL+'/storage/v1/object/public/notice-images/').toLowerCase();if(image&&!/<img\b/i.test(content)&&image.toLowerCase().startsWith(trusted))content+='\n<p><img src="'+escapeHtml(image)+'" alt="Notice image"></p>';return content;}
 function sanitizeNoticeHtml(html){
-  const template=document.createElement('template');template.innerHTML=String(html||'');
+  const source=String(html||'');
+  const template=document.createElement('template');template.innerHTML=source;
   template.content.querySelectorAll('script,style,iframe,object,embed,form,video,audio').forEach(el=>el.remove());
   template.content.querySelectorAll('*').forEach(el=>{
     [...el.attributes].forEach(a=>{
@@ -1219,16 +1230,19 @@ function sanitizeNoticeHtml(html){
     });
     if(el.tagName==='IMG'){const src=el.getAttribute('src')||'';if(!src.startsWith('data:image/png')&&!src.startsWith('data:image/jpeg')&&!src.startsWith('data:image/webp')&&!src.toLowerCase().startsWith((SUPABASE_URL+'/storage/v1/object/public/notice-images/').toLowerCase()))el.remove();}
   });
-  return template.innerHTML;
+  const cleaned=template.innerHTML.trim();
+  // Older notices may contain plain text rather than rich HTML. Keep it visible safely.
+  if(!cleaned && source.trim() && !/<[a-z!/][^>]*>/i.test(source))return '<p>'+escapeHtml(source).replace(/\r?\n/g,'<br>')+'</p>';
+  return cleaned;
 }
 function formatNotice(command,value){$('noticeEditor').focus();document.execCommand(command,false,value||null)}
 function insertNoticeImage(event){const file=event.target.files?.[0];if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>1024*1024){$('noticeAdminMessage').textContent='Please choose a PNG/JPG/WEBP image under 1 MB.';event.target.value='';return}const reader=new FileReader();reader.onload=()=>{const img=document.createElement('img');img.src=reader.result;img.alt='Notice image';img.style.maxWidth='100%';$('noticeEditor').focus();const sel=window.getSelection();if(sel&&sel.rangeCount){const range=sel.getRangeAt(0);range.deleteContents();range.insertNode(img);range.setStartAfter(img);range.collapse(true);sel.removeAllRanges();sel.addRange(range)}else $('noticeEditor').appendChild(img)};reader.readAsDataURL(file)}
 function clearNoticeEditor(){$('noticeTitle').value='';$('noticeEditor').innerHTML='';$('noticeAdminMessage').textContent='';currentNoticeId=null}
 async function loadAdminNotices(){const msg=$('noticeAdminMessage');if(!msg)return;msg.textContent='Loading notice...';const {data,error}=await supabaseClient.from('site_notices').select('*').order('updated_at',{ascending:false}).limit(10);if(error){msg.textContent='Notice Board database is not ready. Run the NOTICE BOARD SQL from the top comment in this file in Supabase SQL Editor. ('+error.message+')';$('noticeCurrentPreview').textContent='Notice Board setup required.';$('noticeCurrentMeta').textContent='Not configured';return}const active=(data||[]).find(n=>n.is_active);if(!active){currentNoticeId=null;$('noticeTitle').value='';$('noticeEditor').innerHTML='';$('noticeCurrentPreview').textContent='No active notice.';$('noticeCurrentMeta').textContent='No active notice';msg.textContent='No active notice. You can publish one above.';return}currentNoticeId=active.id;$('noticeTitle').value=active.title||'';$('noticeEditor').innerHTML=sanitizeNoticeHtml(active.content||'');$('noticeCurrentPreview').innerHTML=sanitizeNoticeHtml(active.content||'');$('noticeCurrentMeta').textContent='Updated '+new Date(active.updated_at).toLocaleString('en-IN');msg.textContent='Current active notice loaded. Publishing will update it.'}
-async function publishNotice(){const title=$('noticeTitle').value.trim(),html=sanitizeNoticeHtml($('noticeEditor').innerHTML);const msg=$('noticeAdminMessage');if(!title||!$('noticeEditor').innerText.trim()){msg.textContent='Please enter a title and notice content.';return}if(html.length>1800000){msg.textContent='Notice is too large. Please reduce text or image size.';return}msg.textContent='Publishing notice...';const {data:userData}=await supabaseClient.auth.getUser();const user=userData?.user;if(!user||user.email?.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){msg.textContent='Admin login is required to publish notices.';return}const {error:deactivateError}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);if(deactivateError){msg.textContent='Could not update notices. Check Notice Board SQL/RLS: '+deactivateError.message;return}const payload={title,content:html,is_active:true,updated_at:new Date().toISOString()};const result=currentNoticeId?await supabaseClient.from('site_notices').update(payload).eq('id',currentNoticeId).select().single():await supabaseClient.from('site_notices').insert(payload).select().single();if(result.error){msg.textContent='Could not publish notice: '+result.error.message;return}currentNoticeId=result.data.id;$('noticeCurrentPreview').innerHTML=sanitizeNoticeHtml(html);$('noticeCurrentMeta').textContent='Updated '+new Date().toLocaleString('en-IN');msg.textContent='Notice published. Customers will see it as a small popup.';}
+async function publishNotice(){const title=$('noticeTitle').value.trim(),html=sanitizeNoticeHtml($('noticeEditor').innerHTML);const msg=$('noticeAdminMessage');if(!title||!$('noticeEditor').innerText.trim()){msg.textContent='Please enter a title and notice content.';return}if(html.length>1800000){msg.textContent='Notice is too large. Please reduce text or image size.';return}msg.textContent='Publishing notice...';const {data:userData}=await supabaseClient.auth.getUser();const user=userData?.user;if(!user||user.email?.toLowerCase()!==ADMIN_EMAIL.toLowerCase()){msg.textContent='Admin login is required to publish notices.';return}const {error:deactivateError}=await supabaseClient.from('site_notices').update({is_active:false}).eq('is_active',true);if(deactivateError){msg.textContent='Could not update notices. Check Notice Board SQL/RLS: '+deactivateError.message;return}const payload={title,content:html,message:html,body:html,is_active:true,updated_at:new Date().toISOString()};const result=currentNoticeId?await supabaseClient.from('site_notices').update(payload).eq('id',currentNoticeId).select().single():await supabaseClient.from('site_notices').insert(payload).select().single();if(result.error){msg.textContent='Could not publish notice: '+result.error.message;return}currentNoticeId=result.data.id;$('noticeCurrentPreview').innerHTML=sanitizeNoticeHtml(html);$('noticeCurrentMeta').textContent='Updated '+new Date().toLocaleString('en-IN');msg.textContent='Notice published. Customers will see it as a small popup.';}
 async function deactivateNotice(){const msg=$('noticeAdminMessage');if(!currentNoticeId){msg.textContent='There is no active notice to remove.';return}const {error}=await supabaseClient.from('site_notices').update({is_active:false,updated_at:new Date().toISOString()}).eq('id',currentNoticeId);if(error){msg.textContent='Could not remove notice: '+error.message;return}currentNoticeId=null;$('noticeCurrentPreview').textContent='No active notice.';$('noticeCurrentMeta').textContent='No active notice';clearNoticeEditor();msg.textContent='Active notice removed.'}
-async function loadPublicNotice(){if(!currentUser)return;const {data,error}=await supabaseClient.from('site_notices').select('id,title,content,updated_at').eq('is_active',true).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error||!data){renderDashboardNotice(null);return}renderDashboardNotice(data);let dismissed='';try{dismissed=localStorage.getItem('ac-dismissed-notice')||''}catch(e){}if(String(data.id)===dismissed)return;$('customerNoticeTitle').textContent=data.title||'Notice';$('customerNoticeContent').innerHTML=sanitizeNoticeHtml(data.content||'');$('customerNoticePopup').dataset.noticeId=String(data.id);$('customerNoticePopup').hidden=false}
-function dismissCustomerNotice(){const popup=$('customerNoticePopup');try{localStorage.setItem('ac-dismissed-notice',popup.dataset.noticeId||'')}catch(e){}popup.hidden=true}
+async function loadPublicNotice(){const {data,error}=await supabaseClient.from('site_notices').select('*').eq('is_active',true).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error||!data){if(currentUser)renderDashboardNotice(null);$('customerNoticePopup').hidden=true;return}if(currentUser)renderDashboardNotice(data);let dismissed='';try{dismissed=sessionStorage.getItem('ac-dismissed-notice-session')||''}catch(e){}const token=String(data.id)+':'+String(data.updated_at||'');if(token===dismissed){$('customerNoticePopup').hidden=true;return}$('customerNoticeTitle').textContent=data.title||'Notice';$('customerNoticeContent').innerHTML=sanitizeNoticeHtml(noticeHtmlFromRow(data));$('customerNoticePopup').dataset.noticeToken=token;$('customerNoticePopup').dataset.noticeId=String(data.id);$('customerNoticePopup').hidden=false}
+function dismissCustomerNotice(){const popup=$('customerNoticePopup');try{sessionStorage.setItem('ac-dismissed-notice-session',popup.dataset.noticeToken||'')}catch(e){}popup.hidden=true}
 
 let adminLoginInProgress=false;
 function openAdmin(){
@@ -1291,6 +1305,16 @@ function filterCustomers(){
   document.querySelectorAll('#adminCustomersBody tr[data-search]').forEach(tr=>{tr.style.display=!q||tr.dataset.search.includes(q)?'':'none'});
 }
 
+const ADMIN_STATUS_TAB_OPTIONS=['Application Submitted','Under Process','Successfully Completed','Declined','Rejected'];
+const adminStatusTabState={adminOrders:'Application Submitted',adminApplications:'Application Submitted',adminPrintOrders:'Application Submitted',adminAppointments:'Application Submitted'};
+function isPdfPrintOrder(order){return String(order?.service||'').toLowerCase().includes('pdf print')}
+function adminStatusSourceRows(sectionId){if(sectionId==='adminPrintOrders')return adminOrdersCache.filter(isPdfPrintOrder);if(sectionId==='adminAppointments'||sectionId==='adminApplications')return adminOrdersCache.filter(o=>!isPdfPrintOrder(o));return adminOrdersCache.slice()}
+function getAdminStatusFilter(sectionId){return adminStatusTabState[sectionId]||'Application Submitted'}
+function ensureAdminStatusTabHost(sectionId){const section=$(sectionId);if(!section)return null;let host=section.querySelector('.admin-status-tabs');if(host)return host;const wrap=section.querySelector('.admin-table-wrap');if(!wrap)return null;host=document.createElement('div');host.className='admin-status-tabs';host.id=sectionId+'StatusTabs';host.setAttribute('role','group');host.setAttribute('aria-label','Filter records by application status');wrap.parentNode.insertBefore(host,wrap);return host}
+function renderAdminStatusTabs(sectionId){const host=ensureAdminStatusTabHost(sectionId);if(!host)return;const rows=adminStatusSourceRows(sectionId),active=getAdminStatusFilter(sectionId);host.innerHTML=ADMIN_STATUS_TAB_OPTIONS.map(status=>{const count=rows.filter(o=>normalizeApplicationStatus(o.status)===status).length;return `<button type="button" class="admin-status-tab ${active===status?'active':''}" aria-pressed="${active===status?'true':'false'}" onclick="selectAdminStatusTab('${sectionId}','${status}')"><span>${status}</span><b>${count}</b></button>`}).join('')}
+async function selectAdminStatusTab(sectionId,status){if(!ADMIN_STATUS_TAB_OPTIONS.includes(status))return;adminStatusTabState[sectionId]=status;renderAdminStatusTabs(sectionId);if(sectionId==='adminApplications')return renderAdminApplications();if(sectionId==='adminOrders')return renderAdminOrders(adminOrdersCache);if(sectionId==='adminPrintOrders')return renderAdminPrintOrders(adminOrdersCache.filter(isPdfPrintOrder));if(sectionId==='adminAppointments'){if(typeof window.renderPortalAppointments==='function')return window.renderPortalAppointments();return renderAdminAppointments(adminOrdersCache.filter(o=>!isPdfPrintOrder(o)))} }
+window.adminStatusTabState=adminStatusTabState;window.getAdminStatusFilter=getAdminStatusFilter;window.renderAdminStatusTabs=renderAdminStatusTabs;window.selectAdminStatusTab=selectAdminStatusTab;
+
 async function loadAdminData(){
   $('adminLastUpdated').textContent='Loading...';
   if($('adminCustomersBody'))$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Loading customer profiles…</td></tr>';
@@ -1305,7 +1329,7 @@ async function loadAdminData(){
     profilesRes=await supabaseClient.from('profiles').select('*');
   }
   const orders=ordersRes.data||[],profiles=(profilesRes.data||[]).map(p=>({...p,auth_id:p.auth_id||p.id||p.user_id,account_created:p.account_created||p.created_at||p.inserted_at||null}));
-  adminOrdersCache=orders;adminCustomersCache=profiles;window.AdminOrders=orders;
+  adminOrdersCache=orders;adminCustomersCache=profiles;window.AdminOrders=orders;['adminApplications','adminOrders','adminPrintOrders','adminAppointments'].forEach(renderAdminStatusTabs);
   if(ordersRes.error){console.error(ordersRes.error);$('adminOrdersBody').innerHTML='<tr><td colspan="12" class="admin-empty">Could not load orders. Please check Admin SQL/RLS.</td></tr>';const pb=$('adminPrintOrdersBody');if(pb)pb.innerHTML='<tr><td colspan="10" class="admin-empty">Could not load print orders. Check Admin SQL/RLS.</td></tr>'}
   else { renderAdminOrders(orders); renderAdminPrintOrders(orders.filter(o=>String(o.service||'').toLowerCase().includes('pdf print'))); renderAdminAppointments(orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print'))); }
   if(profilesRes.error){console.error('Admin customer profile query failed:',profilesRes.error);$('adminCustomersBody').innerHTML='<tr><td colspan="6" class="admin-empty">Could not load customers: '+escapeHtml(profilesRes.error.message||'Database permission denied')+'. Run the supplied admin-customer-fix.sql in Supabase, then click Refresh.</td></tr>'}
@@ -1330,7 +1354,7 @@ async function loadAdminData(){
   $('adminLastUpdated').textContent='Updated: '+new Date().toLocaleString('en-IN');
 }
 
-const APPLICATION_STATUSES=['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'];
+const APPLICATION_STATUSES=['Application Submitted','Under Process','Successfully Completed','Declined','Rejected'];
 function normalizeApplicationStatus(status){const s=String(status||'').toLowerCase();if(s.includes('reject'))return 'Rejected';if(s.includes('declin'))return 'Declined';if(s.includes('complete')||s==='done')return 'Successfully Completed';if(s.includes('process'))return 'Under Process';return 'Application Submitted'}
 function safeAdminOrderSuffix(value){return String(value||'').replace(/[^A-Za-z0-9_-]/g,'')}
 async function adminServiceResultActions(path){
@@ -1371,12 +1395,13 @@ window.adminCustomerUpdateControls=adminCustomerUpdateControls;window.saveOrderC
 
 async function renderAdminApplications(){
  const body=$('adminApplicationsBody');if(!body)return;
- const q=($('applicationSearch')?.value||'').toLowerCase().trim(),st=$('applicationStatusFilter')?.value||'',from=$('applicationFromDate')?.value||'',to=$('applicationToDate')?.value||'';
- const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.phone,o.service].join(' ').toLowerCase();const d=o.created_at?new Date(o.created_at).toLocaleDateString('en-CA'):'';return (!q||text.includes(q))&&(!st||normalizeApplicationStatus(o.status)===st)&&(!from||d>=from)&&(!to||d<=to)}).sort((a,b)=>{const sa=normalizeApplicationStatus(a.status),sb=normalizeApplicationStatus(b.status);const done=['Successfully Completed','Rejected','Declined'];if(done.includes(sa)!==done.includes(sb))return done.includes(sa)?1:-1;return new Date(b.created_at||0)-new Date(a.created_at||0)});
+ renderAdminStatusTabs('adminApplications');
+ const q=($('applicationSearch')?.value||'').toLowerCase().trim(),from=$('applicationFromDate')?.value||'',to=$('applicationToDate')?.value||'',tabStatus=getAdminStatusFilter('adminApplications');
+ const rows=adminOrdersCache.filter(o=>!isPdfPrintOrder(o)&&normalizeApplicationStatus(o.status)===tabStatus).filter(o=>{const text=[o.order_id,o.customer_name,o.phone,o.service].join(' ').toLowerCase();const d=o.created_at?new Date(o.created_at).toLocaleDateString('en-CA'):'';return (!q||text.includes(q))&&(!from||d>=from)&&(!to||d<=to)}).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
  if(!rows.length){body.innerHTML='<tr><td colspan="10" class="admin-empty">No matching applications found.</td></tr>';return}
  body.innerHTML=await Promise.all(rows.map(async o=>{const status=normalizeApplicationStatus(o.status),tools=await adminCustomerUpdateControls(o,'application');return `<tr><td><b>${escapeHtml(o.order_id||'')}</b></td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.phone||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td><select class="admin-status-select" aria-label="Application status" onchange="updateApplicationStatus('${String(o.order_id||'').replace(/'/g,'&#39;')}',this.value)">${APPLICATION_STATUSES.map(x=>`<option ${x===status?'selected':''}>${x}</option>`).join('')}</select></td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td><td>${o.file_path?'<span class="admin-muted">PDF available in All Orders</span>':formatOrderRequirement(o.requirement||'—',true)}</td><td>${tools}</td></tr>`})).join('');
 }
-function resetApplicationFilters(){['applicationSearch','applicationStatusFilter','applicationFromDate','applicationToDate'].forEach(id=>{if($(id))$(id).value=''});renderAdminApplications()}
+function resetApplicationFilters(){['applicationSearch','applicationFromDate','applicationToDate'].forEach(id=>{if($(id))$(id).value=''});adminStatusTabState.adminApplications='Application Submitted';renderAdminApplications()}
 async function updateApplicationStatus(orderId,status,isAppointment=false){
  const msg=$('applicationAdminMessage');let reason='';
  if(status==='Rejected'||status==='Declined'){
@@ -1395,7 +1420,11 @@ async function updateApplicationStatus(orderId,status,isAppointment=false){
  const {error}=await supabaseClient.from('orders').update({status:savedStatus}).eq('order_id',orderId);
  if(error){if(msg)msg.textContent='Could not update status: '+error.message;alert('Could not update status: '+error.message);await loadAdminData();return}
  if(msg)msg.textContent=(isAppointment?'Appointment':'Order/application')+' status updated.';
+ const activeSection=document.querySelector('.admin-section.active')?.id||'';
+ const targetSection=isAppointment?'adminAppointments':(['adminApplications','adminOrders','adminPrintOrders'].includes(activeSection)?activeSection:'adminOrders');
+ adminStatusTabState[targetSection]=normalizeApplicationStatus(savedStatus);
  await loadAdminData();
+ if(targetSection==='adminAppointments'&&typeof window.renderPortalAppointments==='function')await window.renderPortalAppointments();
 }
 function renderAdminPayments(){const body=$('adminPaymentsBody');if(!body)return;const q=($('paymentSearch')?.value||'').toLowerCase().trim(),filter=$('paymentStatusFilter')?.value||'';const rows=adminOrdersCache.filter(o=>{const text=[o.order_id,o.customer_name,o.service,o.payment_method].join(' ').toLowerCase();const method=String(o.payment_method||'').toLowerCase(),status=String(o.status||'').toLowerCase();const paid=method==='upi'||method==='cod'||status.includes('confirm')||status.includes('paid');return (!q||text.includes(q))&&(!filter||(filter==='paid'&&paid)||(filter==='pending'&&!paid)||(filter==='failed'&&status.includes('failed'))||(filter==='refunded'&&status.includes('refund')))});body.innerHTML=rows.length?rows.map(o=>`<tr><td>${escapeHtml(o.order_id||'')}</td><td>${escapeHtml(o.customer_name||'')}</td><td>${escapeHtml(o.service||'')}</td><td>₹${Number(o.amount||0).toFixed(2)}</td><td>${escapeHtml(o.payment_method||'N/A')}</td><td>${escapeHtml(o.status||'Not recorded')}</td><td>${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</td></tr>`).join(''):'<tr><td colspan="7" class="admin-empty">No payment records match.</td></tr>'}
 
@@ -1429,9 +1458,11 @@ function printRequirementSummary(raw){
 }
 async function renderAdminPrintOrders(rows){
   const body=$('adminPrintOrdersBody');if(!body)return;
+  renderAdminStatusTabs('adminPrintOrders');
   const query=($('adminPrintSearch')?.value||'').toLowerCase().trim();
-  const all=(rows||[]).filter(o=>String(o.service||'').toLowerCase().includes('pdf print'));
-  const matching=all.filter(o=>[o.order_id,o.customer_name,o.phone,o.file_path,o.requirement].join(' ').toLowerCase().includes(query));
+  const all=(rows||[]).filter(isPdfPrintOrder);
+  const selected=all.filter(o=>normalizeApplicationStatus(o.status)===getAdminStatusFilter('adminPrintOrders'));
+  const matching=selected.filter(o=>[o.order_id,o.customer_name,o.phone,o.file_path,o.requirement].join(' ').toLowerCase().includes(query));
   const msg=$('adminPrintFileMessage');if(msg)msg.textContent=all.length?`${all.length} PDF Print order(s) found.`:'No PDF Print orders found yet.';
   if(!matching.length){body.innerHTML=`<tr><td colspan="10" class="admin-empty">${query?'No matching PDF Print orders.':'No PDF Print orders found. New orders will appear here after upload and submission.'}</td></tr>`;return;}
   body.innerHTML='<tr><td colspan="10" class="admin-empty">Loading uploaded PDF files…</td></tr>';
@@ -1446,10 +1477,12 @@ async function renderAdminPrintOrders(rows){
   body.innerHTML=rendered.join('');
 }
 async function renderAdminOrders(rows){
-  const body=$('adminOrdersBody');
-  if(!rows.length){body.innerHTML='<tr><td colspan="12" class="admin-empty">No orders or appointments yet.</td></tr>';return}
+  const body=$('adminOrdersBody');if(!body)return;
+  renderAdminStatusTabs('adminOrders');
+  const matching=(rows||[]).filter(o=>normalizeApplicationStatus(o.status)===getAdminStatusFilter('adminOrders'));
+  if(!matching.length){body.innerHTML='<tr><td colspan="12" class="admin-empty">No orders or appointments in this status.</td></tr>';return}
   body.innerHTML='<tr><td colspan="12" class="admin-empty">Loading order files...</td></tr>';
-  const rendered=await Promise.all(rows.map(async o=>{
+  const rendered=await Promise.all(matching.map(async o=>{
     const fileHtml=await adminPdfActions(o.file_path);
     const customerTools=await adminCustomerUpdateControls(o,'all');
     return `<tr>
@@ -1472,8 +1505,10 @@ async function renderAdminOrders(rows){
 
 async function renderAdminAppointments(rows){
   const body=$('adminAppointmentsBody');if(!body)return;
-  if(!rows.length){body.innerHTML='<tr><td colspan="8" class="admin-empty">No appointments yet.</td></tr>';return}
-  const html=await Promise.all(rows.map(async o=>{
+  renderAdminStatusTabs('adminAppointments');
+  const matching=(rows||[]).filter(o=>!isPdfPrintOrder(o)&&normalizeApplicationStatus(o.status)===getAdminStatusFilter('adminAppointments'));
+  if(!matching.length){body.innerHTML='<tr><td colspan="8" class="admin-empty">No appointments in this status.</td></tr>';return}
+  const html=await Promise.all(matching.map(async o=>{
     const tools=await adminCustomerUpdateControls(o,'appointment');
     const orderId=String(o.order_id||'').replace(/[^A-Za-z0-9_-]/g,'');
     return `<tr>
@@ -1657,7 +1692,7 @@ async function adminLogout(){
       <section id="adminApplications" class="admin-section">
         <div class="admin-card">
           <div class="section-head"><h2>📝 Application Management</h2><span>Update application status and review submitted details</span></div>
-          <div class="admin-filter-row"><input id="applicationSearch" placeholder="Search ID, name, mobile or service" oninput="renderAdminApplications()"><select id="applicationStatusFilter" onchange="renderAdminApplications()"><option value="">All statuses</option><option>Application Submitted</option><option>Under Process</option><option>Successfully Completed</option><option>Rejected</option><option>Declined</option></select><label>From <input type="date" id="applicationFromDate" onchange="renderAdminApplications()"></label><label>To <input type="date" id="applicationToDate" onchange="renderAdminApplications()"></label><button class="admin-btn" onclick="resetApplicationFilters()">Reset</button></div>
+          <div class="admin-filter-row"><input id="applicationSearch" placeholder="Search ID, name, mobile or service" oninput="renderAdminApplications()"><label>From <input type="date" id="applicationFromDate" onchange="renderAdminApplications()"></label><label>To <input type="date" id="applicationToDate" onchange="renderAdminApplications()"></label><button class="admin-btn" onclick="resetApplicationFilters()">Reset</button></div>
           <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Application ID</th><th>Customer</th><th>Mobile</th><th>Service</th><th>Amount</th><th>Payment</th><th>Application Status</th><th>Apply Date</th><th>Details / File</th><th>Customer Note / Result PDF</th></tr></thead><tbody id="adminApplicationsBody"></tbody></table></div>
           <p class="note" id="applicationAdminMessage">Status updates are saved to the existing orders table.</p>
         </div>
@@ -1748,6 +1783,9 @@ document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.nav a').forEach(function(link){
     link.addEventListener('click', closeMobileMenu);
   });
+  ['adminApplications','adminOrders','adminPrintOrders','adminAppointments'].forEach(renderAdminStatusTabs);
+  // Public announcement popup is allowed before login.
+  window.setTimeout(()=>{if(typeof window.loadPublicNotice==='function')window.loadPublicNotice(true);else if(typeof loadPublicNotice==='function')loadPublicNotice()},0);
 });
 window.addEventListener('resize', function(){
   if(window.innerWidth > 700) closeMobileMenu();
@@ -1975,10 +2013,10 @@ body.ac-view-admin #adminPage.show{display:block!important;visibility:visible!im
   </div>
 </div>
 
-<script src="js/portal-management.js"></script>
-<script src="js/public-site-fixed.js?v=20261019-viewfix4"></script>
+<script src="js/portal-management.js?v=20261019-support-notice-status6"></script>
+<script src="js/public-site-fixed.js?v=20261019-support-notice-status6"></script>
 
-<script src="js/support-messaging.js?v=20261019-viewfix4"></script>
+<script src="js/support-messaging.js?v=20261019-support-notice-status6"></script>
 
 <style id="ac-final-portal-view-hard-override-v3">
 /* Final exclusive view state. Use both DOM state and inline styles so legacy CSS cannot stack pages. */

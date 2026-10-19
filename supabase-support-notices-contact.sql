@@ -15,6 +15,26 @@ alter table public.site_notices add column if not exists content text not null d
 alter table public.site_notices add column if not exists is_active boolean not null default true;
 alter table public.site_notices add column if not exists updated_at timestamptz not null default now();
 alter table public.site_notices add column if not exists created_by uuid references auth.users(id);
+-- Compatibility with earlier notice table versions that stored text/image separately.
+alter table public.site_notices add column if not exists message text;
+alter table public.site_notices add column if not exists body text;
+alter table public.site_notices add column if not exists image_url text;
+-- Bring old notice text into the current rich-content field so the popup can show it.
+update public.site_notices
+set content = concat_ws(E'\n',
+  coalesce(nullif(btrim(content), ''), nullif(btrim(message), ''), nullif(btrim(body), ''), ''),
+  case
+    when nullif(btrim(image_url), '') is not null
+      and lower(btrim(image_url)) like 'https://tlsrvyqyhonrlcdmlzo.supabase.co/storage/v1/object/public/notice-images/%'
+      and coalesce(content, '') not ilike '%<img%'
+    then '<p><img src="' || replace(btrim(image_url), '"', '&quot;') || '" alt="Notice image"></p>'
+    else null
+  end
+)
+where (coalesce(nullif(btrim(content), ''), '') = '' and coalesce(nullif(btrim(message), ''), nullif(btrim(body), '')) is not null)
+   or (nullif(btrim(image_url), '') is not null
+      and lower(btrim(image_url)) like 'https://tlsrvyqyhonrlcdmlzo.supabase.co/storage/v1/object/public/notice-images/%'
+      and coalesce(content, '') not ilike '%<img%');
 alter table public.site_notices enable row level security;
 
 drop policy if exists "Public can read active notices" on public.site_notices;
@@ -80,6 +100,9 @@ create index if not exists support_conversations_updated_idx on public.support_c
 create index if not exists support_messages_conversation_idx on public.support_messages(conversation_id, created_at asc);
 alter table public.support_conversations enable row level security;
 alter table public.support_messages enable row level security;
+-- Keep RLS enabled for API callers, but allow the trusted SECURITY DEFINER RPC to bypass it as its postgres owner.
+alter table public.support_conversations no force row level security;
+alter table public.support_messages no force row level security;
 
 drop policy if exists "support_conversations_read_owner_admin" on public.support_conversations;
 drop policy if exists "support_conversations_customer_create" on public.support_conversations;
@@ -113,7 +136,7 @@ with check (
 );
 
 create or replace function public.touch_support_conversation_updated_at()
-returns trigger language plpgsql security definer set search_path = public
+returns trigger language plpgsql security definer set search_path = public set row_security = off
 as $$
 begin
   update public.support_conversations set updated_at = now() where id = new.conversation_id;
@@ -124,6 +147,7 @@ drop trigger if exists support_messages_touch_conversation on public.support_mes
 create trigger support_messages_touch_conversation
 after insert on public.support_messages
 for each row execute function public.touch_support_conversation_updated_at();
+alter function public.touch_support_conversation_updated_at() owner to postgres;
 
 -- Contact submissions are logged by the Edge Function using the service role; never expose this table to anon clients.
 create table if not exists public.contact_messages (
@@ -143,3 +167,140 @@ drop policy if exists "contact_messages_admin_read" on public.contact_messages;
 create policy "contact_messages_admin_read" on public.contact_messages
 for select to authenticated
 using (lower(coalesce(auth.jwt() ->> 'email','')) = 'anowarali2707@outlook.com');
+
+-- Hardened, canonical admin identity check and message send RPC.
+-- This replaces earlier email-from-JWT-only checks and avoids client-side RLS failures
+-- when the JWT email claim is stale while the canonical auth.users email is correct.
+create or replace function public.is_anowar_admin_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists (
+    select 1
+    from auth.users u
+    where u.id = auth.uid()
+      and lower(coalesce(u.email, '')) = 'anowarali2707@outlook.com'
+  );
+$function$;
+alter function public.is_anowar_admin_user() owner to postgres;
+revoke all on function public.is_anowar_admin_user() from public, anon;
+grant execute on function public.is_anowar_admin_user() to authenticated;
+
+-- Rebuild conversation/message read and update policies to use the canonical identity check.
+drop policy if exists "support_conversations_read_owner_admin" on public.support_conversations;
+create policy "support_conversations_read_owner_admin"
+on public.support_conversations for select to authenticated
+using (customer_id = auth.uid() or public.is_anowar_admin_user());
+
+drop policy if exists "support_conversations_customer_create" on public.support_conversations;
+create policy "support_conversations_customer_create"
+on public.support_conversations for insert to authenticated
+with check (customer_id = auth.uid());
+
+drop policy if exists "support_conversations_admin_update" on public.support_conversations;
+create policy "support_conversations_admin_update"
+on public.support_conversations for update to authenticated
+using (public.is_anowar_admin_user())
+with check (public.is_anowar_admin_user());
+
+drop policy if exists "support_messages_read_owner_admin" on public.support_messages;
+create policy "support_messages_read_owner_admin"
+on public.support_messages for select to authenticated
+using (exists (
+  select 1 from public.support_conversations c
+  where c.id = support_messages.conversation_id
+    and (c.customer_id = auth.uid() or public.is_anowar_admin_user())
+));
+
+drop policy if exists "support_messages_insert_sender" on public.support_messages;
+create policy "support_messages_insert_sender"
+on public.support_messages for insert to authenticated
+with check (
+  sender_id = auth.uid()
+  and (
+    (sender_role = 'customer' and exists (
+      select 1 from public.support_conversations c
+      where c.id = support_messages.conversation_id and c.customer_id = auth.uid()
+    ))
+    or (sender_role = 'admin' and public.is_anowar_admin_user())
+  )
+);
+
+-- Send through this RPC instead of inserting sender_role from untrusted browser fields.
+-- The function derives the role from auth.users and the conversation owner on the server.
+create or replace function public.send_support_message(
+  p_conversation_id uuid,
+  p_body text
+)
+returns public.support_messages
+language plpgsql
+security definer
+set search_path = ''
+set row_security = off
+as $function$
+declare
+  v_user_id uuid := auth.uid();
+  v_email text;
+  v_meta_name text;
+  v_conversation public.support_conversations%rowtype;
+  v_role text;
+  v_sender_name text;
+  v_message public.support_messages%rowtype;
+begin
+  if v_user_id is null then
+    raise exception 'Sign in is required to send a support message.';
+  end if;
+  if p_body is null or length(trim(p_body)) < 1 or length(p_body) > 4000 then
+    raise exception 'Message must contain 1 to 4000 characters.';
+  end if;
+
+  select lower(coalesce(u.email, '')), coalesce(u.raw_user_meta_data ->> 'name', u.raw_user_meta_data ->> 'full_name', '')
+    into v_email, v_meta_name
+    from auth.users u where u.id = v_user_id;
+  if not found then
+    raise exception 'Authenticated user was not found.';
+  end if;
+
+  select * into v_conversation from public.support_conversations c where c.id = p_conversation_id;
+  if not found then
+    raise exception 'Conversation was not found.';
+  end if;
+
+  if v_email = 'anowarali2707@outlook.com' then
+    v_role := 'admin';
+    v_sender_name := 'Anowar Creation · Admin';
+  elsif v_conversation.customer_id = v_user_id then
+    v_role := 'customer';
+    v_sender_name := coalesce(nullif(v_conversation.customer_name, ''), nullif(v_meta_name, ''), 'Customer');
+  else
+    raise exception 'You do not have permission to send messages in this conversation.';
+  end if;
+
+  insert into public.support_messages (conversation_id, sender_id, sender_role, sender_name, body)
+  values (p_conversation_id, v_user_id, v_role, v_sender_name, trim(p_body))
+  returning * into v_message;
+
+  update public.support_conversations
+     set updated_at = now(), status = case when v_role = 'customer' then 'open' else status end
+   where id = p_conversation_id;
+
+  return v_message;
+end;
+$function$;
+alter function public.send_support_message(uuid, text) owner to postgres;
+revoke all on function public.send_support_message(uuid, text) from public, anon;
+grant execute on function public.send_support_message(uuid, text) to authenticated;
+
+-- Explicit grants for the hosted Supabase REST API (RLS still controls which rows are visible).
+grant usage on schema public to anon, authenticated;
+grant select on public.site_notices to anon, authenticated;
+grant insert, update, delete on public.site_notices to authenticated;
+grant select, insert, update on public.support_conversations to authenticated;
+grant select on public.support_messages to authenticated;
+grant select on public.contact_messages to authenticated;
+-- All message writes should use the SECURITY DEFINER RPC above, which derives sender_role server-side.
+revoke insert on public.support_messages from anon, authenticated;
+grant execute on function public.send_support_message(uuid, text) to authenticated;

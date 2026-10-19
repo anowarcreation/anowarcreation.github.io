@@ -172,17 +172,28 @@
   async function renderPortalAppointments() {
     const body=$('serviceAppointmentsBody')||$('adminAppointmentsBody');if(!body)return;
     const orders=window.AdminOrders||(Array.isArray(window.adminOrdersCache)?window.adminOrdersCache:[]);
+    const standalone=body.id==='serviceAppointmentsBody';
+    const statusKey=standalone?'appointments':'adminAppointments';
+    if(typeof window.renderAdminStatusTabs==='function')window.renderAdminStatusTabs(statusKey);
+    const statusFilter=typeof window.getAdminStatusFilter==='function'?window.getAdminStatusFilter(statusKey):'Application Submitted';
     const select=appointmentFilterElement(),filter=select?.value||'';
-    const rows=orders.filter(o=>{const isPrint=String(o.service||'').toLowerCase().includes('pdf print');if(!filter)return !isPrint;return (priceForOrderName(o.service)?.service_key===filter||String(o.service||'').toLowerCase()===String(serviceRows.find(s=>s.service_key===filter)?.name||'').toLowerCase());});
-    if(!rows.length){body.innerHTML=`<tr><td colspan="8" class="${body.id==='serviceAppointmentsBody'?'':'admin-empty'}">No appointments found for this service.</td></tr>`;return}
+    const matchesService=o=>{
+      if(!filter)return true;
+      const matched=priceForOrderName(o.service);
+      const selected=serviceRows.find(s=>String(s.service_key)===String(filter));
+      return String(matched?.service_key||'')===String(filter)||String(o.service||'').toLowerCase()===String(selected?.name||'').toLowerCase();
+    };
+    const normalized=value=>{const s=String(value||'').toLowerCase();if(s.includes('reject'))return 'Rejected';if(s.includes('declin'))return 'Declined';if(s.includes('complete')||s==='done')return 'Successfully Completed';if(s.includes('process'))return 'Under Process';return 'Application Submitted'};
+    const rows=orders.filter(o=>!String(o.service||'').toLowerCase().includes('pdf print')&&matchesService(o)&&normalized(o.status)===statusFilter);
+    if(!rows.length){body.innerHTML=`<tr><td colspan="8" class="${standalone?'':'admin-empty'}">No appointments found for this service in “${esc(statusFilter)}”.</td></tr>`;return}
     body.innerHTML='<tr><td colspan="8">Loading appointment updates…</td></tr>';
     const rendered=await Promise.all(rows.map(async o=>{
       const id=String(o.order_id||o.id||'').replace(/[^a-zA-Z0-9_-]/g,'');
       const detail=typeof window.formatRequirement==='function'?window.formatRequirement(o.requirement||'',true):esc(o.requirement||'No details');
-      const status=String(o.status||'Application Submitted');
-      const statusOptions=['Application Submitted','Under Process','Successfully Completed','Rejected','Declined'];
-      const changeHandler=body.id==='serviceAppointmentsBody'?'updateStatus':'updateApplicationStatus';
-      const selectHTML=`<select class="admin-status-select" onchange="${changeHandler}('${id}',this.value${changeHandler==='updateApplicationStatus'?',true':''})">${statusOptions.map(v=>`<option ${v.toLowerCase()===status.toLowerCase()?'selected':''}>${v}</option>`).join('')}</select>`;
+      const status=normalized(o.status);
+      const statusOptions=['Application Submitted','Under Process','Successfully Completed','Declined','Rejected'];
+      const changeHandler=standalone?'updateStatus':'updateApplicationStatus';
+      const selectHTML=`<select class="admin-status-select" onchange="${changeHandler}('${id}',this.value${changeHandler==='updateApplicationStatus'?',true':''})">${statusOptions.map(v=>`<option ${v===status?'selected':''}>${v}</option>`).join('')}</select>`;
       const tools=typeof window.adminCustomerUpdateControls==='function'?await window.adminCustomerUpdateControls(o,body.id==='serviceAppointmentsBody'?'page-appointment':'appointment'):'';
       const date=o.created_at?new Date(o.created_at).toLocaleString('en-IN'):'';
       if(body.id==='serviceAppointmentsBody')return `<tr><td><b>${esc(o.order_id||o.id||'')}</b></td><td>${esc(o.customer_name||o.name||'—')}</td><td>${esc(o.phone||'—')}</td><td>${esc(o.service||'—')}</td><td>${detail}</td><td>${selectHTML}</td><td>${esc(date)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button>${tools}</td></tr>`;
@@ -229,11 +240,23 @@
     if(typeof window.openInfo==='function')window.openInfo('💰 Service Rates',msg);else alert(msg);
   };
 
+  function noticeContentFromRow(row){
+    if(!row)return '';
+    let content=[row.content,row.message,row.body,row.description].map(v=>String(v||'').trim()).find(Boolean)||'';
+    const image=String(row.image_url||row.image||'').trim();
+    if(image && !/<img\b/i.test(content)){
+      const trusted=(String(window.SUPABASE_URL||'https://tlsrvyqyhonrlcdmlzo.supabase.co')+'/storage/v1/object/public/notice-images/').toLowerCase();
+      if(image.toLowerCase().startsWith(trusted)) content += `\n<p><img src="${esc(image)}" alt="Notice image"></p>`;
+    }
+    return content;
+  }
   function safeNoticeHtml(html){
-    const box=document.createElement('div');box.innerHTML=String(html||'');
+    const source=String(html||'');
+    const box=document.createElement('div');box.innerHTML=source;
     box.querySelectorAll('script,style,iframe,object,embed,form,video,audio,svg,math').forEach(el=>el.remove());
-    const base=(typeof window.SUPABASE_URL==='string'?window.SUPABASE_URL:'https://tlsrvyqyhonnrlcdmlzo.supabase.co').toLowerCase()+'/storage/v1/object/public/notice-images/';
-    box.querySelectorAll('*').forEach(el=>{[...el.attributes].forEach(a=>{const n=a.name.toLowerCase(),v=String(a.value||'').trim();const low=v.toLowerCase();if(n.startsWith('on')||n==='srcdoc'||n==='formaction'||(n==='href'&&(low.startsWith('javascript:')||low.startsWith('data:'))))el.removeAttribute(a.name);if(n==='src'&&!(low.startsWith('data:image/png')||low.startsWith('data:image/jpeg')||low.startsWith('data:image/webp')||low.startsWith(base)))el.removeAttribute(a.name);if(n==='style'&&/url\s*\(|expression\s*\(/i.test(v))el.removeAttribute(a.name)});if(el.tagName==='IMG'){const src=(el.getAttribute('src')||'').toLowerCase();if(!(src.startsWith('data:image/png')||src.startsWith('data:image/jpeg')||src.startsWith('data:image/webp')||src.startsWith(base)))el.remove()}});return box.innerHTML;
+    const base=(typeof window.SUPABASE_URL==='string'?window.SUPABASE_URL:'https://tlsrvyqyhonrlcdmlzo.supabase.co').toLowerCase()+'/storage/v1/object/public/notice-images/';
+    box.querySelectorAll('*').forEach(el=>{[...el.attributes].forEach(a=>{const n=a.name.toLowerCase(),v=String(a.value||'').trim();const low=v.toLowerCase();if(n.startsWith('on')||n==='srcdoc'||n==='formaction'||(n==='href'&&(low.startsWith('javascript:')||low.startsWith('data:'))))el.removeAttribute(a.name);if(n==='src'&&!(low.startsWith('data:image/png')||low.startsWith('data:image/jpeg')||low.startsWith('data:image/webp')||low.startsWith(base)))el.removeAttribute(a.name);if(n==='style'&&/url\s*\(|expression\s*\(/i.test(v))el.removeAttribute(a.name)});if(el.tagName==='IMG'){const src=(el.getAttribute('src')||'').toLowerCase();if(!(src.startsWith('data:image/png')||src.startsWith('data:image/jpeg')||src.startsWith('data:image/webp')||src.startsWith(base)))el.remove()}});
+    const cleaned=box.innerHTML.trim();if(!cleaned&&String(html||'').trim()&&!/<[a-z!/][^>]*>/i.test(String(html)))return `<p>${esc(String(html)).replace(/\r?\n/g,'<br>')}</p>`;return cleaned;
   }
   function noticeEls(){return {title:$('portalNoticeTitle')||$('noticeTitle'),content:$('portalNoticeContent')||$('noticeEditor'),message:$('portalNoticeMessage')||$('noticeAdminMessage'),current:$('portalNoticeCurrent')||$('noticeCurrentPreview')};}
   function noticeContent(el){if(!el)return '';if(el.isContentEditable||el.id==='noticeEditor')return safeNoticeHtml(el.innerHTML);return String(el.value||'').trim().split(/\r?\n/).map(line=>line.trim()?`<p>${esc(line)}</p>`:'').join('')}
@@ -262,8 +285,8 @@
     const {data,error}=await c.from('site_notices').select('*').order('updated_at',{ascending:false}).limit(10);
     if(error){el.message.textContent='Notice Board database/policy error: '+error.message+'. Run supabase-support-notices-contact.sql in Supabase SQL Editor.';el.current&&(el.current.textContent='Notice setup required.');return}
     currentNotice=(data||[]).find(n=>n.is_active)||null;
-    if(currentNotice){el.title.value=currentNotice.title||'';if(el.content.isContentEditable||el.content.id==='noticeEditor')el.content.innerHTML=safeNoticeHtml(currentNotice.content||'');else el.content.value=String(currentNotice.content||'').replace(/<\/(p|div|li)>/gi,'\n').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<[^>]*>/g,'').trim();
-      if(el.current)el.current.innerHTML=`<h4>${esc(currentNotice.title||'Notice')}</h4><div class="notice-admin-preview-body">${safeNoticeHtml(currentNotice.content||'')}</div><small>Updated ${currentNotice.updated_at?new Date(currentNotice.updated_at).toLocaleString('en-IN'):''}</small>`;
+    if(currentNotice){el.title.value=currentNotice.title||'';if(el.content.isContentEditable||el.content.id==='noticeEditor')el.content.innerHTML=safeNoticeHtml(noticeContentFromRow(currentNotice));else el.content.value=String(noticeContentFromRow(currentNotice)).replace(/<\/(p|div|li)>/gi,'\n').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<[^>]*>/g,'').trim();
+      if(el.current)el.current.innerHTML=`<h4>${esc(currentNotice.title||'Notice')}</h4><div class="notice-admin-preview-body">${safeNoticeHtml(noticeContentFromRow(currentNotice))}</div><small>Updated ${currentNotice.updated_at?new Date(currentNotice.updated_at).toLocaleString('en-IN'):''}</small>`;
       if(showMessage)el.message.textContent='Active notice loaded. Publishing updates the customer popup.';
     }else{if(el.title)el.title.value='';if(el.content.isContentEditable||el.content.id==='noticeEditor')el.content.innerHTML='';else el.content.value='';if(el.current)el.current.innerHTML='<p>No active notice.</p>';if(showMessage)el.message.textContent='No active notice. Write one above and publish it.'}
   }
@@ -276,7 +299,7 @@
     const {data:userResult}=await c.auth.getUser();if(!userResult?.user||String(userResult.user.email||'').toLowerCase()!=='anowarali2707@outlook.com'){if(el.message)el.message.textContent='Please sign in with the admin account to publish notices.';return}
     const {error:deactivateError}=await c.from('site_notices').update({is_active:false,updated_at:new Date().toISOString()}).eq('is_active',true);
     if(deactivateError){if(el.message)el.message.textContent='Could not update active notice: '+deactivateError.message;return}
-    const payload={title,content,is_active:true,updated_at:new Date().toISOString(),created_by:userResult.user.id};
+    const payload={title,content,message:content,body:content,is_active:true,updated_at:new Date().toISOString(),created_by:userResult.user.id};
     const result=currentNotice?.id?await c.from('site_notices').update(payload).eq('id',currentNotice.id).select().single():await c.from('site_notices').insert(payload).select().single();
     if(result.error){if(el.message)el.message.textContent='Could not publish notice: '+result.error.message;return}
     currentNotice=result.data;if(el.current)el.current.innerHTML=`<h4>${esc(title)}</h4><div class="notice-admin-preview-body">${safeNoticeHtml(content)}</div><small>Published just now.</small>`;
@@ -285,21 +308,23 @@
   async function deactivatePortalNotice(){const el=noticeEls();const c=client();if(!c)return;if(!currentNotice?.id){await loadPortalNoticeAdmin();if(el.message)el.message.textContent='No active notice to remove.';return}const {error}=await c.from('site_notices').update({is_active:false,updated_at:new Date().toISOString()}).eq('id',currentNotice.id);if(error){if(el.message)el.message.textContent='Could not remove notice: '+error.message;return}currentNotice=null;if(el.title)el.title.value='';if(el.content){if(el.content.id==='noticeEditor')el.content.innerHTML='';else el.content.value=''}if(el.current)el.current.innerHTML='<p>No active notice.</p>';if(el.message)el.message.textContent='Active notice removed.';const pop=$('customerNoticePopup');if(pop)pop.hidden=true}
   async function loadCustomerNotice(forceShow=false){
     const popup=$('customerNoticePopup');if(!popup)return;
-    let loggedIn=false;try{loggedIn=!!(typeof currentUser!=='undefined'&&currentUser)}catch(_){}
-    if(!loggedIn){popup.hidden=true;return}
+    // Notices are public announcements: show them on the public Home Page before login too.
     const c=client();if(!c)return;
-    const {data,error}=await c.from('site_notices').select('id,title,content,updated_at').eq('is_active',true).order('updated_at',{ascending:false}).limit(1).maybeSingle();
+    const {data,error}=await c.from('site_notices').select('*').eq('is_active',true).order('updated_at',{ascending:false}).limit(1).maybeSingle();
     if(error||!data){popup.hidden=true;return}
-    const token=String(data.id)+':'+String(data.updated_at||'');let dismissed='';try{dismissed=localStorage.getItem('ac-dismissed-notice')||''}catch(_){}
+    const token=String(data.id)+':'+String(data.updated_at||'');let dismissed='';try{dismissed=sessionStorage.getItem('ac-dismissed-notice-session')||''}catch(_){}
     if(!forceShow&&dismissed===token){popup.hidden=true;return}
-    $('customerNoticeTitle').textContent=data.title||'Notice';$('customerNoticeContent').innerHTML=safeNoticeHtml(data.content||'');popup.dataset.noticeToken=token;popup.hidden=false;
+    const title=$('customerNoticeTitle'),content=$('customerNoticeContent');
+    if(title)title.textContent=data.title||'Notice';
+    if(content)content.innerHTML=safeNoticeHtml(noticeContentFromRow(data));
+    popup.dataset.noticeToken=token;popup.hidden=false;
   }
   function startNoticeRefresh(){
     if(noticeRealtimeStarted)return;noticeRealtimeStarted=true;const c=client();if(!c)return;
     try{c.channel('portal-notice-live').on('postgres_changes',{event:'*',schema:'public',table:'site_notices'},()=>loadCustomerNotice(true)).subscribe();c.channel('portal-services-live').on('postgres_changes',{event:'*',schema:'public',table:'portal_services'},()=>refreshPortalServices()).subscribe()}catch(_){/* periodic refresh below is the fallback */}
     window.setInterval(()=>loadCustomerNotice(false),45000);
   }
-  function dismissPortalNotice(){const popup=$('customerNoticePopup');if(!popup)return;try{localStorage.setItem('ac-dismissed-notice',popup.dataset.noticeToken||'')}catch(_){}popup.hidden=true}
+  function dismissPortalNotice(){const popup=$('customerNoticePopup');if(!popup)return;try{sessionStorage.setItem('ac-dismissed-notice-session',popup.dataset.noticeToken||'')}catch(_){}popup.hidden=true}
 
   // Public globals used by buttons in both admin panels.
   window.loadPortalManagement=refreshPortalServices;window.refreshPortalManagementUI=renderManagement;window.refreshPortalServices=refreshPortalServices;
@@ -318,6 +343,6 @@
     loadPortalNoticeAdmin(false);
     if($('dashboardNotice')?.closest('.ac-dashboard-panel'))$('dashboardNotice').closest('.ac-dashboard-panel').style.display='none';
     startNoticeRefresh();
-    const c=client();if(c)c.auth.getSession().then(({data})=>{if(data?.session){loadCustomerNotice(true);refreshPortalServices()} });
+    const c=client();if(c){loadCustomerNotice(true);c.auth.getSession().then(({data})=>{if(data?.session){refreshPortalServices()} });}
   });
 })();

@@ -5,8 +5,8 @@ const APPLICATION_STATUSES = [
   'Application Submitted',
   'Under Process',
   'Successfully Completed',
-  'Rejected',
-  'Declined'
+  'Declined',
+  'Rejected'
 ];
 
 let orders = [];
@@ -57,6 +57,69 @@ function safeOrderId(value) {
   // before placing an ID in an inline handler attribute.
   return String(value ?? '').replace(/[^A-Za-z0-9_-]/g, '');
 }
+
+// Status-based queues in the standalone Admin Portal. Records move between queues
+// automatically after a successful status change.
+const ADMIN_STATUS_TABS = ['Application Submitted', 'Under Process', 'Successfully Completed', 'Declined', 'Rejected'];
+const adminStatusTabState = {
+  orders: 'Application Submitted', applications: 'Application Submitted', front: 'Application Submitted',
+  pan: 'Application Submitted', voter: 'Application Submitted', scholarship: 'Application Submitted',
+  dlrc: 'Application Submitted', print: 'Application Submitted', appointments: 'Application Submitted'
+};
+function adminIsPrintOrder(order) { return String(order?.service || '').toLowerCase().includes('pdf print'); }
+function adminServiceOrders(sectionId) {
+  const all = Array.isArray(orders) ? orders : [];
+  if (sectionId === 'orders') return all;
+  if (sectionId === 'applications' || sectionId === 'appointments') return all.filter(o => !adminIsPrintOrder(o));
+  if (sectionId === 'front') return all.filter(o => /front|assignment|project report/i.test(String(o.service || '')));
+  if (sectionId === 'pan') return all.filter(o => /pan/i.test(String(o.service || '')));
+  if (sectionId === 'voter') return all.filter(o => /voter|epic/i.test(String(o.service || '')));
+  if (sectionId === 'scholarship') return all.filter(o => /scholarship|svmcm|nsp|aikyashree/i.test(String(o.service || '')));
+  if (sectionId === 'dlrc') return all.filter(o => /driving licence|driving license|\bdl\b|\brc\b|rc pdf|vehicle registration/i.test(String(o.service || '')));
+  if (sectionId === 'print') return all.filter(adminIsPrintOrder);
+  return [];
+}
+function ensureAdminStatusTabHost(sectionId) {
+  const section = $(sectionId); if (!section) return null;
+  let host = section.querySelector('.admin-status-tabs'); if (host) return host;
+  const panel = section.querySelector('.panel') || section;
+  host = document.createElement('div'); host.className = 'admin-status-tabs'; host.id = `status-tabs-${sectionId}`;
+  host.setAttribute('role', 'group'); host.setAttribute('aria-label', 'Filter by application status');
+  const tableWrap = panel.querySelector('.table-wrap');
+  if (tableWrap?.parentNode) tableWrap.parentNode.insertBefore(host, tableWrap);
+  else panel.appendChild(host);
+  return host;
+}
+function getAdminStatusFilter(sectionId) { return adminStatusTabState[sectionId] || 'Application Submitted'; }
+function renderAdminStatusTabs(sectionId) {
+  const host = ensureAdminStatusTabHost(sectionId); if (!host) return;
+  let rows = adminServiceOrders(sectionId);
+  if (sectionId === 'appointments') {
+    const selectedService = $('serviceAppointmentFilter')?.value || '';
+    if (selectedService) {
+      const svc = (window.PortalServices || []).find(x => String(x.service_key) === String(selectedService));
+      rows = rows.filter(o => (window.getPortalServiceForOrder?.(o.service)?.service_key === selectedService) || String(o.service || '').toLowerCase() === String(svc?.name || '').toLowerCase());
+    }
+  }
+  const selected = getAdminStatusFilter(sectionId);
+  host.innerHTML = ADMIN_STATUS_TABS.map(status => {
+    const count = rows.filter(o => normalizedStatus(o.status) === status).length;
+    return `<button type="button" class="admin-status-tab ${selected === status ? 'active' : ''}" aria-pressed="${selected === status}" onclick="selectAdminStatusTab('${sectionId}','${status}')"><span>${esc(status)}</span><b>${count}</b></button>`;
+  }).join('');
+}
+function selectAdminStatusTab(sectionId, status) {
+  if (!ADMIN_STATUS_TABS.includes(status)) return;
+  adminStatusTabState[sectionId] = status; renderAdminStatusTabs(sectionId);
+  if (sectionId === 'orders') return renderOrders();
+  if (sectionId === 'applications') return renderApplications();
+  if (sectionId === 'front') return renderFront();
+  if (sectionId === 'print') return renderPrintOrders();
+  if (sectionId === 'appointments') return window.renderPortalAppointments?.();
+  if (['pan','voter','scholarship','dlrc'].includes(sectionId)) return renderServiceOrders(sectionId);
+}
+window.getAdminStatusFilter = getAdminStatusFilter;
+window.renderAdminStatusTabs = renderAdminStatusTabs;
+window.selectAdminStatusTab = selectAdminStatusTab;
 
 const pdfFileLinkCache = new Map();
 async function getPdfFileLinks(filePath) {
@@ -140,9 +203,10 @@ function printDetails(raw) {
 async function renderPrintOrders() {
   const body = $('printOrdersBody');
   if (!body) return;
+  renderAdminStatusTabs('print');
   const query = ($('printOrderSearch')?.value || '').toLowerCase().trim();
-  const printOrders = orders.filter(order => String(order.service || '').toLowerCase().includes('pdf print'));
-  const matching = printOrders.filter(order => [order.order_id, order.customer_name, order.phone, order.requirement, order.file_path].join(' ').toLowerCase().includes(query));
+  const printOrders = adminServiceOrders('print');
+  const matching = printOrders.filter(order => normalizedStatus(order.status) === getAdminStatusFilter('print') && [order.order_id, order.customer_name, order.phone, order.requirement, order.file_path].join(' ').toLowerCase().includes(query));
   const message = $('printOrdersMessage');
   if (message) message.textContent = `${printOrders.length} PDF Print order(s) found.`;
   if (!matching.length) {
@@ -228,6 +292,8 @@ async function load() {
   renderApplications();
   renderPayments();
   renderFront();
+  ['pan','voter','scholarship','dlrc'].forEach(renderServiceOrders);
+  ['orders','applications','front','pan','voter','scholarship','dlrc','print','appointments'].forEach(renderAdminStatusTabs);
   if (window.renderPortalAppointments) window.renderPortalAppointments();
   if (window.refreshPortalManagementUI) window.refreshPortalManagementUI();
 }
@@ -257,8 +323,9 @@ async function renderOrders() {
     body.innerHTML = `<tr><td colspan="8">Could not load orders: ${esc(ordersLoadError.message || 'Database access denied')}. Check the admin orders SELECT policy.</td></tr>`;
     return;
   }
+  renderAdminStatusTabs('orders');
   const query = ($('orderSearch')?.value || '').toLowerCase().trim();
-  const matching = orders.filter(order => [order.order_id, order.customer_name, order.phone, order.service, order.requirement]
+  const matching = orders.filter(order => normalizedStatus(order.status) === getAdminStatusFilter('orders') && [order.order_id, order.customer_name, order.phone, order.service, order.requirement]
     .join(' ').toLowerCase().includes(query));
   body.innerHTML = matching.length ? (await Promise.all(matching.map(async order => {
     const id = safeOrderId(order.order_id);
@@ -305,7 +372,8 @@ async function renderApplications() {
     body.innerHTML = `<tr><td colspan="6">Could not load applications: ${esc(ordersLoadError.message || 'Database access denied')}.</td></tr>`;
     return;
   }
-  const applications = orders.filter(order => !String(order.service || '').toLowerCase().includes('pdf print'));
+  renderAdminStatusTabs('applications');
+  const applications = adminServiceOrders('applications').filter(order => normalizedStatus(order.status) === getAdminStatusFilter('applications'));
   body.innerHTML = applications.length ? (await Promise.all(applications.map(async order => {
     const id = safeOrderId(order.order_id);
     const tools = await adminCustomerUpdateControls(order, 'page-applications');
@@ -333,13 +401,30 @@ function renderPayments() {
 async function renderFront() {
   const body = $('frontBody');
   if (!body) return;
-  const frontOrders = orders.filter(order => /front|assignment|project report/i.test(String(order.service || '')));
+  renderAdminStatusTabs('front');
+  const frontOrders = adminServiceOrders('front').filter(order => normalizedStatus(order.status) === getAdminStatusFilter('front'));
   body.innerHTML = frontOrders.length ? (await Promise.all(frontOrders.map(async order => {
     const id = safeOrderId(order.order_id), tools = await adminCustomerUpdateControls(order, 'page-front');
     return `<tr><td>${esc(order.order_id || '')}</td><td>${esc(order.customer_name || '')}</td><td>${esc(order.service || '')}</td>
       <td>${formatRequirement(order.requirement || '', true)}</td><td>${statusSelect(id, order.status)}</td><td><button type="button" onclick="viewOrder('${id}')">View</button>${tools}</td></tr>`;
   }))).join('') : '<tr><td colspan="6">No Front Page Maker orders.</td></tr>';
 }
+
+async function renderServiceOrders(sectionId) {
+  const bodyId = { pan: 'panOrdersBody', voter: 'voterOrdersBody', scholarship: 'scholarshipOrdersBody', dlrc: 'dlrcOrdersBody' }[sectionId];
+  const body = $(bodyId); if (!body) return;
+  renderAdminStatusTabs(sectionId);
+  const query = ($(`${sectionId}Search`)?.value || '').toLowerCase().trim();
+  const matching = adminServiceOrders(sectionId).filter(order => normalizedStatus(order.status) === getAdminStatusFilter(sectionId))
+    .filter(order => [order.order_id, order.customer_name, order.phone, order.service, order.requirement].join(' ').toLowerCase().includes(query));
+  if (!matching.length) { body.innerHTML = '<tr><td colspan="9">No requests in this status.</td></tr>'; return; }
+  body.innerHTML = await Promise.all(matching.map(async order => {
+    const id = safeOrderId(order.order_id);
+    const tools = await adminCustomerUpdateControls(order, `service-${sectionId}`);
+    return `<tr><td><b>${esc(order.order_id || '')}</b></td><td>${esc(order.customer_name || '—')}</td><td>${esc(order.phone || '—')}</td><td>${esc(order.service || '—')}</td><td>${formatRequirement(order.requirement || '', true)}</td><td>₹${(Number(order.amount) || 0).toFixed(2)}</td><td>${statusSelect(id, order.status)}</td><td>${order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : ''}</td><td><button type="button" onclick="viewOrder('${id}')">View</button>${tools}</td></tr>`;
+  })).then(rows => rows.join(''));
+}
+window.renderServiceOrders = renderServiceOrders;
 
 async function updateStatus(orderId, requestedStatus) {
   const id = safeOrderId(orderId);
@@ -371,6 +456,8 @@ async function updateStatus(orderId, requestedStatus) {
     await load();
     return;
   }
+  const activeSection = document.querySelector('.section.active')?.id || '';
+  if (Object.prototype.hasOwnProperty.call(adminStatusTabState, activeSection)) adminStatusTabState[activeSection] = normalizedStatus(savedStatus);
   await load();
 }
 

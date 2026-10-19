@@ -1,0 +1,12 @@
+ANOWAR CREATION — FINAL CHAT / NOTICE / STATUS / HOME FIX
+
+1. Root index.html had a malformed HTML-to-PDF document.write string with CSS accidentally injected in the middle. That caused the main inline JavaScript script block to fail parsing. Fixed the string and loaded admin status-tab CSS as a stylesheet.
+2. Customer/Home/Admin views and customer dashboard navigation now have their original JavaScript free to initialize; hidden views remain controlled with display, visibility, opacity, pointer-events and inert state.
+3. Support messages use the send_support_message Supabase RPC for both customer messages and Admin replies. The included SQL sets its trusted SECURITY DEFINER function owner to postgres and row_security=off inside the function, and versioned script URLs prevent loading old direct-insert code from cache.
+4. Notice content fallback handles current content plus legacy message/body/image_url fields; rich formatted content and trusted notice-images bucket URLs are rendered in the public centered popup.
+5. Admin status queues are available for Orders, Applications, Appointments, PDF Print and service sections. New records are Application Submitted by default and change queues after a saved status update.
+6. Existing site services, Online Exam external link, logo/themes, Front Page Maker, Admin/customer functionality, contact email function, and assets are retained.
+
+SETUP REQUIRED: Upload all ZIP files to the existing GitHub repository root and run supabase-support-notices-contact.sql in Supabase SQL Editor. Also ensure send-contact-email Edge Function and its Resend secret are deployed/configured for actual automatic email delivery.
+
+STATIC VALIDATION: JavaScript syntax, HTML inline-script syntax, URL typo scan, feature checks and ZIP integrity were run. Live Supabase/browser acceptance tests were not performed here.

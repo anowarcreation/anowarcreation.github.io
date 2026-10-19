@@ -77,7 +77,7 @@
   }
   function renderMessages(container, rows, currentUserId) {
     if (!container) return;
-    if (!rows?.length) { container.innerHTML = '<p class="support-empty">No messages yet. Send the first message below.</p>'; return; }
+    if (!rows?.length) { container.innerHTML = '<p class="support-empty">No message is saved in this conversation yet. Earlier messages that failed with a permission error were not stored; send the message again below or reply here to start the saved chat history.</p>'; return; }
     const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 70;
     container.innerHTML = rows.map(m => {
       const mine = String(m.sender_id) === String(currentUserId);
@@ -140,7 +140,8 @@
         const { data: conversation, error } = await c.from('support_conversations').insert({ customer_id: user.id, customer_name: profileName(user), customer_email: user.email || '', subject, status: 'open' }).select('*').single();
         if (error) throw error; conversationId = conversation.id; activeCustomerConversationId = conversationId;
       }
-      const { error: sendError } = await c.from('support_messages').insert({ conversation_id: conversationId, sender_id: user.id, sender_role: 'customer', sender_name: profileName(user), body });
+      // Use the database RPC so sender role and permissions are checked against auth.users on the server.
+      const { error: sendError } = await c.rpc('send_support_message', { p_conversation_id: conversationId, p_body: body });
       if (sendError) throw sendError;
       if (draft) draft.value = ''; if ($('customerSupportMessageStatus')) $('customerSupportMessageStatus').textContent = 'Message sent. Your conversation history is saved.';
       if ($('customerSupportSubject')) $('customerSupportSubject').value = '';
@@ -192,7 +193,8 @@
     if (!activeAdminConversationId || !body) { if (status) status.textContent = 'Select a conversation and write a reply.'; return; }
     const btn = $('supportAdminSendButton'); if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
     try {
-      const { error } = await c.from('support_messages').insert({ conversation_id: activeAdminConversationId, sender_id: user.id, sender_role: 'admin', sender_name: 'Anowar Creation · Admin', body });
+      // Admin replies go through the same hardened RPC; this fixes RLS denials from the direct client insert.
+      const { error } = await c.rpc('send_support_message', { p_conversation_id: activeAdminConversationId, p_body: body });
       if (error) throw error;
       if ($('supportAdminReplyDraft')) $('supportAdminReplyDraft').value = ''; if (status) status.textContent = 'Reply sent and saved in the chat history.';
       await loadAdminSupportConversations(); await loadAdminSupportThread(activeAdminConversationId);

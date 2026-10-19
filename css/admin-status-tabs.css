@@ -1,0 +1,12 @@
+/* Status queues for standalone Admin: records move to the matching tab after a status update. */
+.admin-status-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 14px;padding:2px 0 12px;border-bottom:1px solid #1f395b}
+.admin-status-tab{appearance:none;display:inline-flex;align-items:center;justify-content:space-between;gap:10px;flex:0 1 auto;min-width:135px;max-width:100%;padding:10px 12px;border:1px solid #294d77;border-radius:10px;background:#08182d;color:#c8ddfa;font-size:12px;font-weight:800;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.admin-status-tab b{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 6px;border-radius:7px;background:#162e4d;color:#83d6ff;font-size:11px}
+.admin-status-tab.active{background:linear-gradient(105deg,#087ef3,#622af5);border-color:#38bdf8;color:#fff;box-shadow:0 5px 16px #034cb455}
+.admin-status-tab.active b{background:#ffffff24;color:#fff}.admin-status-tab:hover{border-color:#36c5ff;transform:translateY(-1px)}
+@media(max-width:760px){.admin-status-tabs{gap:6px}.admin-status-tab{flex:1 1 calc(50% - 6px);min-width:0;font-size:11px;padding:8px}.admin-status-tab span{overflow-wrap:anywhere;text-align:left}}
+
+/* Visibility guard for all status queue selectors on the standalone Admin Portal. */
+.section .admin-status-tabs{position:relative!important;z-index:1!important;display:flex!important;visibility:visible!important;opacity:1!important;min-height:44px!important;width:100%!important;flex-wrap:wrap!important;background:transparent!important;}
+.section .admin-status-tab{display:inline-flex!important;visibility:visible!important;opacity:1!important;color:#c8ddfa!important;line-height:1.35!important;white-space:normal!important;}
+.section .admin-status-tab.active{color:#fff!important;}

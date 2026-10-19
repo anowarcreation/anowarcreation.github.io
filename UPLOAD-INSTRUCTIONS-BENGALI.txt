@@ -1,0 +1,33 @@
+ANOWAR CREATION — সর্বশেষ Chat, Notice, Status ও Homepage Fix
+
+১) GitHub আপডেট
+- ZIP ডাউনলোড করে Extract করুন।
+- GitHub repository `anowarcreation.github.io` খুলুন।
+- Add file → Upload files বেছে Extract করা ফোল্ডারের ভেতরের সব ফাইল ও ফোল্ডার repository-র root-এ আপলোড করুন।
+- একই নামের পুরোনো ফাইল replace করে Commit changes দিন। ZIP-টি একক ফাইল হিসেবে GitHub-এ আপলোড করবেন না।
+
+২) Supabase SQL অবশ্যই চালাবেন
+- এই ZIP-এর `supabase-support-notices-contact.sql` ফাইল খুলুন।
+- পুরো SQL কপি করুন।
+- Supabase Dashboard → SQL Editor → New query-তে paste করে Run করুন।
+- আগে পুরোনো `support-conversations-permission-fix.sql` বা আগের Support SQL চালানো থাকলেও এই পূর্ণ আপডেট করা SQL আবার চালাতে হবে। SQL GitHub-এ upload করলেই database পরিবর্তন হয় না।
+
+৩) Customer/Admin Chat পরীক্ষা
+- SQL সফল হলে ওয়েবসাইট খুলে customer account দিয়ে Support / Message Admin-এ নতুন message পাঠান।
+- Admin Panel → Messages-এ conversation নির্বাচন করলে message body bubble হিসেবে দেখা উচিত; Admin Reply পাঠালে Customer-এর chat history-তে দেখাবে।
+- আগের যেসব message RLS error-এর কারণে insert-ই হয়নি, সেগুলোর body database-এ নেই; সেগুলো customer-কে আবার পাঠাতে হবে। Conversation title থাকবে।
+
+৪) Notice পরীক্ষা
+- Admin Panel → Notice Board-এ title ও formatted message লিখুন এবং PNG/JPG/WEBP image (সর্বোচ্চ 2 MB) upload করে Publish করুন।
+- Public Home Page-এ sign out/private window দিয়ে পরীক্ষা করুন; active notice মাঝখানে scrollable popup হিসেবে দেখা উচিত। পুরোনো notice-এর content/message/body/image_url ক্ষেত্রগুলো SQL চালানোর সময় current content field-এ migrate করা হয়।
+
+৫) Appointment/Order Status
+- Admin Panel-এর Orders & Applications, Appointments, PDF Print এবং service-specific sections-এ status button/tab আছে।
+- নতুন request `Application Submitted`-এ আসে। Status `Under Process`, `Successfully Completed`, `Declined` বা `Rejected` করলে সেটি সংশ্লিষ্ট status tab-এ চলে যায়। Declined/Rejected-এর জন্য reason দিতে হয়।
+
+৬) Contact Email
+- Contact form থেকে সত্যিকারের automatic email পাঠাতে `supabase/functions/send-contact-email/index.ts` Edge Function deploy করতে হবে এবং `RESEND_API_KEY` configure করতে হবে। Email service configure না থাকলে email draft fallback থাকবে।
+
+নিরাপত্তা
+- Supabase service-role key বা Resend API key HTML/JavaScript/GitHub-এ রাখবেন না।
+- SQL চালানোর পর Supabase-এ বাস্তব customer ও admin account দিয়ে পরীক্ষা করুন।
