@@ -245,7 +245,7 @@
     let content=[row.content,row.message,row.body,row.description].map(v=>String(v||'').trim()).find(Boolean)||'';
     const image=String(row.image_url||row.image||'').trim();
     if(image && !/<img\b/i.test(content)){
-      const trusted=(String(window.SUPABASE_URL||'https://tlsrvyqyhonnrlcdmlzo.supabase.co')+'/storage/v1/object/public/notice-images/').toLowerCase();
+      const trusted=(String(window.SUPABASE_URL||'https://tlsrvyqyhonrlcdmlzo.supabase.co')+'/storage/v1/object/public/notice-images/').toLowerCase();
       if(image.toLowerCase().startsWith(trusted)) content += `\n<p><img src="${esc(image)}" alt="Notice image"></p>`;
     }
     return content;
@@ -254,7 +254,7 @@
     const source=String(html||'');
     const box=document.createElement('div');box.innerHTML=source;
     box.querySelectorAll('script,style,iframe,object,embed,form,video,audio,svg,math').forEach(el=>el.remove());
-    const base=(typeof window.SUPABASE_URL==='string'?window.SUPABASE_URL:'https://tlsrvyqyhonnrlcdmlzo.supabase.co').toLowerCase()+'/storage/v1/object/public/notice-images/';
+    const base=(typeof window.SUPABASE_URL==='string'?window.SUPABASE_URL:'https://tlsrvyqyhonrlcdmlzo.supabase.co').toLowerCase()+'/storage/v1/object/public/notice-images/';
     box.querySelectorAll('*').forEach(el=>{[...el.attributes].forEach(a=>{const n=a.name.toLowerCase(),v=String(a.value||'').trim();const low=v.toLowerCase();if(n.startsWith('on')||n==='srcdoc'||n==='formaction'||(n==='href'&&(low.startsWith('javascript:')||low.startsWith('data:'))))el.removeAttribute(a.name);if(n==='src'&&!(low.startsWith('data:image/png')||low.startsWith('data:image/jpeg')||low.startsWith('data:image/webp')||low.startsWith(base)))el.removeAttribute(a.name);if(n==='style'&&/url\s*\(|expression\s*\(/i.test(v))el.removeAttribute(a.name)});if(el.tagName==='IMG'){const src=(el.getAttribute('src')||'').toLowerCase();if(!(src.startsWith('data:image/png')||src.startsWith('data:image/jpeg')||src.startsWith('data:image/webp')||src.startsWith(base)))el.remove()}});
     const cleaned=box.innerHTML.trim();if(!cleaned&&String(html||'').trim()&&!/<[a-z!/][^>]*>/i.test(String(html)))return `<p>${esc(String(html)).replace(/\r?\n/g,'<br>')}</p>`;return cleaned;
   }

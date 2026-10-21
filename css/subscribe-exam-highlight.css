@@ -2,11 +2,32 @@
 .pub-subscribe-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:10px 13px;border-radius:12px;border:1px solid rgba(32,216,255,.58);background:linear-gradient(135deg,rgba(9,42,77,.98),rgba(8,22,51,.98));color:#dff7ff!important;font-size:12px;font-weight:900;white-space:nowrap;box-shadow:inset 0 0 14px rgba(32,216,255,.08);transition:background .18s,border-color .18s,transform .18s}
 .pub-subscribe-btn:hover{background:linear-gradient(105deg,rgba(4,120,226,.32),rgba(92,45,255,.24));border-color:#38ddff;transform:translateY(-1px)}
 .pub-nav-actions .pub-subscribe-btn,.pub-nav-actions .pub-login-btn,.pub-nav-actions .pub-admin-btn{flex:0 0 auto}
-/* Only the primary Online Exam navigation link is oversized and animated. */
-@keyframes acOnlineExamPulse{0%,100%{transform:translateY(0);box-shadow:0 0 0 0 rgba(31,197,255,.28),0 5px 16px rgba(0,110,255,.22)}50%{transform:translateY(-2px);box-shadow:0 0 0 4px rgba(31,197,255,.10),0 0 26px rgba(62,115,255,.62)}}
-.public-site .pub-exam-nav>a.pub-link{position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:0 15px!important;border:1px solid rgba(46,219,255,.95)!important;border-radius:12px;background:linear-gradient(110deg,#087fec 0%,#374dff 55%,#862dff 100%);color:#fff!important;font-size:14px!important;font-weight:950!important;letter-spacing:.12px;text-shadow:0 1px 8px rgba(0,0,0,.25);box-shadow:0 5px 16px rgba(0,110,255,.22);animation:acOnlineExamPulse 2.6s ease-in-out infinite!important;transition:filter .18s,border-color .18s}
-.public-site .pub-exam-nav>a.pub-link:hover{filter:brightness(1.15);border-color:#8ff4ff!important}
+/* Online Exam: make both the navigation item and the Home hero CTA a matching, prominent button. */
+@keyframes acOnlineExamPulse{
+  0%,100%{transform:translateY(0) scale(1);box-shadow:0 0 0 0 rgba(31,197,255,.20),0 6px 18px rgba(0,110,255,.22);filter:saturate(1)}
+  50%{transform:translateY(-2px) scale(1.025);box-shadow:0 0 0 4px rgba(31,197,255,.10),0 0 28px rgba(62,115,255,.52);filter:saturate(1.18)}
+}
+.public-site .pub-exam-nav>a.pub-link,
+.public-site .pub-hero-actions>.pub-online-exam-cta{
+  position:relative;isolation:isolate;display:inline-flex!important;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 17px!important;border:1px solid rgba(46,219,255,.95)!important;border-radius:12px;
+  background:linear-gradient(110deg,#087fec 0%,#374dff 55%,#862dff 100%)!important;color:#fff!important;
+  font-size:14px!important;font-weight:950!important;letter-spacing:.12px;text-shadow:0 1px 8px rgba(0,0,0,.25);
+  box-shadow:0 5px 16px rgba(0,110,255,.22);animation:acOnlineExamPulse 2.6s ease-in-out infinite!important;
+  transition:filter .18s,border-color .18s;white-space:nowrap;
+}
+.public-site .pub-exam-nav>a.pub-link:hover,
+.public-site .pub-hero-actions>.pub-online-exam-cta:hover{filter:brightness(1.15);border-color:#8ff4ff!important}
 .public-site .pub-exam-toggle{font-size:17px;font-weight:950;min-width:23px}
+
+@media(max-width:1250px){
+  .pub-subscribe-btn{padding:9px 10px;font-size:11px}
+  .public-site .pub-exam-nav>a.pub-link,.public-site .pub-hero-actions>.pub-online-exam-cta{padding-inline:13px!important;font-size:13px!important}
+}
+@media(max-width:920px){
+  .pub-nav-actions .pub-subscribe-btn{min-height:38px;padding:8px 10px;font-size:11px}
+  .public-site .pub-exam-nav>a.pub-link,.public-site .pub-hero-actions>.pub-online-exam-cta{justify-content:flex-start;min-height:43px;padding:0 13px!important;font-size:14px!important;animation:acOnlineExamPulse 2.6s ease-in-out infinite!important}
+}
 .pub-subscribe-modal[hidden]{display:none!important}
 .pub-subscribe-modal{position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;padding:18px;isolation:isolate}
 .pub-subscribe-backdrop{position:absolute;inset:0;background:rgba(1,7,20,.78);backdrop-filter:blur(8px)}
@@ -22,4 +43,6 @@
 @media(max-width:1250px){.pub-subscribe-btn{padding:9px 10px;font-size:11px}.public-site .pub-exam-nav>a.pub-link{padding-inline:12px!important;font-size:13px!important}}
 @media(max-width:920px){.pub-nav-actions .pub-subscribe-btn{min-height:38px;padding:8px 10px;font-size:11px}.public-site .pub-exam-nav>a.pub-link{justify-content:flex-start;min-height:43px;padding:0 13px!important;font-size:14px!important;animation:acOnlineExamPulse 2.6s ease-in-out infinite!important}}
 @media(max-width:600px){.pub-nav-actions .pub-subscribe-btn{min-height:35px;padding:7px 8px;font-size:10px;border-radius:9px}.pub-subscribe-dialog{padding:24px 19px;border-radius:19px}.pub-subscribe-dialog>p{font-size:13px}.pub-subscribe-icon{width:49px;height:49px;border-radius:14px;font-size:24px}}
-@media(prefers-reduced-motion:reduce){.public-site .pub-exam-nav>a.pub-link{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){
+  .public-site .pub-exam-nav>a.pub-link,.public-site .pub-hero-actions>.pub-online-exam-cta{animation:none!important;transition:none!important}
+}

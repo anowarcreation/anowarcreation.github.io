@@ -1,0 +1,9 @@
+Anowar Creation update
+
+Changes:
+- Made the navigation Online Exam link and Home hero Online Exam CTA matching highlighted animated buttons.
+- Added a subtle slow static website background; Online Exam button animation only to public pages.
+- Kept reduced-motion preference respected.
+- Corrected the Supabase hostname in website configuration to match the working URL shown in the Auth health check.
+
+Upload all extracted files to the repository root, replacing files with the same names. No new SQL is needed for these visual changes.

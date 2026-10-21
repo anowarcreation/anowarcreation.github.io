@@ -25,7 +25,7 @@ set content = concat_ws(E'\n',
   coalesce(nullif(btrim(content), ''), nullif(btrim(message), ''), nullif(btrim(body), ''), ''),
   case
     when nullif(btrim(image_url), '') is not null
-      and lower(btrim(image_url)) like 'https://tlsrvyqyhonnrlcdmlzo.supabase.co/storage/v1/object/public/notice-images/%'
+      and lower(btrim(image_url)) like 'https://tlsrvyqyhonrlcdmlzo.supabase.co/storage/v1/object/public/notice-images/%'
       and coalesce(content, '') not ilike '%<img%'
     then '<p><img src="' || replace(btrim(image_url), '"', '&quot;') || '" alt="Notice image"></p>'
     else null
@@ -33,7 +33,7 @@ set content = concat_ws(E'\n',
 )
 where (coalesce(nullif(btrim(content), ''), '') = '' and coalesce(nullif(btrim(message), ''), nullif(btrim(body), '')) is not null)
    or (nullif(btrim(image_url), '') is not null
-      and lower(btrim(image_url)) like 'https://tlsrvyqyhonnrlcdmlzo.supabase.co/storage/v1/object/public/notice-images/%'
+      and lower(btrim(image_url)) like 'https://tlsrvyqyhonrlcdmlzo.supabase.co/storage/v1/object/public/notice-images/%'
       and coalesce(content, '') not ilike '%<img%');
 alter table public.site_notices enable row level security;
 
