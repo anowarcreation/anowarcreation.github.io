@@ -619,8 +619,9 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
   <link rel="stylesheet" href="css/site-refresh.css">
   <link rel="stylesheet" href="css/admin-status-tabs.css?v=20261019-support-notice-status6">
   <link rel="stylesheet" href="css/portal-management.css?v=20261019-support-notice-status6">
-  <link rel="stylesheet" href="css/public-site-fixed.css?v=20261019-support-notice-status6">
+  <link rel="stylesheet" href="css/public-site-fixed.css?v=20261021-subscribe1">
   <link rel="stylesheet" href="css/support-messaging.css?v=20261019-support-notice-status6">
+  <link rel="stylesheet" href="css/subscribe-exam-highlight.css?v=20261021-subscribe1">
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -642,7 +643,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
       <a class="pub-link " href="https://anowarcreation.github.io/anowarcreation-online-exam/exam/" target="_blank" rel="noopener">🎓 Online Exam</a>
       <button class="pub-exam-toggle" type="button" aria-label="Open Online Exam menu" aria-expanded="false" onclick="toggleExamMenu(event)">⌄</button>
       <div class="pub-dropdown"><a href="https://anowarcreation.github.io/anowarcreation-online-exam/exam/" target="_blank" rel="noopener">📝 Take Test</a><a href="online-exam.html">ℹ️ Exam Information</a><a href="https://anowarcreation.github.io/anowarcreation-online-exam/exam/" target="_blank" rel="noopener">🏆 Results & Certificates</a></div>
-    </div><a class="pub-link " href="tools.html">Tools</a><a class="pub-link " href="about.html">About</a><a class="pub-link " href="contact.html">Contact</a></nav><div class="pub-nav-actions"> <a class="pub-login-btn" href="index.html?auth=login" onclick="return handlePublicAuthLink(event,'login')">♙ Login / Register <span>→</span></a><a class="pub-admin-btn" href="auth/admin-login.html" aria-label="Admin Login"><span aria-hidden="true">🔐</span><b>Admin Login</b></a></div></header>
+    </div><a class="pub-link " href="tools.html">Tools</a><a class="pub-link " href="about.html">About</a><a class="pub-link " href="contact.html">Contact</a></nav><div class="pub-nav-actions"> <a class="pub-subscribe-btn" href="index.html?subscribe=1" onclick="return handleSiteSubscribeLink(event)" aria-label="Subscribe by email for notices and updates">✉ Subscribe</a> <a class="pub-login-btn" href="index.html?auth=login" onclick="return handlePublicAuthLink(event,'login')">♙ Login / Register <span>→</span></a><a class="pub-admin-btn" href="auth/admin-login.html" aria-label="Admin Login"><span aria-hidden="true">🔐</span><b>Admin Login</b></a></div></header>
   <main class="pub-home-wrap">
     <section class="pub-hero">
       <div class="pub-hero-copy">
@@ -716,6 +717,24 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
     <section class="pub-portfolio-section pub-final-cta"><div><span class="pub-section-kicker">READY WHEN YOU ARE</span><h2>Start with the service you need.</h2><p>Explore the public pages first, then login when you are ready to submit a request or manage an existing order.</p></div><div class="pub-story-actions"><a class="pub-action-btn" href="services.html">Browse Services →</a><a class="pub-action-btn secondary" href="index.html?auth=login">Login / Register →</a></div></section>
   </main>
   <footer class="pub-footer"><span>© <span data-pub-year></span> Anowar Creation. All rights reserved.</span><span>A trusted digital service platform for students and everyone</span><span>Designed &amp; Developed by Anowar Ali <b>♥</b></span></footer>
+  <div id="subscribeModal" class="pub-subscribe-modal" hidden aria-hidden="true">
+    <div class="pub-subscribe-backdrop" onclick="closeSubscribeModal()" aria-hidden="true"></div>
+    <section class="pub-subscribe-dialog" role="dialog" aria-modal="true" aria-labelledby="subscribeTitle" aria-describedby="subscribeDescription">
+      <button type="button" class="pub-subscribe-close" onclick="closeSubscribeModal()" aria-label="Close subscription form">×</button>
+      <div class="pub-subscribe-icon" aria-hidden="true">✉</div>
+      <span class="pub-subscribe-kicker">ANOWAR CREATION UPDATES</span>
+      <h2 id="subscribeTitle">Stay in the loop.</h2>
+      <p id="subscribeDescription">Subscribe with your email to receive important website notices, service updates and announcements from Anowar Creation.</p>
+      <form id="siteSubscribeForm" class="pub-subscribe-form" onsubmit="return submitSiteSubscription(event)">
+        <label for="siteSubscribeEmail">Email address</label>
+        <input id="siteSubscribeEmail" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required>
+        <label class="pub-subscribe-honeypot" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
+        <div id="siteSubscribeMessage" class="pub-subscribe-message" role="status" aria-live="polite"></div>
+        <button id="siteSubscribeSubmit" type="submit">Subscribe to Updates <span aria-hidden="true">→</span></button>
+      </form>
+      <small>Your email will be used for Anowar Creation notices and updates only.</small>
+    </section>
+  </div>
 </div>
 <div id="authScreen" class="auth-screen" style="display:none" aria-hidden="true">
   <section class="auth-welcome"><a class="auth-welcome-brand" href="index.html"><img src="assets/anowar-logo.webp" alt=""><span><b>ANOWAR</b><strong>CREATION</strong><small>Digital Service Portal</small></span></a><span class="pub-eyebrow">YOUR DIGITAL ASSISTANT</span><h1>Welcome to<br><span>Anowar Creation</span></h1><p>Login or create an account to access services, submit applications, track orders and get support.</p><ul><li>Access all customer services</li><li>Manage your orders and updates</li><li>Use the Online Exam portal</li><li>Get help when you need it</li></ul><div class="auth-welcome-art"><div class="mini-screen"><img src="assets/anowar-logo.webp" alt="Anowar Creation logo"></div><div class="mini-book"></div><div class="mini-plant"></div></div></section>
@@ -2013,10 +2032,10 @@ body.ac-view-admin #adminPage.show{display:block!important;visibility:visible!im
   </div>
 </div>
 
-<script src="js/portal-management.js?v=20261019-support-notice-status6"></script>
-<script src="js/public-site-fixed.js?v=20261019-support-notice-status6"></script>
+<script src="js/portal-management.js?v=20261021-subscribe1"></script>
+<script src="js/public-site-fixed.js?v=20261021-subscribe1"></script>
 
-<script src="js/support-messaging.js?v=20261019-support-notice-status6"></script>
+<script src="js/support-messaging.js?v=20261021-subscribe1"></script>
 
 <style id="ac-final-portal-view-hard-override-v3">
 /* Final exclusive view state. Use both DOM state and inline styles so legacy CSS cannot stack pages. */

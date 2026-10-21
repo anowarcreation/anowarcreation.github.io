@@ -1,0 +1,2 @@
+Update 2026-10-21: Added an email Subscribe button and accessible subscription modal across public pages. Added insert-only email_subscribers SQL, send-site-notice-email Supabase Edge Function, and Admin Notice publish hook to email subscribed addresses. The Online Exam top-navigation link is now larger, bolder, highlighted, and gently animated; respects prefers-reduced-motion.
+See SUBSCRIBE-UPDATES-SETUP-BENGALI.txt for one-time setup. Existing services, login, Admin/Customer portals, notice/chat functionality, and Front Page Maker assets were retained.

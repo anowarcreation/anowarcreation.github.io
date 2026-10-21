@@ -304,6 +304,16 @@
     if(result.error){if(el.message)el.message.textContent='Could not publish notice: '+result.error.message;return}
     currentNotice=result.data;if(el.current)el.current.innerHTML=`<h4>${esc(title)}</h4><div class="notice-admin-preview-body">${safeNoticeHtml(content)}</div><small>Published just now.</small>`;
     if(el.message)el.message.textContent='Notice published. Customers will see it in a centered popup.';await loadCustomerNotice(true);
+    // Email active subscribers when the admin publishes/updates a notice. Email failure never rolls back the website notice.
+    try{
+      const mailResult=await c.functions.invoke('send-site-notice-email',{body:{notice_id:result.data.id}});
+      if(mailResult.error||!mailResult.data?.success){
+        console.warn('Subscriber email notification was not delivered:',mailResult.error||mailResult.data?.message);
+        if(el.message)el.message.textContent='Notice published successfully. Subscriber emails were not sent; deploy send-site-notice-email and configure Resend to enable email updates.';
+      }else if(el.message){
+        const md=mailResult.data;el.message.textContent=md.subscribers===0?'Notice published. No email subscribers yet.':(md.failed?`Notice published; ${md.sent} subscriber emails sent, ${md.failed} failed.`:`Notice published and emailed to ${md.sent} subscriber(s).`);
+      }
+    }catch(mailError){console.warn('Subscriber notice emails not available yet:',mailError);if(el.message)el.message.textContent='Notice published successfully. To email subscribers, deploy send-site-notice-email and configure Resend.';}
   }
   async function deactivatePortalNotice(){const el=noticeEls();const c=client();if(!c)return;if(!currentNotice?.id){await loadPortalNoticeAdmin();if(el.message)el.message.textContent='No active notice to remove.';return}const {error}=await c.from('site_notices').update({is_active:false,updated_at:new Date().toISOString()}).eq('id',currentNotice.id);if(error){if(el.message)el.message.textContent='Could not remove notice: '+error.message;return}currentNotice=null;if(el.title)el.title.value='';if(el.content){if(el.content.id==='noticeEditor')el.content.innerHTML='';else el.content.value=''}if(el.current)el.current.innerHTML='<p>No active notice.</p>';if(el.message)el.message.textContent='Active notice removed.';const pop=$('customerNoticePopup');if(pop)pop.hidden=true}
   async function loadCustomerNotice(forceShow=false){

@@ -1,0 +1,22 @@
+ANOWAR CREATION — SUBSCRIBE BUTTON & EMAIL UPDATES SETUP
+
+WHAT'S INCLUDED
+1. Subscribe button in the header of the public pages.
+2. A modal form to collect an email address.
+3. Email subscriptions stored privately in public.email_subscribers (public visitors can INSERT but cannot read the list).
+4. Online Exam header button is larger, bold, highly visible and gently animated. Other navigation buttons do not animate.
+5. When Admin publishes/updates a Notice, the site calls the send-site-notice-email Edge Function to send the notice to active subscribers.
+
+REQUIRED ONE-TIME SETUP
+A) Upload all extracted website files to the root of the existing GitHub Pages repository, replacing same-name files. Do not upload the ZIP as one file.
+B) In Supabase Dashboard → SQL Editor → New query, run the entire supabase-support-notices-contact.sql file. This file includes the email_subscribers table and insert-only Row Level Security policy. Alternatively, run supabase-email-subscriptions.sql if the rest of the support/notice SQL has already been applied.
+C) Deploy the function `send-site-notice-email` from `supabase/functions/send-site-notice-email/index.ts`. It requires a signed-in Supabase JWT and checks the admin email `anowarali2707@outlook.com`. Do not turn off JWT verification for this function.
+D) In Supabase Edge Function secrets, set `RESEND_API_KEY` and `CONTACT_FROM_EMAIL`. CONTACT_FROM_EMAIL must be a sender identity verified by your Resend account. `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are standard Supabase Edge Function environment variables; never put the service role key into website JavaScript.
+
+HOW IT WORKS
+Visitors can subscribe from any public page. The email is normalized to lowercase and duplicate subscriptions show an “already subscribed” message. When an admin publishes a notice, subscribers receive its title/text and, where the notice image uses the `notice-images` storage bucket, the image in the email. If email service isn't configured, the notice remains published; the Admin Notice Board shows a message that email delivery needs configuration.
+
+TEST
+1. After deploying and running SQL, open the website, click Subscribe, and subscribe with an email you control.
+2. Verify that the subscription saved (success message). The table itself is private to public visitors.
+3. Log in as admin, publish a short test notice, and check Resend's logs and the subscriber inbox.
