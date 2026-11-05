@@ -622,6 +622,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
   <link rel="stylesheet" href="css/public-site-fixed.css?v=20261021-subscribe1">
   <link rel="stylesheet" href="css/support-messaging.css?v=20261019-support-notice-status6">
   <link rel="stylesheet" href="css/subscribe-exam-highlight.css?v=20261021-exam-only">
+  <link rel="stylesheet" href="css/home-banner-manager.css?v=20261105-home-banner1">
 </head>
 <body>
 <div class="space-stage" aria-hidden="true">
@@ -645,6 +646,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
       <div class="pub-dropdown"><a href="https://anowarcreation.github.io/anowarcreation-online-exam/exam/" target="_blank" rel="noopener">📝 Take Test</a><a href="online-exam.html">ℹ️ Exam Information</a><a href="https://anowarcreation.github.io/anowarcreation-online-exam/exam/" target="_blank" rel="noopener">🏆 Results & Certificates</a></div>
     </div><a class="pub-link " href="tools.html">Tools</a><a class="pub-link " href="about.html">About</a><a class="pub-link " href="contact.html">Contact</a></nav><div class="pub-nav-actions"> <a class="pub-subscribe-btn" href="index.html?subscribe=1" onclick="return handleSiteSubscribeLink(event)" aria-label="Subscribe by email for notices and updates">✉ Subscribe</a> <a class="pub-login-btn" href="index.html?auth=login" onclick="return handlePublicAuthLink(event,'login')">♙ Login / Register <span>→</span></a><a class="pub-admin-btn" href="auth/admin-login.html" aria-label="Admin Login"><span aria-hidden="true">🔐</span><b>Admin Login</b></a></div></header>
   <main class="pub-home-wrap">
+    <div id="homeAnnouncementTicker" hidden aria-label="Latest announcement"></div>
     <section class="pub-hero">
       <div class="pub-hero-copy">
         <span class="pub-eyebrow">✦ Welcome to</span>
@@ -664,7 +666,7 @@ linear-gradient(135deg,#020611 0%,#06152b 48%,#03040c 100%)!important;
           <a href="about.html">Read my story <span>→</span></a>
         </div>
       </div>
-      <div class="pub-portfolio-hero-art" aria-label="Anowar Ali Mondal portfolio hero card">
+      <div class="pub-portfolio-hero-art" id="homeBannerCarousel" aria-label="Anowar Creation featured banner">
         <img src="assets/anowar-portfolio-hero.webp" alt="Anowar Ali Mondal — passionate learner, focused on medical science, technology, problem solving and continuous learning" loading="eager" fetchpriority="high" decoding="async">
       </div>
     </section>
@@ -1654,6 +1656,7 @@ async function adminLogout(){
         <button onclick="switchAdminSection('adminPayments',this);loadAdminData()">💳 Payments</button>
         <button onclick="switchAdminSection('adminAppointments',this)">📅 Appointments</button>
         <button onclick="switchAdminSection('adminNoticeBoard',this);loadAdminNotices()">📢 Notice Board</button>
+        <button onclick="switchAdminSection('adminHomeBanners',this);loadHomeBannerAdmin()">🖼️ Home Banner Manager</button>
         <button onclick="switchAdminSection('adminServices',this);loadPortalManagement?.()">🛠️ Service Management</button>
         <button onclick="switchAdminSection('adminPricing',this);loadPortalManagement?.()">💰 Price Management</button>
       </div>
@@ -1708,6 +1711,37 @@ async function adminLogout(){
         </div>
       </section>
 
+      <section id="adminHomeBanners" class="admin-section">
+        <div class="admin-card">
+          <div class="section-head"><h2>🖼️ Home Banner Manager</h2><span>Manage the image area on the public Home Page</span></div>
+          <p class="desc">Upload any promotional image, notice, offer or personal photo. Active banners appear in the existing hero image area. Multiple active banners rotate automatically.</p>
+          <form id="homeBannerForm" class="form">
+            <h3 id="homeBannerFormTitle">Add New Banner</h3>
+            <div class="home-banner-admin-grid">
+              <label class="wide">Banner Image (JPG, PNG, WEBP or GIF, max 5 MB)<input id="homeBannerImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></label>
+              <label>Banner Title (optional)<input id="homeBannerTitle" maxlength="120" placeholder="e.g. Important Update"></label>
+              <label>Button Text (optional)<input id="homeBannerButtonText" maxlength="40" placeholder="View Details"></label>
+              <label class="wide">Description (optional)<textarea id="homeBannerDescription" rows="2" maxlength="300" placeholder="Short supporting information"></textarea></label>
+              <label class="wide">Button Link (optional)<input id="homeBannerButtonUrl" type="url" maxlength="1000" placeholder="https://example.com"></label>
+              <label>Display Order<input id="homeBannerSort" type="number" value="0" step="1"></label>
+              <label style="display:flex;align-items:center;gap:9px"><input id="homeBannerActive" type="checkbox" checked style="width:auto"> Publish this banner</label>
+            </div>
+            <div class="admin-actions"><button class="admin-btn primary" id="homeBannerSave" type="submit">Publish Banner</button><button class="admin-btn" id="homeBannerReset" type="button">Clear / Add New</button></div>
+            <div id="homeBannerAdminMessage" class="note" role="status"></div>
+          </form>
+          <div class="section-head" style="margin-top:24px"><h2>Current Banners</h2><span>Manage published and hidden images</span></div>
+          <div id="homeBannerAdminList" class="ac-banner-admin-list"><p class="note">Open this section to load banners.</p></div>
+        </div>
+        <div class="admin-card" style="margin-top:16px">
+          <div class="section-head"><h2>📢 Scrolling Announcement</h2><span>Shown above the Home Page hero section</span></div>
+          <div class="form">
+            <label>Announcement Text<textarea id="homeTickerText" rows="2" maxlength="500" placeholder="Write an important announcement..."></textarea></label>
+            <label>Text Colour<input id="homeTickerColor" type="color" value="#ffd84d" style="width:75px;height:42px;padding:3px"></label>
+            <label style="display:flex;align-items:center;gap:9px"><input id="homeTickerEnabled" type="checkbox" style="width:auto"> Enable scrolling announcement</label>
+            <button class="admin-btn primary" id="homeTickerSave" type="button">Save Announcement</button>
+          </div>
+        </div>
+      </section>
       <section id="adminApplications" class="admin-section">
         <div class="admin-card">
           <div class="section-head"><h2>📝 Application Management</h2><span>Update application status and review submitted details</span></div>
@@ -2033,6 +2067,7 @@ body.ac-view-admin #adminPage.show{display:block!important;visibility:visible!im
 </div>
 
 <script src="js/portal-management.js?v=20261021-subscribe1"></script>
+<script src="js/home-banner-manager.js?v=20261105-home-banner1"></script>
 <script src="js/public-site-fixed.js?v=20261021-subscribe1"></script>
 
 <script src="js/support-messaging.js?v=20261021-subscribe1"></script>

@@ -1,0 +1,21 @@
+ANOWAR CREATION - HOME BANNER MANAGER SETUP
+
+এই আপডেটে Home Page-এর hero image area-টি Dynamic Banner Slider করা হয়েছে। Admin Panel থেকে এক বা একাধিক ছবি Upload করা যাবে। Banner-এর Title, Description, Button Text, Button Link, Display Order এবং Publish/Hide নিয়ন্ত্রণ করা যাবে। Home Page-এর উপরে Scrolling Announcement-ও Admin Panel থেকে নিয়ন্ত্রণ করা যাবে।
+
+একবারের Supabase Setup:
+1. Supabase Dashboard খুলুন।
+2. SQL Editor-এ যান।
+3. এই ZIP-এর supabase-home-banners.sql ফাইলের সম্পূর্ণ SQL কপি করে Run করুন।
+4. SQL সফল হলে Website-এর আপডেটেড ফাইল GitHub repository-তে আপলোড/পুশ করুন।
+5. Admin account দিয়ে login করুন।
+6. Admin Panel > Home Banner Manager খুলুন।
+7. Image, optional title/description/button/link দিন এবং Publish Banner চাপুন।
+8. একাধিক Active banner থাকলে Home Page-এ ৫ সেকেন্ড অন্তর Slider চলবে। Publish বন্ধ করলে Banner public page-এ দেখাবে না।
+
+Image formats: JPG, PNG, WEBP, GIF. Maximum size: 5 MB.
+
+গুরুত্বপূর্ণ:
+- SQL অবশ্যই deploy করা নতুন JavaScript/HTML-এর আগে বা সঙ্গে Supabase-এ Run করতে হবে, নইলে banner table/bucket পাওয়া যাবে না।
+- Admin permission SQL-এ বর্তমানে existing admin email anowarali2707@outlook.com দিয়ে সীমাবদ্ধ করা হয়েছে।
+- পুরোনো Notice Board এবং customer notice popup আলাদা আছে; এই নতুন Home Banner Manager সেগুলোকে replace করে না।
+- পুরোনো portfolio hero image fallback হিসেবে রাখা হয়েছে। কোনো active banner না থাকলে আগের ছবিটিই দেখাবে।
