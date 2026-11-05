@@ -93,9 +93,9 @@ async function resetPassword(){
 async function updatePassword(){
   const password=$('password')?.value;
   const confirm=$('confirm')?.value;
-  if(!password||password.length<6)return message('Password must be at least 6 characters.');
+  if(!password||password.length<8)return message('Password must be at least 8 characters.');
   if(password!==confirm)return message('Passwords do not match.');
-  const {error}=await sb.auth.updateUser({password});
+  const {error}=await sb.auth.updateUser({password,data:{must_change_password:false,temporary_password_issued_at:null}});
   if(error)return message(error.message);
   message('Password updated successfully. You can now login.','success');
 }

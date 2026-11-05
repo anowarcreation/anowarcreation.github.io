@@ -310,7 +310,7 @@ function nav(id, button) {
   document.querySelector('.side')?.classList.remove('open');
   if (!$(id)) console.error('Admin section not found:', id);
   if (['serviceManage','pricing'].includes(id) && window.loadPortalManagement) window.loadPortalManagement();
-  if (id === 'notice' && window.loadPortalNoticeAdmin) window.loadPortalNoticeAdmin();
+  if (id === 'notice') { if (window.loadPortalNoticeAdmin) window.loadPortalNoticeAdmin(); if (window.loadHomeBannerAdmin) window.loadHomeBannerAdmin(); }
   if (id === 'messages' && window.loadAdminSupportConversations) window.loadAdminSupportConversations();
   if (id === 'appointments' && window.renderPortalAppointments) window.renderPortalAppointments();
   if (id === 'print') window.renderPrintOrders?.();
@@ -536,9 +536,10 @@ async function issueTemporaryPassword() {
       body: { action: 'temporary_password', user_id: id }
     });
     if (error) throw error;
-    message.textContent = data?.message || 'Request completed. Ask the customer to change the temporary password after login.';
+    if (!data?.temporary_password) throw new Error(data?.message || 'The function did not return a temporary password.');
+    message.innerHTML = `<div class="temp-password-result"><b>Temporary password generated</b><code id="issuedTemporaryPassword">${esc(data.temporary_password)}</code><button type="button" class="btn" onclick="copyIssuedTemporaryPassword()">Copy password</button><small>Share it privately with the customer. They will be asked to set a new password after login.</small></div>`;
   } catch (error) {
-    message.textContent = 'Temporary password is not configured yet. Deploy the admin-customer-management Supabase Edge Function and set SUPABASE_SERVICE_ROLE_KEY as an Edge Function secret. Details: ' + (error.message || 'Function unavailable');
+    message.textContent = 'Could not generate temporary password: ' + (error.message || 'Function unavailable') + '. Deploy supabase/functions/admin-customer-management and set SUPABASE_SERVICE_ROLE_KEY.';
   }
 }
 
@@ -556,6 +557,7 @@ window.viewCustomer = viewCustomer;
 window.closeCustomerModal = closeCustomerModal;
 window.saveCustomerProfile = saveCustomerProfile;
 window.issueTemporaryPassword = issueTemporaryPassword;
+window.copyIssuedTemporaryPassword = () => { const value = $('issuedTemporaryPassword')?.textContent || ''; if (value) navigator.clipboard.writeText(value).then(() => { const m=$('customerModalMessage'); if(m) m.insertAdjacentHTML('beforeend','<p>Password copied.</p>'); }).catch(() => alert('Copy failed. Please select and copy the password manually.')); };
 window.viewOrder = viewOrder;
 window.updateStatus = updateStatus;
 window.logout = logout;

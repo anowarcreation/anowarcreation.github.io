@@ -1,0 +1,58 @@
+ANOWAR CREATION - ADMIN PANEL / PASSWORD UPDATE
+================================================
+
+এই আপডেটে যা পরিবর্তন করা হয়েছে
+--------------------------------
+1. Admin Panel-এর Notice & Announcements অংশে Notice Board, Home Banner Manager এবং Scrolling Announcement একসঙ্গে রাখা হয়েছে।
+2. Home Banner Manager থেকে একাধিক ছবি upload, edit, delete, publish/hide এবং order পরিবর্তন করা যাবে।
+3. Scrolling Announcement-এর লেখা ও রং বদলানো যাবে। Live Preview-তে লেখাটি চলতে দেখা যাবে। Save করলে Main Website-এর উপরের ticker-এ continuously এক দিক থেকে অন্য দিকে চলবে। Hover করলে preview থামবে।
+4. Customer Dashboard-এ নিজের password পরিবর্তনের form যোগ হয়েছে।
+5. Forgot Password page-এর recovery event handling ঠিক করা হয়েছে।
+6. Admin Customer Profile থেকে Temporary Password generate করা যাবে। Password একবার Admin-কে দেখানো হবে এবং Copy করা যাবে।
+7. Temporary password দিয়ে customer login করলে Dashboard-এ নতুন password সেট না করা পর্যন্ত service cards hidden থাকবে।
+8. Admin Panel-এর spacing, navigation, form, cards, tables ও mobile layout polish করা হয়েছে।
+
+DEPLOY STEPS
+------------
+A) Website files
+- ZIP extract করুন।
+- GitHub repository-তে updated project-এর files upload/commit করুন।
+- Existing Supabase URL এবং publishable key পরিবর্তন করবেন না।
+
+B) Home Banner database/storage
+- Supabase Dashboard > SQL Editor খুলুন।
+- supabase-home-banners.sql ফাইলের SQL একবার Run করুন।
+- এটি site_home_banners, site_home_banner_settings এবং site-home-banners Storage bucket/policies তৈরি করে।
+
+C) Temporary Password Edge Function
+এই ফিচারের জন্য Supabase Edge Function deploy করা বাধ্যতামূলক। Supabase CLI দিয়ে project link করা থাকলে project root থেকে:
+
+  supabase functions deploy admin-customer-management
+
+Supabase Dashboard > Project Settings > Edge Functions > Secrets-এ এই secret নিশ্চিত করুন:
+
+  SUPABASE_SERVICE_ROLE_KEY = আপনার Project-এর service_role secret key
+
+গুরুত্বপূর্ণ:
+- Service role key কখনো website JavaScript, HTML, GitHub repository বা ZIP-এর public config-এ বসাবেন না।
+- Secret শুধু Supabase Edge Function Secrets-এ থাকবে।
+- Function-এ JWT verification enabled রাখা হয়েছে।
+- Function শুধু authorised admin email anowarali2707@outlook.com-কে অনুমতি দেয়।
+
+D) Customer password
+- Customer Dashboard-এ Change your password section থাকবে।
+- Forgot Password-এর জন্য Supabase Authentication > URL Configuration-এ Site URL এবং Redirect URLs-এ আপনার GitHub Pages domain-এর /auth/reset-password.html path allow করুন।
+- উদাহরণ: https://YOUR-USERNAME.github.io/auth/reset-password.html
+- Admin temporary password দিলে customer login-এর পর Dashboard-এ password change করতে হবে।
+
+E) Test checklist
+1. Admin login করুন এবং Notice & Announcements খুলুন।
+2. Banner upload করে Publish Banner দিন। Main website-এর নিজের ছবির জায়গায় banner দেখা উচিত।
+3. 2 বা তার বেশি active banner দিলে slider rotate করবে।
+4. Scrolling Announcement লিখে Enable করে Save Announcement দিন।
+5. Notice Board থেকে customer popup notice publish করে পরীক্ষা করুন।
+6. Customers > customer profile > Issue temporary password পরীক্ষা করুন।
+7. Temporary password দিয়ে customer login করে নতুন password save করুন।
+8. Forgot Password email link দিয়ে password reset পরীক্ষা করুন।
+
+যদি database permission error আসে, Supabase SQL migration এবং authenticated admin email policy মিলিয়ে দেখুন।

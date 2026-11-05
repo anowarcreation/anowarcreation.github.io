@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.send-site-notice-email]
 verify_jwt = true
+
+[functions.admin-customer-management]
+verify_jwt = true
